@@ -3,13 +3,22 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../orders/application/order_workspace_controller.dart';
+import '../../orders/presentation/compose_page.dart';
+import '../../orders/presentation/items_page.dart';
+import '../../orders/presentation/tickets_page.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/settings_page.dart';
 import 'overview_page.dart';
 
 class WorkspaceShell extends StatefulWidget {
-  const WorkspaceShell({super.key, required this.settings});
+  const WorkspaceShell({
+    super.key,
+    required this.settings,
+    required this.orders,
+  });
   final SettingsController settings;
+  final OrderWorkspaceController orders;
 
   @override
   State<WorkspaceShell> createState() => _WorkspaceShellState();
@@ -37,8 +46,24 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         : labels[_selected];
     final page = switch (_selected) {
       0 => OverviewPage(onSelect: _select),
+      1 => ComposePage(
+        controller: widget.orders,
+        heading: widget.settings.settings.heading,
+      ),
+      2 => ItemsPage(controller: widget.orders),
+      3 => TicketsPage(
+        controller: widget.orders,
+        onOpenCompose: () => _select(1),
+      ),
       4 => SettingsPage(controller: widget.settings),
-      _ => _ComingPage(index: _selected, onBack: () => _select(0)),
+      _ => OverviewPage(onSelect: _select),
+    };
+    final subtitle = switch (_selected) {
+      0 => l.overviewSubtitle,
+      1 => l.composeSubtitle,
+      2 => l.itemsSubtitle,
+      3 => l.ticketsSubtitle,
+      _ => l.settingsSubtitle,
     };
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -176,22 +201,18 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                                           .textTheme
                                           .headlineLarge,
                                     ),
-                                    if (_selected == 0 || _selected == 4) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        _selected == 0
-                                            ? l.overviewSubtitle
-                                            : l.settingsSubtitle,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyLarge
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                            ),
-                                      ),
-                                    ],
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      subtitle,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                    ),
                                     const SizedBox(height: 28),
                                     page,
                                     const SizedBox(height: 16),
@@ -364,75 +385,6 @@ class _Sidebar extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ComingPage extends StatelessWidget {
-  const _ComingPage({required this.index, required this.onBack});
-  final int index;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final titles = [l.composeTitle, l.itemsTitle, l.ticketsTitle];
-    final bodies = [l.composeBody, l.itemsBody, l.ticketsBody];
-    const icons = [
-      Icons.note_add_outlined,
-      Icons.inventory_2_outlined,
-      Icons.receipt_long_outlined,
-    ];
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 52),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Icon(
-                  icons[index - 1],
-                  size: 48,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                l.previewLabel,
-                style: Theme.of(context).textTheme.labelLarge
-                    ?.copyWith(color: Theme.of(context).colorScheme.primary),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                titles[index - 1],
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 16),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Text(
-                  bodies[index - 1],
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-              const SizedBox(height: 28),
-              OutlinedButton.icon(
-                onPressed: onBack,
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: Text(l.backOverview),
-              ),
-            ],
-          ),
         ),
       ),
     );

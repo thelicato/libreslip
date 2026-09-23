@@ -1,21 +1,24 @@
-# Foundation milestone validation
+# Items and order tickets milestone validation
 
-Validated on 23 September 2026 for LibreSlip 0.2.0+2, Android application identifier `io.thelicato.libreslip`.
+Validated on 23 September 2026 for LibreSlip 0.3.0+3, Android application identifier `io.thelicato.libreslip`.
 
 | Check | Result |
 | --- | --- |
-| Dart formatting | Passed, 18 Dart files checked. |
+| Dart formatting | Passed, 27 Dart files checked. |
 | Static analysis | Passed with no issues. |
-| Unit, widget and render tests | All 22 passed, including storage failure/recovery, language switching, phone/tablet/landscape layouts and doubled text size. |
-| Real Android preference storage | Integration test passed on an isolated Android 14 emulator. |
-| Clean release build | APK built successfully; application label LibreSlip, minimum API 34, target API 36. |
-| Release signature | APK signature verified; development signing key used for this preview. |
-| Offline cold launch | Release app launched with airplane mode enabled and Wi-Fi/mobile data disabled. |
-| Process restart | Italian selection survived full process termination and a cold restart. |
-| Privacy configuration | Release has no internet permission; automatic backup and device transfer exclusions are configured. |
-| Visual inspection | Phone, wide-screen and Italian dark-theme renders reviewed. |
-| Source ZIP | Packaging verifies archive integrity and exact source contents; APK packaging also rejects a mismatched application ID or inconsistent Gradle/Flutter outputs. |
+| Unit and widget tests | All 26 active tests passed; the normal run skipped only the opt-in render capture. |
+| SQLite migrations | Version 1 to 2 upgrade passed while preserving existing catalogue data. |
+| Draft restart recovery | Passed in a temporary desktop database and through the real Android SQLite backend after close and reopen. |
+| Ticket snapshot integrity | Passed: later catalogue rename and archival did not change saved heading, item name, quantity or notes. |
+| Duplicate protection | Passed: retrying conversion of the same draft returned the same stable ticket and left one history record. |
+| End-to-end workflow | Passed from reusable item creation through composition, reference persistence, ticket history and duplication into a new draft. |
+| Responsive localisation | Passed in British English and Italian on small phone, landscape, tablet and doubled-text layouts. |
+| Android platform integration | Passed on a read-only Android 14 API 34 emulator using real DataStore and SQLite implementations. |
+| Visual inspection | Fresh Compose phone, Italian Items dark-theme and Tickets wide-screen renders reviewed. |
+| Privacy configuration | Release requests no internet permission; automatic cloud backup and device transfer remain disabled. |
+| Release build and signature | Release APK built successfully and its development signature was verified. |
+| Source delivery | Packaging verified the archive root and contents, versioned APK metadata, source freshness, matching APK outputs and SHA-256 checksums. |
 
-The Android check used a read-only emulator instance, without changing its saved state. See the [offline Italian screen](previews/android14-offline-it.png). The integration test passed; an attempted cleanup of the previous app identifier produced a harmless emulator uninstall warning. The final release was rebuilt from clean generated files and verified independently.
+The Android integration test used a dedicated temporary database and restored the previous preference document. The emulator was started read-only and its state was not saved. Automated tests do not verify operating-system process kill during an in-progress SQLite transaction, but SQLite transactions and the idempotent origin-draft constraint protect the implemented save boundary.
 
-This milestone implements the app shell and local preferences. Item management, order composition/history, printer communication and in-app ZIP transfer remain pending. Physical NETUM NT-1809DD compatibility has not been tested.
+This milestone implements local item management, multiple editable drafts and saved ticket history. Integer quantities from 1 to 999 are supported. Item images remain app-private and will enter full backups in task 5. Printing, print attempts, 58 mm rendering, PDF sharing and in-app ZIP transfer are not implemented. The NETUM NT-1809DD has not been tested, and no print success is claimed.

@@ -6,7 +6,7 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | --- | --- | --- |
 | 1. Requirements and project rules | Product rules, local storage requirements, Android 14+ baseline and NETUM NT-1809DD hardware target. Updated for the LibreSlip scope. | Complete |
 | 2. Flutter foundation and visual shell | LibreSlip branding, bilingual resources, responsive navigation, local heading/language/theme settings, original design, toolchain documentation and preview APK/source ZIP. Verify analysis, tests and offline launch. | Complete |
-| 3. Items and order tickets | SQLite schema/migrations, reusable item editing, categories, search, ad-hoc items, quantities, notes, references, persistent drafts, ticket snapshots and history. Verify restart recovery and duplicate protection. | Pending |
+| 3. Items and order tickets | SQLite schema/migrations, reusable item editing, categories, search, ad-hoc items, quantities, notes, references, persistent drafts, ticket snapshots and history. Verify restart recovery and duplicate protection. | Complete |
 | 4. Ticket layout and NETUM printing | Bilingual 58 mm ticket preview, header/logo/footer settings, Bluetooth Classic SPP, setup/test ticket, durable print jobs, reconnect, explicit reprint and PDF sharing. Verify the user's physical printer. | Pending |
 | 5. ZIP portability | Configuration/full-backup export, validated staged import, preview, confirmation and rollback. Verify fresh-install restore, corruption, malicious paths, interruption and round trips. | Pending |
 | 6. Release verification and packaging | Accessibility, both languages, offline operation, process recovery, hardware evidence, build instructions, installable APK, source ZIP and checksums. | Pending |
@@ -17,4 +17,4 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-The LibreSlip foundation is complete, with a verified Android preview APK, working local settings and responsive preview navigation. Item editing, ticket creation/history, printing and in-app ZIP portability are not implemented yet. See [development instructions](development.md) for the toolchain and verification commands, and [milestone validation](validation.md) for results. The next task is reusable items, persistent order drafts and ticket history.
+Reusable catalogue items, multiple persistent drafts and saved ticket history are operational with local SQLite storage. Saved tickets preserve heading, item names, quantities and notes as immutable snapshots. Draft conversion uses its stable draft identifier as a unique idempotency key within the save transaction. Printing, print attempts, PDF sharing and in-app ZIP transfer remain pending. See [development instructions](development.md) for the implementation and [milestone validation](validation.md) for verified results. The next task is bilingual 58 mm ticket rendering and NETUM NT-1809DD printing.

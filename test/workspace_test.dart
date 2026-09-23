@@ -24,9 +24,11 @@ Future<SettingsController> openApp(
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   final store = repository ?? (MemorySettingsRepository()..stored = settings);
   final controller = SettingsController(store);
+  final orders = await createMemoryOrders();
   addTearDown(controller.dispose);
+  addTearDown(orders.dispose);
   await controller.load();
-  await tester.pumpWidget(LibreSlipApp(settings: controller));
+  await tester.pumpWidget(LibreSlipApp(settings: controller, orders: orders));
   await tester.pumpAndSettle();
   return controller;
 }
@@ -50,29 +52,25 @@ void main() {
     },
   );
 
-  testWidgets('navigation opens honest empty states and returns to overview', (
-    tester,
-  ) async {
+  testWidgets('navigation opens real task 3 empty states', (tester) async {
     await openApp(tester);
     expect(find.text('Your workspace'), findsOneWidget);
     for (final (index, title) in [
-      (1, 'A place for every detail.'),
-      (2, 'Your favourites, close to hand.'),
-      (3, 'Every order has a story.'),
+      (1, 'Start with an item.'),
+      (2, 'Your item shelf is ready.'),
+      (3, 'No saved tickets yet.'),
     ]) {
       await tester.tap(find.byKey(ValueKey('nav-$index')));
       await tester.pumpAndSettle();
       expect(find.text(title), findsOneWidget);
-      expect(find.text('Workspace preview'), findsOneWidget);
-      await tester.tap(find.text('Back to overview'));
+      await tester.tap(find.byKey(const ValueKey('nav-0')));
       await tester.pumpAndSettle();
-      expect(find.text('Your workspace'), findsOneWidget);
     }
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-    'language switches immediately while the ticket heading stays unchanged',
+    'language switches immediately while stored content stays unchanged',
     (tester) async {
       final controller = await openApp(
         tester,

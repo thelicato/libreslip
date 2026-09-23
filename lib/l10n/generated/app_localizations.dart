@@ -447,6 +447,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'These settings work without an internet connection. Automatic cloud backup is switched off.'**
   String get privacyBody;
+
+  /// No description provided for @composeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Build an order and keep every detail safe as you work.'**
+  String get composeSubtitle;
+
+  /// No description provided for @itemsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reusable favourites for faster ticket composition.'**
+  String get itemsSubtitle;
+
+  /// No description provided for @ticketsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved order snapshots, kept separately from printing.'**
+  String get ticketsSubtitle;
+
+  /// No description provided for @newDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'New draft'**
+  String get newDraft;
+
+  /// No description provided for @draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get draft;
+
+  /// No description provided for @drafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get drafts;
+
+  /// No description provided for @deleteDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete draft'**
+  String get deleteDraft;
+
+  /// No description provided for @deleteDraftQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this draft?'**
+  String get deleteDraftQuestion;
+
+  /// No description provided for @deleteDraftBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its items and notes will be removed from this phone.'**
+  String get deleteDraftBody;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @searchItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Search items'**
+  String get searchItems;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get allCategories;
+
+  /// No description provided for @favourites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get favourites;
+
+  /// No description provided for @addItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get addItem;
+
+  /// No description provided for @editItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get editItem;
+
+  /// No description provided for @itemName.
+  ///
+  /// In en, this message translates to:
+  /// **'Item name'**
+  String get itemName;
+
+  /// No description provided for @itemNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example, Mushroom toastie'**
+  String get itemNameHint;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @categoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example, Kitchen'**
+  String get categoryHint;
+
+  /// No description provided for @favouriteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in favourites'**
+  String get favouriteItem;
+
+  /// No description provided for @favouriteItemBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourite items appear first when composing.'**
+  String get favouriteItemBody;
+
+  /// No description provided for @chooseImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose image'**
+  String get chooseImage;
+
+  /// No description provided for @changeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change image'**
+  String get changeImage;
+
+  /// No description provided for @removeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get removeImage;
+
+  /// No description provided for @imagePickerError.
+  ///
+  /// In en, this message translates to:
+  /// **'The image could not be added. Try another image.'**
+  String get imagePickerError;
+
+  /// No description provided for @itemRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an item name.'**
+  String get itemRequired;
+
+  /// No description provided for @itemNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 80 characters or fewer.'**
+  String get itemNameTooLong;
+
+  /// No description provided for @categoryTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 60 characters or fewer.'**
+  String get categoryTooLong;
+
+  /// No description provided for @duplicateItemError.
+  ///
+  /// In en, this message translates to:
+  /// **'An active item already uses that name.'**
+  String get duplicateItemError;
+
+  /// No description provided for @emptyItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your item shelf is ready.'**
+  String get emptyItemsTitle;
+
+  /// No description provided for @emptyItemsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reusable items to find them quickly while composing a ticket.'**
+  String get emptyItemsBody;
+
+  /// No description provided for @noItemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No items match this search.'**
+  String get noItemsFound;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @removeItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove item'**
+  String get removeItem;
+
+  /// No description provided for @removeItemQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String removeItemQuestion(String name);
+
+  /// No description provided for @removeItemBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved tickets keep their original snapshot. This item will disappear from new searches.'**
+  String get removeItemBody;
+
+  /// No description provided for @addToDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to draft'**
+  String get addToDraft;
+
+  /// No description provided for @adHocItem.
+  ///
+  /// In en, this message translates to:
+  /// **'One-off item'**
+  String get adHocItem;
+
+  /// No description provided for @adHocItemBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item to this draft without saving it to your reusable shelf.'**
+  String get adHocItemBody;
+
+  /// No description provided for @orderReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Table or order reference'**
+  String get orderReference;
+
+  /// No description provided for @orderReferenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, for example Table 4'**
+  String get orderReferenceHint;
+
+  /// No description provided for @orderNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Order notes'**
+  String get orderNotes;
+
+  /// No description provided for @orderNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional notes for the whole order'**
+  String get orderNotesHint;
+
+  /// No description provided for @draftEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with an item.'**
+  String get draftEmptyTitle;
+
+  /// No description provided for @draftEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a reusable item or add a one-off item. Your draft is saved on this phone as you work.'**
+  String get draftEmptyBody;
+
+  /// No description provided for @quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get quantity;
+
+  /// No description provided for @preparationNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparation note'**
+  String get preparationNote;
+
+  /// No description provided for @preparationNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, for example no onion'**
+  String get preparationNoteHint;
+
+  /// No description provided for @removeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove line'**
+  String get removeLine;
+
+  /// No description provided for @saveTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Save ticket'**
+  String get saveTicket;
+
+  /// No description provided for @ticketSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket saved to history.'**
+  String get ticketSaved;
+
+  /// No description provided for @ticketNeedsItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one item before saving.'**
+  String get ticketNeedsItem;
+
+  /// No description provided for @draftSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'This draft could not be saved. Your latest details remain on screen. Try again.'**
+  String get draftSaveError;
+
+  /// No description provided for @storageErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order workspace needs a moment'**
+  String get storageErrorTitle;
+
+  /// No description provided for @storageErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'LibreSlip could not open its local order database. Nothing has been reset or overwritten.'**
+  String get storageErrorBody;
+
+  /// No description provided for @emptyTicketsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved tickets yet.'**
+  String get emptyTicketsTitle;
+
+  /// No description provided for @emptyTicketsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When you save a composed order, its item names, quantities, notes and heading appear here as a fixed snapshot.'**
+  String get emptyTicketsBody;
+
+  /// No description provided for @ticketNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket {number}'**
+  String ticketNumber(int number);
+
+  /// No description provided for @itemCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No items} =1{1 item} other{{count} items}}'**
+  String itemCount(int count);
+
+  /// No description provided for @viewTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'View ticket'**
+  String get viewTicket;
+
+  /// No description provided for @duplicateTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate as draft'**
+  String get duplicateTicket;
+
+  /// No description provided for @duplicatedTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'A new editable draft was created from this snapshot.'**
+  String get duplicatedTicket;
+
+  /// No description provided for @ticketDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket details'**
+  String get ticketDetails;
+
+  /// No description provided for @savedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved heading'**
+  String get savedHeading;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @printingLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing is not available in this milestone. Saving a ticket does not print it or create a sale.'**
+  String get printingLater;
+
+  /// No description provided for @savedSnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved snapshot'**
+  String get savedSnapshot;
+
+  /// No description provided for @savedSnapshotBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalogue edits do not change this ticket.'**
+  String get savedSnapshotBody;
+
+  /// No description provided for @oneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'One-off'**
+  String get oneOff;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @savingOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving locally…'**
+  String get savingOrders;
+
+  /// No description provided for @referenceTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 80 characters or fewer.'**
+  String get referenceTooLong;
+
+  /// No description provided for @noteTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'This note is too long.'**
+  String get noteTooLong;
+
+  /// No description provided for @searchTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tickets'**
+  String get searchTickets;
 }
 
 class _AppLocalizationsDelegate

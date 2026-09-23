@@ -192,6 +192,257 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get privacyBody =>
       'Queste impostazioni funzionano senza connessione a Internet. Il backup automatico sul cloud è disattivato.';
+
+  @override
+  String get composeSubtitle =>
+      'Crea un ordine e salva ogni dettaglio mentre lavori.';
+
+  @override
+  String get itemsSubtitle =>
+      'I preferiti riutilizzabili per comporre le comande più velocemente.';
+
+  @override
+  String get ticketsSubtitle =>
+      'Istantanee degli ordini salvati, separate dalla stampa.';
+
+  @override
+  String get newDraft => 'Nuova bozza';
+
+  @override
+  String get draft => 'Bozza';
+
+  @override
+  String get drafts => 'Bozze';
+
+  @override
+  String get deleteDraft => 'Elimina bozza';
+
+  @override
+  String get deleteDraftQuestion => 'Eliminare questa bozza?';
+
+  @override
+  String get deleteDraftBody =>
+      'Gli articoli e le note verranno rimossi da questo telefono.';
+
+  @override
+  String get delete => 'Elimina';
+
+  @override
+  String get searchItems => 'Cerca articoli';
+
+  @override
+  String get allCategories => 'Tutte le categorie';
+
+  @override
+  String get favourites => 'Preferiti';
+
+  @override
+  String get addItem => 'Aggiungi articolo';
+
+  @override
+  String get editItem => 'Modifica articolo';
+
+  @override
+  String get itemName => 'Nome articolo';
+
+  @override
+  String get itemNameHint => 'Ad esempio, Toast ai funghi';
+
+  @override
+  String get category => 'Categoria';
+
+  @override
+  String get categoryHint => 'Ad esempio, Cucina';
+
+  @override
+  String get favouriteItem => 'Tieni nei preferiti';
+
+  @override
+  String get favouriteItemBody =>
+      'Gli articoli preferiti compaiono per primi durante la composizione.';
+
+  @override
+  String get chooseImage => 'Scegli immagine';
+
+  @override
+  String get changeImage => 'Cambia immagine';
+
+  @override
+  String get removeImage => 'Rimuovi immagine';
+
+  @override
+  String get imagePickerError =>
+      'Impossibile aggiungere l’immagine. Provane un’altra.';
+
+  @override
+  String get itemRequired => 'Inserisci il nome dell’articolo.';
+
+  @override
+  String get itemNameTooLong => 'Usa al massimo 80 caratteri.';
+
+  @override
+  String get categoryTooLong => 'Usa al massimo 60 caratteri.';
+
+  @override
+  String get duplicateItemError => 'Un articolo attivo usa già questo nome.';
+
+  @override
+  String get emptyItemsTitle => 'Il tuo spazio articoli è pronto.';
+
+  @override
+  String get emptyItemsBody =>
+      'Aggiungi articoli riutilizzabili per trovarli subito mentre componi una comanda.';
+
+  @override
+  String get noItemsFound => 'Nessun articolo corrisponde alla ricerca.';
+
+  @override
+  String get edit => 'Modifica';
+
+  @override
+  String get removeItem => 'Rimuovi articolo';
+
+  @override
+  String removeItemQuestion(String name) {
+    return 'Rimuovere $name?';
+  }
+
+  @override
+  String get removeItemBody =>
+      'Le comande salvate conservano l’istantanea originale. L’articolo non comparirà più nelle nuove ricerche.';
+
+  @override
+  String get addToDraft => 'Aggiungi alla bozza';
+
+  @override
+  String get adHocItem => 'Articolo occasionale';
+
+  @override
+  String get adHocItemBody =>
+      'Aggiungi un articolo a questa bozza senza salvarlo tra quelli riutilizzabili.';
+
+  @override
+  String get orderReference => 'Riferimento tavolo o ordine';
+
+  @override
+  String get orderReferenceHint => 'Facoltativo, ad esempio Tavolo 4';
+
+  @override
+  String get orderNotes => 'Note dell’ordine';
+
+  @override
+  String get orderNotesHint => 'Note facoltative per l’intero ordine';
+
+  @override
+  String get draftEmptyTitle => 'Inizia con un articolo.';
+
+  @override
+  String get draftEmptyBody =>
+      'Scegli un articolo riutilizzabile o aggiungine uno occasionale. La bozza viene salvata su questo telefono mentre lavori.';
+
+  @override
+  String get quantity => 'Quantità';
+
+  @override
+  String get preparationNote => 'Nota di preparazione';
+
+  @override
+  String get preparationNoteHint => 'Facoltativa, ad esempio senza cipolla';
+
+  @override
+  String get removeLine => 'Rimuovi riga';
+
+  @override
+  String get saveTicket => 'Salva comanda';
+
+  @override
+  String get ticketSaved => 'Comanda salvata nello storico.';
+
+  @override
+  String get ticketNeedsItem => 'Aggiungi almeno un articolo prima di salvare.';
+
+  @override
+  String get draftSaveError =>
+      'Impossibile salvare la bozza. Gli ultimi dettagli restano sullo schermo. Riprova.';
+
+  @override
+  String get storageErrorTitle => 'Un momento per il tuo spazio ordini';
+
+  @override
+  String get storageErrorBody =>
+      'LibreSlip non è riuscito ad aprire il database locale degli ordini. Nulla è stato reimpostato o sovrascritto.';
+
+  @override
+  String get emptyTicketsTitle => 'Nessuna comanda salvata.';
+
+  @override
+  String get emptyTicketsBody =>
+      'Quando salvi un ordine, nomi, quantità, note e intestazione vengono conservati qui come istantanea fissa.';
+
+  @override
+  String ticketNumber(int number) {
+    return 'Comanda $number';
+  }
+
+  @override
+  String itemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articoli',
+      one: '1 articolo',
+      zero: 'Nessun articolo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewTicket => 'Vedi comanda';
+
+  @override
+  String get duplicateTicket => 'Duplica come bozza';
+
+  @override
+  String get duplicatedTicket =>
+      'È stata creata una nuova bozza modificabile da questa istantanea.';
+
+  @override
+  String get ticketDetails => 'Dettagli comanda';
+
+  @override
+  String get savedHeading => 'Intestazione salvata';
+
+  @override
+  String get close => 'Chiudi';
+
+  @override
+  String get printingLater =>
+      'La stampa non è disponibile in questa fase. Salvare una comanda non la stampa e non crea una vendita.';
+
+  @override
+  String get savedSnapshot => 'Istantanea salvata';
+
+  @override
+  String get savedSnapshotBody =>
+      'Le modifiche al catalogo non cambiano questa comanda.';
+
+  @override
+  String get oneOff => 'Occasionale';
+
+  @override
+  String get saved => 'Salvata';
+
+  @override
+  String get savingOrders => 'Salvataggio locale…';
+
+  @override
+  String get referenceTooLong => 'Usa al massimo 80 caratteri.';
+
+  @override
+  String get noteTooLong => 'Questa nota è troppo lunga.';
+
+  @override
+  String get searchTickets => 'Cerca comande';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

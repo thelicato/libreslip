@@ -53,6 +53,9 @@ void main() {
     for (final (name, size, language, mode, page) in [
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
+      ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 1),
+      ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 2),
+      ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
     ]) {
       tester.view.physicalSize = size;
@@ -61,11 +64,30 @@ void main() {
           ..stored = AppSettings(language: language, themeMode: mode),
       );
       await controller.load();
+      final orders = await createMemoryOrders();
+      if (page >= 1 && page <= 3) {
+        await orders.saveItem(
+          name: 'Mushroom toastie',
+          categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
+          isFavourite: true,
+        );
+      }
+      if (page == 1 || page == 3) {
+        orders.addCatalogueItem(orders.items.single);
+        orders.setReference(language == 'it' ? 'Tavolo 4' : 'Table 4');
+        orders.setOrderNote(
+          language == 'it' ? 'Portare insieme' : 'Bring together',
+        );
+        await orders.flushWrites();
+      }
+      if (page == 3) {
+        await orders.saveActiveTicket(heading: 'Corner & Co.');
+      }
       final boundary = GlobalKey();
       await tester.pumpWidget(
         RepaintBoundary(
           key: boundary,
-          child: LibreSlipApp(settings: controller),
+          child: LibreSlipApp(settings: controller, orders: orders),
         ),
       );
       await tester.pumpAndSettle();
@@ -87,6 +109,7 @@ void main() {
       });
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
+      orders.dispose();
     }
   });
 }
