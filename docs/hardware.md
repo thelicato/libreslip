@@ -22,13 +22,13 @@ The required device is the NETUM NT-1809DD 58 mm Portable Thermal Receipt Printe
 | --- | --- |
 | Amazon identifier resolved | B0854CCF75 |
 | Printer model | User confirmed NETUM NT-1809DD, 58 mm, Bluetooth 4.0 and USB |
-| Firmware and self-test details | Record during physical printer validation |
+| Firmware and self-test details | Not recorded during this milestone |
 | Phone operating system | User confirmed Android 14 or later, no specific handset |
-| Bluetooth profile and pairing | Not tested |
-| 58 mm layout, long names and Italian accents | Not tested |
-| Logo and long ticket | Not tested |
-| Reconnect, printer off, paper out and interrupted transmission | Not tested |
-| Reprint without duplicate ticket | Not tested |
-| Final compatibility claim | Pending implementation and physical testing |
+| Bluetooth profile and pairing | User reported successful Classic SPP pairing and connection on the physical printer |
+| 58 mm layout, long names and Italian accents | User reported the task 4 physical ticket workflow worked; automated coverage verifies wrapping and raster fallback |
+| Logo and long ticket | User reported the task 4 physical ticket workflow worked |
+| Reconnect, printer off, paper out and interrupted transmission | Reconnect workflow was included in the successful user test; individual printer-off and paper-out observations were not separately recorded |
+| Reprint without duplicate ticket | User reported success; automated storage tests also verify that reprint adds an attempt without adding a ticket |
+| Final compatibility claim | Bluetooth Classic printing is confirmed by the user for the implemented NETUM NT-1809DD workflow; firmware details and separate fault-condition observations remain unrecorded |
 
-The phone must be able to save an order and retain its ticket when printing is unavailable. Real hardware validation remains a release requirement even if encoding and transport tests pass.
+The phone saves an order independently of printing and retains its ticket when printing is unavailable. The physical result above was reported by the user rather than independently observed by the developer. A transmitted state means the phone completed its write and still requires the operator to check the paper.

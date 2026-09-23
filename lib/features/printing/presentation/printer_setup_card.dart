@@ -186,7 +186,8 @@ class _DeviceList extends StatelessWidget {
                             ? null
                             : () => controller.connect(device),
                         child: Text(
-                          controller.operation == PrinterOperation.connecting
+                          controller.operation == PrinterOperation.connecting &&
+                                  controller.connectingAddress == device.address
                               ? l.connectingPrinter
                               : l.connectPrinter,
                         ),

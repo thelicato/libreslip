@@ -13,7 +13,7 @@ SOURCE_FILES = {
     '.gitignore', '.metadata', 'AGENTS.md', 'README.md',
     'analysis_options.yaml', 'l10n.yaml', 'pubspec.yaml', 'pubspec.lock',
 }
-SOURCE_DIRS = {'android', 'docs', 'lib', 'test', 'integration_test', 'tool'}
+SOURCE_DIRS = {'android', 'assets', 'docs', 'lib', 'test', 'integration_test', 'tool'}
 EXCLUDED_DIRS = {
     '.git', '.agents', '.codex', '.gradle', '.kotlin', '.cxx', '.idea',
     '.dart_tool', 'build', 'dist', '__pycache__', 'captures',
@@ -37,7 +37,7 @@ def source_files():
                     continue
                 if child.name in EXCLUDED_FILES or child.name.startswith('.env'):
                     continue
-                if child.suffix in {'.jks', '.keystore', '.iml', '.pyc', '.apk', '.zip'}:
+                if child.suffix in {'.jks', '.keystore', '.iml', '.pyc', '.apk', '.zip', '.orig', '.rej'}:
                     continue
                 yield child
 
@@ -51,16 +51,16 @@ def main():
         built = ROOT / 'build/app/outputs/flutter-apk/app-release.apk'
         canonical = metadata_path.parent / 'app-release.apk'
         if not metadata_path.is_file() or not built.is_file() or not canonical.is_file():
-            raise RuntimeError('Build a fresh LibreSlip 0.3.0+3 release before packaging')
+            raise RuntimeError('Build a fresh LibreSlip 0.4.0+4 release before packaging')
         metadata = json.loads(metadata_path.read_text())
         elements = metadata.get('elements', [])
         if (
             metadata.get('applicationId') != 'io.thelicato.libreslip'
             or len(elements) != 1
-            or elements[0].get('versionName') != '0.3.0'
-            or elements[0].get('versionCode') != 3
+            or elements[0].get('versionName') != '0.4.0'
+            or elements[0].get('versionCode') != 4
         ):
-            raise RuntimeError('Build a fresh LibreSlip 0.3.0+3 release before packaging')
+            raise RuntimeError('Build a fresh LibreSlip 0.4.0+4 release before packaging')
         newest_source = max(path.stat().st_mtime for path in source_files())
         if built.stat().st_mtime < newest_source:
             raise RuntimeError('Release APK is older than the packaged source')
@@ -68,7 +68,7 @@ def main():
             raise RuntimeError('Flutter and Gradle APK outputs do not match')
     destination = ROOT / 'dist'
     destination.mkdir(exist_ok=True)
-    source = destination / 'LibreSlip-task-03-items-tickets.zip'
+    source = destination / 'LibreSlip-task-04-ticket-printing.zip'
     included = list(source_files())
     with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in included:
@@ -83,7 +83,7 @@ def main():
     outputs = [source]
     if args.include_apk:
         built = ROOT / 'build/app/outputs/flutter-apk/app-release.apk'
-        apk = destination / 'LibreSlip-task-03-preview.apk'
+        apk = destination / 'LibreSlip-task-04-preview.apk'
         shutil.copy2(built, apk)
         outputs.append(apk)
     checksums = []
@@ -91,7 +91,7 @@ def main():
         digest = hashlib.sha256(output.read_bytes()).hexdigest()
         checksums.append(f'{digest}  {output.name}\n')
         print(f'{output.relative_to(ROOT)} ({output.stat().st_size:,} bytes)')
-    (destination / 'LibreSlip-task-03-SHA256SUMS.txt').write_text(''.join(checksums))
+    (destination / 'LibreSlip-task-04-SHA256SUMS.txt').write_text(''.join(checksums))
     print(f'Verified {len(included)} source files; SHA-256 checksums written.')
 
 

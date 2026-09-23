@@ -11,6 +11,8 @@ enum PrinterOperation {
   sending,
 }
 
+enum PrinterTransmissionOutcome { transmitted, failed, uncertain }
+
 enum TestPrintOutcome { none, sent, failed, uncertain }
 
 class PrinterController extends ChangeNotifier {
@@ -21,12 +23,22 @@ class PrinterController extends ChangeNotifier {
   BluetoothHostStatus hostStatus = BluetoothHostStatus.ready;
   List<PairedPrinter> devices = const [];
   String? connectedAddress;
+  String? connectingAddress;
   PrinterOperation operation = PrinterOperation.idle;
   TestPrintOutcome testOutcome = TestPrintOutcome.none;
   String? lastErrorCode;
 
   bool get busy => operation != PrinterOperation.idle;
   bool get connected => connectedAddress != null;
+
+  PairedPrinter? get connectedPrinter {
+    final address = connectedAddress;
+    if (address == null) return null;
+    for (final device in devices) {
+      if (device.address == address) return device;
+    }
+    return PairedPrinter(name: address, address: address);
+  }
 
   Future<void> refresh() async {
     if (busy) return;
@@ -70,6 +82,7 @@ class PrinterController extends ChangeNotifier {
   Future<bool> connect(PairedPrinter device) async {
     if (busy) return false;
     operation = PrinterOperation.connecting;
+    connectingAddress = device.address;
     lastErrorCode = null;
     testOutcome = TestPrintOutcome.none;
     notifyListeners();
@@ -87,6 +100,7 @@ class PrinterController extends ChangeNotifier {
       return false;
     } finally {
       operation = PrinterOperation.idle;
+      connectingAddress = null;
       notifyListeners();
     }
   }
@@ -105,29 +119,59 @@ class PrinterController extends ChangeNotifier {
     }
   }
 
-  Future<TestPrintOutcome> printTestTicket() async {
-    if (busy || !connected) return TestPrintOutcome.failed;
+  Future<PrinterTransmissionOutcome> transmit(Uint8List bytes) async {
+    if (busy || !connected || bytes.isEmpty) {
+      lastErrorCode = 'notConnected';
+      notifyListeners();
+      return PrinterTransmissionOutcome.failed;
+    }
     operation = PrinterOperation.sending;
     lastErrorCode = null;
-    testOutcome = TestPrintOutcome.none;
     notifyListeners();
     try {
-      await _transport.send(EscPosTestTicket.build());
-      testOutcome = TestPrintOutcome.sent;
+      final written = await _transport.send(bytes);
+      if (written != bytes.length) {
+        lastErrorCode = 'sendFailed';
+        await _dropConnection();
+        return PrinterTransmissionOutcome.uncertain;
+      }
+      return PrinterTransmissionOutcome.transmitted;
     } on PrinterTransportException catch (error) {
       lastErrorCode = error.code;
-      testOutcome = error.code == 'sendFailed' || error.bytesWritten > 0
-          ? TestPrintOutcome.uncertain
-          : TestPrintOutcome.failed;
-      connectedAddress = null;
+      await _dropConnection();
+      return error.code == 'sendFailed' || error.bytesWritten > 0
+          ? PrinterTransmissionOutcome.uncertain
+          : PrinterTransmissionOutcome.failed;
     } catch (_) {
       lastErrorCode = 'sendFailed';
-      testOutcome = TestPrintOutcome.failed;
-      connectedAddress = null;
+      await _dropConnection();
+      return PrinterTransmissionOutcome.uncertain;
     } finally {
       operation = PrinterOperation.idle;
       notifyListeners();
     }
+  }
+
+  Future<TestPrintOutcome> printTestTicket() async {
+    if (busy || !connected) return TestPrintOutcome.failed;
+    testOutcome = TestPrintOutcome.none;
+    notifyListeners();
+    final outcome = await transmit(EscPosTestTicket.build());
+    testOutcome = switch (outcome) {
+      PrinterTransmissionOutcome.transmitted => TestPrintOutcome.sent,
+      PrinterTransmissionOutcome.failed => TestPrintOutcome.failed,
+      PrinterTransmissionOutcome.uncertain => TestPrintOutcome.uncertain,
+    };
+    notifyListeners();
     return testOutcome;
+  }
+
+  Future<void> _dropConnection() async {
+    try {
+      await _transport.disconnect();
+    } catch (_) {
+      // A failed transport is already unusable.
+    }
+    connectedAddress = null;
   }
 }

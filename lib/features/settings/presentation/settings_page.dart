@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
@@ -53,6 +55,37 @@ class SettingsPage extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined),
             ),
             onTap: controller.saving ? null : () => _editName(context),
+          ),
+        ),
+        const SizedBox(height: 20),
+        _SettingsSection(
+          title: l.ticketTemplate,
+          subtitle: l.ticketTemplateBody,
+          icon: Icons.receipt_long_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ListTile(
+                key: const ValueKey('edit-footer'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  settings.footer.isEmpty
+                      ? l.ticketFooterHint
+                      : settings.footer,
+                ),
+                subtitle: Text(l.ticketFooter),
+                trailing: IconButton(
+                  tooltip: l.editFooter,
+                  onPressed: controller.saving
+                      ? null
+                      : () => _editFooter(context),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                onTap: controller.saving ? null : () => _editFooter(context),
+              ),
+              const Divider(height: 28),
+              _LogoEditor(controller: controller),
+            ],
           ),
         ),
         const SizedBox(height: 20),
@@ -168,6 +201,97 @@ class SettingsPage extends StatelessWidget {
     if (name != null && context.mounted) {
       await controller.update(controller.settings.copyWith(heading: name));
     }
+  }
+
+  Future<void> _editFooter(BuildContext context) async {
+    final footer = await showDialog<String>(
+      context: context,
+      builder: (_) => _FooterDialog(initial: controller.settings.footer),
+    );
+    if (footer != null && context.mounted) {
+      await controller.update(controller.settings.copyWith(footer: footer));
+    }
+  }
+}
+
+class _LogoEditor extends StatelessWidget {
+  const _LogoEditor({required this.controller});
+
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final path = controller.settings.logoPath;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 76,
+          height: 76,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: path == null
+              ? const Icon(Icons.image_outlined)
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(path),
+                    width: 76,
+                    height: 76,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) =>
+                        const Icon(Icons.broken_image_outlined),
+                  ),
+                ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l.ticketLogo, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Text(l.ticketLogoBody),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    key: const ValueKey('choose-ticket-logo'),
+                    onPressed: controller.saving ? null : controller.chooseLogo,
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text(path == null ? l.chooseLogo : l.changeLogo),
+                  ),
+                  if (controller.logoFailed)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        l.logoPickerError,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  if (path != null)
+                    TextButton.icon(
+                      onPressed: controller.saving
+                          ? null
+                          : controller.removeLogo,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: Text(l.removeLogo),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -306,6 +430,71 @@ class _Choice extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FooterDialog extends StatefulWidget {
+  const _FooterDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_FooterDialog> createState() => _FooterDialogState();
+}
+
+class _FooterDialogState extends State<_FooterDialog> {
+  late final _text = TextEditingController(text: widget.initial);
+  final _form = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_form.currentState!.validate()) {
+      Navigator.pop(context, _text.text.trim());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return AlertDialog(
+      scrollable: true,
+      title: Text(l.editFooter),
+      content: SizedBox(
+        width: 380,
+        child: Form(
+          key: _form,
+          child: TextFormField(
+            key: const ValueKey('footer-input'),
+            controller: _text,
+            autofocus: true,
+            maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l.ticketFooter,
+              hintText: l.ticketFooterHint,
+            ),
+            validator: (value) {
+              if ((value ?? '').characters.length > 120) {
+                return l.footerTooLong;
+              }
+              return null;
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(onPressed: _save, child: Text(l.save)),
+      ],
     );
   }
 }

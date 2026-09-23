@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
+import 'package:libreslip/features/printing/domain/print_job.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -143,6 +145,83 @@ void main() {
     expect(await repository.loadTickets(), hasLength(1));
     expect(await repository.loadDrafts(), isEmpty);
   });
+
+  test(
+    'print jobs are idempotent and interrupted sending recovers as uncertain',
+    () async {
+      final first = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      await first.open();
+      final blank = await first.createDraft();
+      final draft = blank.copyWith(
+        updatedAt: DateTime.now().toUtc(),
+        lines: [
+          TicketLine(id: createLocalId(), name: 'Caffè lungo', quantity: 2),
+        ],
+      );
+      final ticket = await first.convertDraftToTicket(
+        draft,
+        heading: 'Bottega',
+      );
+      final created = await first.createPrintJob(
+        requestId: 'request-1',
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([0x1B, 0x40, 0x0A]),
+      );
+      final duplicate = await first.createPrintJob(
+        requestId: 'request-1',
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([0x00]),
+      );
+      expect(duplicate.id, created.id);
+      await first.markPrintJobSending(
+        created.id,
+        printerAddress: '00:11:22:33:44:55',
+        printerName: 'NT-1809DD',
+      );
+      await first.close();
+
+      final recovered = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      addTearDown(recovered.close);
+      await recovered.open();
+      final jobs = await recovered.loadPrintJobs(ticketId: ticket.id);
+
+      expect(jobs, hasLength(1));
+      expect(jobs.single.status, PrintJobStatus.uncertain);
+      expect(jobs.single.errorCode, 'interrupted');
+      expect(jobs.single.printerName, 'NT-1809DD');
+      await expectLater(
+        recovered.markPrintJobSending(
+          jobs.single.id,
+          printerAddress: '00:11:22:33:44:55',
+          printerName: 'NT-1809DD',
+        ),
+        throwsA(isA<OrderStorageException>()),
+      );
+
+      final reprint = await recovered.createPrintJob(
+        requestId: 'request-2',
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([0x1B, 0x40, 0x0A]),
+      );
+      await recovered.markPrintJobSending(
+        reprint.id,
+        printerAddress: '00:11:22:33:44:55',
+        printerName: 'NT-1809DD',
+      );
+      await recovered.markPrintJobOutcome(
+        reprint.id,
+        status: PrintJobStatus.transmitted,
+      );
+      expect(await recovered.loadPrintJobs(ticketId: ticket.id), hasLength(2));
+      expect(await recovered.loadTickets(), hasLength(1));
+    },
+  );
 
   test(
     'version 1 databases migrate in place without losing catalogue data',

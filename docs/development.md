@@ -31,15 +31,21 @@ flutter test integration_test/settings_persistence_test.dart -d DEVICE_ID
 
 ## Architecture and persistence
 
-`lib/app` owns app startup, localisation and themes. `lib/core` contains reusable visual primitives. Settings retain their preference model, repository, controller and screens. `lib/features/orders` separates item and ticket domain models, application state, SQLite and image persistence, and the Compose, Items and Tickets pages. `lib/features/workspace` owns responsive navigation and the overview.
+`lib/app` owns app startup, localisation and themes. `lib/core` contains reusable visual primitives. Settings retain their preference model, repository, controller and screens. `lib/features/orders` separates item and ticket domain models, application state, SQLite and image persistence, and the Compose, Items and Tickets pages. `lib/features/printing` separates ticket documents, ESC/POS encoding, durable output coordination, Android transport, PDF sharing and presentation. `lib/features/workspace` owns responsive navigation and the overview.
 
-Simple settings remain in one versioned JSON document through `SharedPreferencesAsync`, backed by Android DataStore. Reusable items, categories, drafts, draft lines, tickets, ticket lines and ticket numbering use `sqflite` in app-private storage. Schema version 2 is upgraded transactionally from version 1. Foreign keys, uniqueness constraints and quantity checks protect relationships and invalid values.
+Simple settings remain in one versioned JSON document through `SharedPreferencesAsync`, backed by Android DataStore. Settings format version 2 adds the optional ticket footer and the app-private logo path while retaining migration from version 1. Reusable items, categories, drafts, draft lines, tickets, ticket lines, ticket numbering and print jobs use `sqflite` in app-private storage. Database schema version 3 is upgraded transactionally from versions 1 and 2. Foreign keys, uniqueness constraints and quantity checks protect relationships and invalid values.
 
 Every draft line stores the item name selected at that moment. Saving a ticket copies heading, reference, notes, names and quantities into separate snapshot tables in one transaction. The ticket table has a unique origin draft identifier. A retry after an uncertain caller response returns the existing ticket instead of incrementing the number or inserting a duplicate. Saving removes only the converted draft and immediately creates a fresh editable draft in application state. Catalogue edits and archival cannot change saved snapshots.
 
-Optional item images are selected through the Android system picker and copied into the app support directory. Removing or replacing an item image removes the old private file after the database change succeeds. Image files are not uploaded. Full backup of database and referenced images belongs to task 5.
+Optional item images and the ticket logo are selected through the Android system picker and copied into the app support directory. Removing or replacing an image removes the old private file after its owning state change succeeds. Image files are not uploaded. Full backup of the database and referenced images belongs to task 5.
 
-The release manifest requests no internet permission. Automatic Android cloud backup and device transfer remain excluded for all app data domains. Printing and in-app ZIP portability are not present in this milestone.
+Each print attempt stores its ticket snapshot payload, selected device, request identifier, status and timestamps before transmission. A unique request identifier makes queue creation idempotent. Jobs move through queued, sending, transmitted, failed or uncertain states. Opening the database changes any interrupted sending job to uncertain, and the app never automatically resends it. Explicit reprint creates a new print attempt for the existing ticket and cannot create another order.
+
+Android printing uses the platform Bluetooth Classic RFCOMM/SPP APIs and lists already bonded devices. It requests only `BLUETOOTH_CONNECT`, does not scan for devices and never needs location or internet access. The 58 mm encoder targets 384 printable dots, selects PC858 for supported text and rasterises unsupported text and configured logos with bundled Roboto fonts. Data is written in bounded 256-byte chunks. Neither tickets nor test tickets send cash-drawer or cutter commands. A completed socket write is recorded as transmitted, not as proof that paper was produced.
+
+PDF tickets are rendered locally with the same bundled fonts and passed to the Android system share sheet. The app creates no server upload and chooses no destination on the user's behalf.
+
+The release manifest requests no internet permission. Automatic Android cloud backup and device transfer remain excluded for all app data domains. In-app ZIP portability is not present in this milestone.
 
 ## Localisation and interface
 
@@ -53,7 +59,7 @@ Generate review images with the installed Flutter SDK fonts:
 flutter test test/preview_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true
 ```
 
-Images are written under `build/previews`. This optional capture is skipped during normal tests; it is a review aid rather than a pixel-perfect golden assertion.
+Images are written under `build/previews`. This optional capture is skipped during normal tests; it is a review aid rather than a pixel-perfect golden assertion. The task 4 review set includes the Italian phone ticket preview and dark Italian settings screen.
 
 ## Package a milestone
 
@@ -61,4 +67,4 @@ Images are written under `build/previews`. This optional capture is skipped duri
 python3 tool/package_milestone.py --include-apk
 ```
 
-The script writes the task 3 source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes the lockfile and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the planned in-app backup format. APK packaging checks the release application identifier, version name and version code, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs.
+The script writes the task 4 source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes the lockfile, bundled font licence and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the planned in-app backup format. APK packaging checks the release application identifier, version name and version code, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs.

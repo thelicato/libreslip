@@ -414,10 +414,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
-  String get printingLater =>
-      'Printing is not available in this milestone. Saving a ticket does not print it or create a sale.';
-
-  @override
   String get savedSnapshot => 'Saved snapshot';
 
   @override
@@ -531,6 +527,137 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get testTicketSafety =>
       'The test uses ESC/POS, feeds paper and never sends a cutter or cash-drawer command.';
+
+  @override
+  String get ticketTemplate => 'Printed ticket';
+
+  @override
+  String get ticketTemplateBody =>
+      'Add an optional logo and footer to the saved heading and ticket snapshot.';
+
+  @override
+  String get ticketFooter => 'Ticket footer';
+
+  @override
+  String get ticketFooterHint => 'Optional, for example Prepared with care';
+
+  @override
+  String get editFooter => 'Edit ticket footer';
+
+  @override
+  String get footerTooLong => 'Use 120 characters or fewer.';
+
+  @override
+  String get ticketLogo => 'Ticket logo';
+
+  @override
+  String get ticketLogoBody =>
+      'Stored privately on this phone and printed in monochrome.';
+
+  @override
+  String get chooseLogo => 'Choose logo';
+
+  @override
+  String get changeLogo => 'Change logo';
+
+  @override
+  String get removeLogo => 'Remove logo';
+
+  @override
+  String get logoPickerError =>
+      'The logo could not be saved. Try another image.';
+
+  @override
+  String get ticketLabel => 'ORDER TICKET';
+
+  @override
+  String get lineNoteLabel => 'Note';
+
+  @override
+  String get printTicket => 'Print ticket';
+
+  @override
+  String get reprintTicket => 'Print again';
+
+  @override
+  String get sendQueuedTicket => 'Send queued ticket';
+
+  @override
+  String get shareTicketPdf => 'Share PDF';
+
+  @override
+  String get preparingTicket => 'Preparing ticket…';
+
+  @override
+  String get connectBeforePrinting =>
+      'Connect a printer in Settings. This ticket can be queued now and sent explicitly after connecting.';
+
+  @override
+  String get printQueued => 'Ticket queued';
+
+  @override
+  String get printQueuedBody =>
+      'Nothing has been sent. Connect the printer, then use Send queued ticket.';
+
+  @override
+  String get printTransmitted => 'Ticket bytes sent';
+
+  @override
+  String get printTransmittedBody =>
+      'Check the paper. LibreSlip cannot confirm physical output, so it will not resend automatically.';
+
+  @override
+  String get printFailed => 'Nothing was sent';
+
+  @override
+  String get printFailedBody =>
+      'Reconnect the printer and start a new explicit print attempt.';
+
+  @override
+  String get printUncertain => 'Printing outcome uncertain';
+
+  @override
+  String get printUncertainBody =>
+      'Some data may have reached the printer. Check the paper before choosing Print again.';
+
+  @override
+  String get printAttempts => 'Print attempts';
+
+  @override
+  String get noPrintAttempts =>
+      'This saved ticket has not been sent to a printer.';
+
+  @override
+  String get printStatusQueued => 'Queued';
+
+  @override
+  String get printStatusSending => 'Sending';
+
+  @override
+  String get printStatusTransmitted => 'Sent, check paper';
+
+  @override
+  String get printStatusFailed => 'Failed before transmission';
+
+  @override
+  String get printStatusUncertain => 'Uncertain, check paper';
+
+  @override
+  String get pdfShareFailed =>
+      'The PDF could not be opened in the system share sheet.';
+
+  @override
+  String ticketPdfSubject(int number) {
+    return 'LibreSlip ticket $number';
+  }
+
+  @override
+  String get hardwareTested =>
+      'NETUM NT-1809DD connection test printed successfully on the user’s physical printer.';
+
+  @override
+  String get printStorageError =>
+      'The print attempt could not be saved safely, so LibreSlip did not continue automatically.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

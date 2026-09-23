@@ -838,12 +838,6 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get close;
 
-  /// No description provided for @printingLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Printing is not available in this milestone. Saving a ticket does not print it or create a sale.'**
-  String get printingLater;
-
   /// No description provided for @savedSnapshot.
   ///
   /// In en, this message translates to:
@@ -1047,6 +1041,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The test uses ESC/POS, feeds paper and never sends a cutter or cash-drawer command.'**
   String get testTicketSafety;
+
+  /// No description provided for @ticketTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed ticket'**
+  String get ticketTemplate;
+
+  /// No description provided for @ticketTemplateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an optional logo and footer to the saved heading and ticket snapshot.'**
+  String get ticketTemplateBody;
+
+  /// No description provided for @ticketFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket footer'**
+  String get ticketFooter;
+
+  /// No description provided for @ticketFooterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, for example Prepared with care'**
+  String get ticketFooterHint;
+
+  /// No description provided for @editFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ticket footer'**
+  String get editFooter;
+
+  /// No description provided for @footerTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 120 characters or fewer.'**
+  String get footerTooLong;
+
+  /// No description provided for @ticketLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket logo'**
+  String get ticketLogo;
+
+  /// No description provided for @ticketLogoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored privately on this phone and printed in monochrome.'**
+  String get ticketLogoBody;
+
+  /// No description provided for @chooseLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose logo'**
+  String get chooseLogo;
+
+  /// No description provided for @changeLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Change logo'**
+  String get changeLogo;
+
+  /// No description provided for @removeLogo.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove logo'**
+  String get removeLogo;
+
+  /// No description provided for @logoPickerError.
+  ///
+  /// In en, this message translates to:
+  /// **'The logo could not be saved. Try another image.'**
+  String get logoPickerError;
+
+  /// No description provided for @ticketLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ORDER TICKET'**
+  String get ticketLabel;
+
+  /// No description provided for @lineNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get lineNoteLabel;
+
+  /// No description provided for @printTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Print ticket'**
+  String get printTicket;
+
+  /// No description provided for @reprintTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Print again'**
+  String get reprintTicket;
+
+  /// No description provided for @sendQueuedTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Send queued ticket'**
+  String get sendQueuedTicket;
+
+  /// No description provided for @shareTicketPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Share PDF'**
+  String get shareTicketPdf;
+
+  /// No description provided for @preparingTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing ticket…'**
+  String get preparingTicket;
+
+  /// No description provided for @connectBeforePrinting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a printer in Settings. This ticket can be queued now and sent explicitly after connecting.'**
+  String get connectBeforePrinting;
+
+  /// No description provided for @printQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket queued'**
+  String get printQueued;
+
+  /// No description provided for @printQueuedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing has been sent. Connect the printer, then use Send queued ticket.'**
+  String get printQueuedBody;
+
+  /// No description provided for @printTransmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket bytes sent'**
+  String get printTransmitted;
+
+  /// No description provided for @printTransmittedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the paper. LibreSlip cannot confirm physical output, so it will not resend automatically.'**
+  String get printTransmittedBody;
+
+  /// No description provided for @printFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was sent'**
+  String get printFailed;
+
+  /// No description provided for @printFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect the printer and start a new explicit print attempt.'**
+  String get printFailedBody;
+
+  /// No description provided for @printUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing outcome uncertain'**
+  String get printUncertain;
+
+  /// No description provided for @printUncertainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Some data may have reached the printer. Check the paper before choosing Print again.'**
+  String get printUncertainBody;
+
+  /// No description provided for @printAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'Print attempts'**
+  String get printAttempts;
+
+  /// No description provided for @noPrintAttempts.
+  ///
+  /// In en, this message translates to:
+  /// **'This saved ticket has not been sent to a printer.'**
+  String get noPrintAttempts;
+
+  /// No description provided for @printStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get printStatusQueued;
+
+  /// No description provided for @printStatusSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get printStatusSending;
+
+  /// No description provided for @printStatusTransmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent, check paper'**
+  String get printStatusTransmitted;
+
+  /// No description provided for @printStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed before transmission'**
+  String get printStatusFailed;
+
+  /// No description provided for @printStatusUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncertain, check paper'**
+  String get printStatusUncertain;
+
+  /// No description provided for @pdfShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The PDF could not be opened in the system share sheet.'**
+  String get pdfShareFailed;
+
+  /// No description provided for @ticketPdfSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'LibreSlip ticket {number}'**
+  String ticketPdfSubject(int number);
+
+  /// No description provided for @hardwareTested.
+  ///
+  /// In en, this message translates to:
+  /// **'NETUM NT-1809DD connection test printed successfully on the user’s physical printer.'**
+  String get hardwareTested;
+
+  /// No description provided for @printStorageError.
+  ///
+  /// In en, this message translates to:
+  /// **'The print attempt could not be saved safely, so LibreSlip did not continue automatically.'**
+  String get printStorageError;
 }
 
 class _AppLocalizationsDelegate

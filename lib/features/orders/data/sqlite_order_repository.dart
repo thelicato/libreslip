@@ -1,13 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
 
-class SqliteOrderRepository implements OrderRepository {
+class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 2;
+  static const databaseVersion = 3;
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -41,6 +44,18 @@ class SqliteOrderRepository implements OrderRepository {
           onUpgrade: _migrate,
         ),
       );
+      await _database!.transaction((transaction) async {
+        await transaction.update(
+          'print_jobs',
+          {
+            'status': printJobStatusValue(PrintJobStatus.uncertain),
+            'error_code': 'interrupted',
+            'updated_at': _timestamp(DateTime.now()),
+          },
+          where: 'status = ?',
+          whereArgs: [printJobStatusValue(PrintJobStatus.sending)],
+        );
+      });
     } catch (error) {
       throw OrderStorageException('Could not open the order database.', error);
     }
@@ -133,6 +148,28 @@ class SqliteOrderRepository implements OrderRepository {
       await database.execute('ALTER TABLE items ADD COLUMN image_path TEXT');
       await database.execute(
         'ALTER TABLE tickets ADD COLUMN source_ticket_id TEXT',
+      );
+    }
+    if (oldVersion < 3 && newVersion >= 3) {
+      await database.execute('''
+        CREATE TABLE print_jobs (
+          id TEXT PRIMARY KEY,
+          request_id TEXT NOT NULL UNIQUE,
+          ticket_id TEXT NOT NULL REFERENCES tickets(id) ON DELETE RESTRICT,
+          payload BLOB NOT NULL,
+          status TEXT NOT NULL CHECK (
+            status IN ('queued', 'sending', 'transmitted', 'failed', 'uncertain')
+          ),
+          printer_address TEXT,
+          printer_name TEXT,
+          error_code TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await database.execute(
+        'CREATE INDEX print_jobs_ticket_index '
+        'ON print_jobs(ticket_id, created_at DESC)',
       );
     }
   }
@@ -427,6 +464,166 @@ class SqliteOrderRepository implements OrderRepository {
       throw OrderStorageException('Could not read tickets.', error);
     }
   }
+
+  @override
+  Future<List<PrintJob>> loadPrintJobs({String? ticketId}) async {
+    try {
+      final database = await _db;
+      final rows = await database.rawQuery('''
+        SELECT p.*, t.ticket_number
+        FROM print_jobs p
+        JOIN tickets t ON t.id = p.ticket_id
+        ${ticketId == null ? '' : 'WHERE p.ticket_id = ?'}
+        ORDER BY p.created_at DESC
+        ''', ticketId == null ? null : [ticketId]);
+      return rows.map(_printJobFromRow).toList(growable: false);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not read print jobs.', error);
+    }
+  }
+
+  @override
+  Future<PrintJob> createPrintJob({
+    required String requestId,
+    required String ticketId,
+    required Uint8List payload,
+  }) async {
+    if (requestId.isEmpty || payload.isEmpty || payload.length > 2097152) {
+      throw const OrderStorageException('The print job is invalid.');
+    }
+    try {
+      final database = await _db;
+      final id = await database.transaction<String>((transaction) async {
+        final existing = await transaction.query(
+          'print_jobs',
+          columns: ['id'],
+          where: 'request_id = ?',
+          whereArgs: [requestId],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) return existing.single['id']! as String;
+        final now = _timestamp(DateTime.now());
+        final jobId = createLocalId();
+        await transaction.insert('print_jobs', {
+          'id': jobId,
+          'request_id': requestId,
+          'ticket_id': ticketId,
+          'payload': payload,
+          'status': printJobStatusValue(PrintJobStatus.queued),
+          'created_at': now,
+          'updated_at': now,
+        });
+        return jobId;
+      });
+      return await _loadPrintJob(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not create the print job.', error);
+    }
+  }
+
+  @override
+  Future<PrintJob> markPrintJobSending(
+    String id, {
+    required String printerAddress,
+    required String printerName,
+  }) async {
+    try {
+      final database = await _db;
+      final changed = await database.update(
+        'print_jobs',
+        {
+          'status': printJobStatusValue(PrintJobStatus.sending),
+          'printer_address': printerAddress,
+          'printer_name': printerName,
+          'error_code': null,
+          'updated_at': _timestamp(DateTime.now()),
+        },
+        where: 'id = ? AND status = ?',
+        whereArgs: [id, printJobStatusValue(PrintJobStatus.queued)],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'Only a queued print job can be sent.',
+        );
+      }
+      return await _loadPrintJob(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not start the print job.', error);
+    }
+  }
+
+  @override
+  Future<PrintJob> markPrintJobOutcome(
+    String id, {
+    required PrintJobStatus status,
+    String? errorCode,
+  }) async {
+    if (!{
+      PrintJobStatus.transmitted,
+      PrintJobStatus.failed,
+      PrintJobStatus.uncertain,
+    }.contains(status)) {
+      throw const OrderStorageException('The print outcome is invalid.');
+    }
+    try {
+      final database = await _db;
+      final changed = await database.update(
+        'print_jobs',
+        {
+          'status': printJobStatusValue(status),
+          'error_code': errorCode,
+          'updated_at': _timestamp(DateTime.now()),
+        },
+        where: 'id = ? AND status = ?',
+        whereArgs: [id, printJobStatusValue(PrintJobStatus.sending)],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'Only a sending print job can receive an outcome.',
+        );
+      }
+      return await _loadPrintJob(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not finish the print job.', error);
+    }
+  }
+
+  static Future<PrintJob> _loadPrintJob(
+    DatabaseExecutor executor,
+    String id,
+  ) async {
+    final rows = await executor.rawQuery(
+      '''
+      SELECT p.*, t.ticket_number
+      FROM print_jobs p
+      JOIN tickets t ON t.id = p.ticket_id
+      WHERE p.id = ?
+      ''',
+      [id],
+    );
+    if (rows.isEmpty) {
+      throw const OrderStorageException('The print job could not be found.');
+    }
+    return _printJobFromRow(rows.single);
+  }
+
+  static PrintJob _printJobFromRow(Map<String, Object?> row) => PrintJob(
+    id: row['id']! as String,
+    requestId: row['request_id']! as String,
+    ticketId: row['ticket_id']! as String,
+    ticketNumber: row['ticket_number']! as int,
+    createdAt: DateTime.parse(row['created_at']! as String),
+    updatedAt: DateTime.parse(row['updated_at']! as String),
+    status: parsePrintJobStatus(row['status']! as String),
+    payload: row['payload']! as Uint8List,
+    printerAddress: row['printer_address'] as String?,
+    printerName: row['printer_name'] as String?,
+    errorCode: row['error_code'] as String?,
+  );
 
   static Future<SavedTicket> _loadTicket(
     DatabaseExecutor executor,

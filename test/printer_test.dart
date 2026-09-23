@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -38,6 +39,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'only the selected device says connecting while every connect button is disabled',
+    (tester) async {
+      final gate = Completer<void>();
+      final transport = FakePrinterTransport()
+        ..connectGate = gate
+        ..state = const BluetoothHostState(
+          status: BluetoothHostStatus.ready,
+          devices: [
+            PairedPrinter(name: 'NT-1809DD', address: '00:11:22:33:44:55'),
+            PairedPrinter(
+              name: 'Kitchen speaker',
+              address: 'AA:BB:CC:DD:EE:FF',
+            ),
+          ],
+        );
+      final controller = PrinterController(transport);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('en', 'GB'),
+          supportedLocales: const [Locale('en', 'GB'), Locale('it', 'IT')],
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PrinterSetupCard(controller: controller),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('connect-00:11:22:33:44:55')));
+      await tester.pump();
+
+      expect(find.text('Connecting…'), findsOneWidget);
+      expect(find.text('Connect'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('connect-AA:BB:CC:DD:EE:FF')),
+            )
+            .onPressed,
+        isNull,
+      );
+
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(controller.connectedAddress, '00:11:22:33:44:55');
+    },
+  );
+
   test('connection test ticket initialises, selects PC858 and never cuts or opens a drawer', () {
     final bytes = EscPosTestTicket.build();
 
@@ -61,6 +114,21 @@ void main() {
     expect(controller.connected, isTrue);
     expect(await controller.printTestTicket(), TestPrintOutcome.sent);
     expect(transport.lastBytes, isNotEmpty);
+  });
+
+  test('disconnect and explicit reconnect can send a fresh test', () async {
+    final transport = FakePrinterTransport();
+    final controller = PrinterController(transport);
+    addTearDown(controller.dispose);
+    await controller.refresh();
+
+    await controller.connect(controller.devices.single);
+    await controller.disconnect();
+    await controller.connect(controller.devices.single);
+    expect(await controller.printTestTicket(), TestPrintOutcome.sent);
+
+    expect(transport.connectCalls, 2);
+    expect(transport.sendCalls, 1);
   });
 
   test(
@@ -121,12 +189,16 @@ class FakePrinterTransport implements PrinterTransport {
   );
   bool grantPermission = true;
   int? failAfterBytes;
+  Completer<void>? connectGate;
+  int connectCalls = 0;
   int sendCalls = 0;
   Uint8List lastBytes = Uint8List(0);
   String? connectedAddress;
 
   @override
   Future<void> connect(String address) async {
+    if (connectGate != null) await connectGate!.future;
+    connectCalls++;
     connectedAddress = address;
     state = BluetoothHostState(
       status: BluetoothHostStatus.ready,

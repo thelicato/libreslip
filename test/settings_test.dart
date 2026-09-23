@@ -12,6 +12,8 @@ void main() {
   test('settings round trip preserves non-ASCII headings independently of language', () {
     const original = AppSettings(
       heading: 'Caffè Libertà',
+      footer: 'Preparato con cura',
+      logoPath: '/private/ticket-logo.png',
       language: 'it',
       themeMode: ThemeMode.dark,
     );
@@ -21,11 +23,24 @@ void main() {
     expect(decoded.toJson(), original.toJson());
     expect(decoded.locale, const Locale('it', 'IT'));
     expect(decoded.copyWith(language: 'en').heading, 'Caffè Libertà');
+    expect(decoded.footer, 'Preparato con cura');
+    expect(decoded.logoPath, '/private/ticket-logo.png');
+  });
+
+  test('version 1 preferences migrate with an empty footer and no logo', () {
+    final legacy = AppSettings.fromJson({
+      'version': 1,
+      'heading': 'Corner & Co.',
+      'language': 'en',
+      'theme': 'system',
+    });
+    expect(legacy.footer, isEmpty);
+    expect(legacy.logoPath, isNull);
   });
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 2},
+      {...const AppSettings().toJson(), 'version': 3},
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
       {...const AppSettings().toJson(), 'heading': List.filled(61, 'x').join()},

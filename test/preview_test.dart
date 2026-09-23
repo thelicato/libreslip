@@ -37,6 +37,12 @@ void main() {
       loader.addFont(Future.value(ByteData.sublistView(bytes)));
     }
     await loader.load();
+    final ticketLoader = FontLoader('RobotoTicket');
+    for (final font in ['Roboto-Regular.ttf', 'Roboto-Bold.ttf']) {
+      final bytes = File.fromUri(fonts.resolve(font)).readAsBytesSync();
+      ticketLoader.addFont(Future.value(ByteData.sublistView(bytes)));
+    }
+    await ticketLoader.load();
     final iconLoader = FontLoader('MaterialIcons')
       ..addFont(
         Future.value(
@@ -56,6 +62,13 @@ void main() {
       ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 1),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 2),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
+      (
+        'ticket-preview-phone-it',
+        const Size(520, 1200),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
     ]) {
       tester.view.physicalSize = size;
@@ -93,6 +106,10 @@ void main() {
       await tester.pumpAndSettle();
       if (page != 0) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'ticket-preview-phone-it') {
+        await tester.tap(find.text('Comanda 1'));
         await tester.pumpAndSettle();
       }
       expect(tester.takeException(), isNull);

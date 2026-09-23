@@ -416,10 +416,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get close => 'Chiudi';
 
   @override
-  String get printingLater =>
-      'La stampa non è disponibile in questa fase. Salvare una comanda non la stampa e non crea una vendita.';
-
-  @override
   String get savedSnapshot => 'Istantanea salvata';
 
   @override
@@ -536,6 +532,137 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get testTicketSafety =>
       'Il test usa ESC/POS, fa avanzare la carta e non invia comandi di taglio o apertura cassetto.';
+
+  @override
+  String get ticketTemplate => 'Comanda stampata';
+
+  @override
+  String get ticketTemplateBody =>
+      'Aggiungi logo e piè di pagina facoltativi all’intestazione e all’istantanea della comanda.';
+
+  @override
+  String get ticketFooter => 'Piè di pagina';
+
+  @override
+  String get ticketFooterHint => 'Facoltativo, ad esempio Preparato con cura';
+
+  @override
+  String get editFooter => 'Modifica piè di pagina';
+
+  @override
+  String get footerTooLong => 'Usa al massimo 120 caratteri.';
+
+  @override
+  String get ticketLogo => 'Logo della comanda';
+
+  @override
+  String get ticketLogoBody =>
+      'Salvato in modo privato sul telefono e stampato in bianco e nero.';
+
+  @override
+  String get chooseLogo => 'Scegli logo';
+
+  @override
+  String get changeLogo => 'Cambia logo';
+
+  @override
+  String get removeLogo => 'Rimuovi logo';
+
+  @override
+  String get logoPickerError =>
+      'Impossibile salvare il logo. Prova un’altra immagine.';
+
+  @override
+  String get ticketLabel => 'COMANDA';
+
+  @override
+  String get lineNoteLabel => 'Nota';
+
+  @override
+  String get printTicket => 'Stampa comanda';
+
+  @override
+  String get reprintTicket => 'Stampa di nuovo';
+
+  @override
+  String get sendQueuedTicket => 'Invia comanda in coda';
+
+  @override
+  String get shareTicketPdf => 'Condividi PDF';
+
+  @override
+  String get preparingTicket => 'Preparazione comanda…';
+
+  @override
+  String get connectBeforePrinting =>
+      'Connetti una stampante nelle Impostazioni. Puoi mettere ora la comanda in coda e inviarla esplicitamente dopo la connessione.';
+
+  @override
+  String get printQueued => 'Comanda in coda';
+
+  @override
+  String get printQueuedBody =>
+      'Nessun dato è stato inviato. Connetti la stampante, poi usa Invia comanda in coda.';
+
+  @override
+  String get printTransmitted => 'Byte della comanda inviati';
+
+  @override
+  String get printTransmittedBody =>
+      'Controlla la carta. LibreSlip non può confermare l’uscita fisica, quindi non ripete automaticamente l’invio.';
+
+  @override
+  String get printFailed => 'Nessun dato inviato';
+
+  @override
+  String get printFailedBody =>
+      'Riconnetti la stampante e avvia un nuovo tentativo esplicito.';
+
+  @override
+  String get printUncertain => 'Esito della stampa incerto';
+
+  @override
+  String get printUncertainBody =>
+      'Alcuni dati potrebbero essere arrivati alla stampante. Controlla la carta prima di scegliere Stampa di nuovo.';
+
+  @override
+  String get printAttempts => 'Tentativi di stampa';
+
+  @override
+  String get noPrintAttempts =>
+      'Questa comanda salvata non è mai stata inviata a una stampante.';
+
+  @override
+  String get printStatusQueued => 'In coda';
+
+  @override
+  String get printStatusSending => 'Invio';
+
+  @override
+  String get printStatusTransmitted => 'Inviata, controlla la carta';
+
+  @override
+  String get printStatusFailed => 'Non inviata';
+
+  @override
+  String get printStatusUncertain => 'Incerta, controlla la carta';
+
+  @override
+  String get pdfShareFailed =>
+      'Impossibile aprire il PDF nel pannello di condivisione del sistema.';
+
+  @override
+  String ticketPdfSubject(int number) {
+    return 'Comanda LibreSlip $number';
+  }
+
+  @override
+  String get hardwareTested =>
+      'Il test di connessione con la NETUM NT-1809DD è stato stampato correttamente sulla stampante fisica dell’utente.';
+
+  @override
+  String get printStorageError =>
+      'Impossibile salvare il tentativo di stampa in modo sicuro, quindi LibreSlip non ha continuato automaticamente.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../printing/application/ticket_output_controller.dart';
+import '../../printing/presentation/ticket_detail_dialog.dart';
+import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 
@@ -8,11 +11,15 @@ class TicketsPage extends StatefulWidget {
   const TicketsPage({
     super.key,
     required this.controller,
+    required this.settings,
     required this.onOpenCompose,
+    this.output,
   });
 
   final OrderWorkspaceController controller;
+  final AppSettings settings;
   final VoidCallback onOpenCompose;
+  final TicketOutputController? output;
 
   @override
   State<TicketsPage> createState() => _TicketsPageState();
@@ -94,8 +101,10 @@ class _TicketsPageState extends State<TicketsPage> {
 
   Future<void> _showTicket(SavedTicket ticket) => showDialog<void>(
     context: context,
-    builder: (context) => _TicketDialog(
+    builder: (context) => TicketDetailDialog(
       ticket: ticket,
+      settings: widget.settings,
+      output: widget.output,
       onDuplicate: () {
         Navigator.pop(context);
         _duplicate(ticket);
@@ -215,137 +224,6 @@ class _TicketCard extends StatelessWidget {
               );
             },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TicketDialog extends StatelessWidget {
-  const _TicketDialog({required this.ticket, required this.onDuplicate});
-
-  final SavedTicket ticket;
-  final VoidCallback onDuplicate;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final local = ticket.createdAt.toLocal();
-    final material = MaterialLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l.ticketNumber(ticket.number)),
-      content: SizedBox(
-        width: 480,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SnapshotNotice(),
-              const SizedBox(height: 18),
-              Text(
-                ticket.heading.isEmpty ? l.defaultHeading : ticket.heading,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${material.formatFullDate(local)} · '
-                '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}',
-              ),
-              if (ticket.reference.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                Text(
-                  l.orderReference,
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                Text(ticket.reference),
-              ],
-              const Divider(height: 30),
-              for (final line in ticket.lines)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 42,
-                        child: Text(
-                          '${line.quantity}×',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              line.name,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            if (line.preparationNote.isNotEmpty)
-                              Text(line.preparationNote),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (ticket.orderNote.isNotEmpty) ...[
-                const Divider(height: 24),
-                Text(
-                  l.orderNotes,
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(ticket.orderNote),
-              ],
-              const SizedBox(height: 18),
-              Text(
-                l.printingLater,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: onDuplicate, child: Text(l.duplicateTicket)),
-        FilledButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l.close),
-        ),
-      ],
-    );
-  }
-}
-
-class _SnapshotNotice extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Material(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            const Icon(Icons.lock_clock_outlined),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l.savedSnapshot,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  Text(l.savedSnapshotBody),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
