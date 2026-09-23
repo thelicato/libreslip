@@ -17,9 +17,9 @@
 
 | Area | Required LibreSlip capabilities |
 | --- | --- |
-| Reusable items | Local item names, categories, optional images, search and favourites for quickly composing tickets. No stock accounting. |
-| Ticket composition | Items, quantities, preparation options, line/order notes, optional table or order reference, ad-hoc items, editable local drafts and print preview. |
-| Ticket history | Stable ticket identifiers, creation times, saved snapshots, reopen/duplicate, explicit reprint and a clear distinction between drafts and print attempts. |
+| Reusable items | Local item names, categories, optional images and search for quickly composing tickets. No favourites or stock accounting. |
+| Ticket composition | Reusable items, quantities, optional preparation notes, optional order notes, optional table or order reference, persistent recovery and print preview. Do not add one-off items or expose multiple-draft management. |
+| Ticket history | Stable ticket identifiers, creation times, saved snapshots, viewing, explicit reprint and a clear distinction between editable work and print attempts. Do not duplicate saved tickets into drafts. |
 | Printing | Custom heading/logo/footer, readable 58 mm layout, bilingual labels, printer setup, test ticket, durable print jobs, reconnect and recoverable failures. |
 | Portability | Versioned configuration ZIPs and full backups, import preview, validated restore, rollback, and optional ticket PDF sharing through the system share sheet. |
 

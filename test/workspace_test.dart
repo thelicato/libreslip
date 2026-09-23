@@ -69,6 +69,74 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Italian bottom navigation labels remain on one line', (
+    tester,
+  ) async {
+    await openApp(
+      tester,
+      size: const Size(320, 740),
+      scale: 2,
+      settings: const AppSettings(language: 'it'),
+    );
+    final label = find.text('Impostazioni');
+    expect(label, findsOneWidget);
+    expect(tester.getSize(label).height, lessThan(20));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('optional order fields can be hidden before saving a ticket', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(520, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(MemorySettingsRepository());
+    final orders = await createMemoryOrders();
+    addTearDown(settings.dispose);
+    addTearDown(orders.dispose);
+    await settings.load();
+    await orders.saveItem(name: 'Toastie');
+    orders.addCatalogueItem(orders.items.single);
+    orders.setReference('Table 9');
+    orders.setOrderNote('Together');
+    orders.setPreparationNote(orders.activeDraft!.lines.single.id, 'No onion');
+    await orders.flushWrites();
+    await tester.pumpWidget(LibreSlipApp(settings: settings, orders: orders));
+    await tester.pumpAndSettle();
+
+    expect(find.text('On this phone'), findsNothing);
+    expect(find.text('Yours stays yours.'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('nav-4')));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved on this phone'), findsNothing);
+    for (final key in [
+      'toggle-order-reference',
+      'toggle-preparation-notes',
+      'toggle-order-notes',
+    ]) {
+      await tester.ensureVisible(find.byKey(ValueKey(key)));
+      await tester.tap(find.byKey(ValueKey(key)));
+      await tester.pumpAndSettle();
+    }
+    expect(orders.activeDraft!.reference, 'Table 9');
+    expect(orders.activeDraft!.orderNote, 'Together');
+    expect(orders.activeDraft!.lines.single.preparationNote, 'No onion');
+
+    await tester.tap(find.byKey(const ValueKey('nav-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Table or order reference'), findsNothing);
+    expect(find.text('Preparation note'), findsNothing);
+    expect(find.text('Order notes'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('print-ticket')));
+    await tester.pumpAndSettle();
+    expect(orders.tickets, hasLength(1));
+    expect(orders.tickets.single.reference, isEmpty);
+    expect(orders.tickets.single.orderNote, isEmpty);
+    expect(orders.tickets.single.lines.single.preparationNote, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'language switches immediately while stored content stays unchanged',
     (tester) async {

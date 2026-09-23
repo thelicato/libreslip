@@ -75,7 +75,6 @@ class _TicketsPageState extends State<TicketsPage> {
                 child: _TicketCard(
                   ticket: ticket,
                   onView: () => _showTicket(ticket),
-                  onDuplicate: () => _duplicate(ticket),
                 ),
               ),
           if (widget.controller.saveFailed) ...[
@@ -90,39 +89,21 @@ class _TicketsPageState extends State<TicketsPage> {
     },
   );
 
-  Future<void> _duplicate(SavedTicket ticket) async {
-    final l = AppLocalizations.of(context);
-    await widget.controller.duplicateTicket(ticket);
-    if (!mounted || widget.controller.saveFailed) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l.duplicatedTicket)));
-    widget.onOpenCompose();
-  }
-
   Future<void> _showTicket(SavedTicket ticket) => showDialog<void>(
     context: context,
     builder: (context) => TicketDetailDialog(
       ticket: ticket,
       settings: widget.settings,
       output: widget.output,
-      onDuplicate: () {
-        Navigator.pop(context);
-        _duplicate(ticket);
-      },
     ),
   );
 }
 
 class _TicketCard extends StatelessWidget {
-  const _TicketCard({
-    required this.ticket,
-    required this.onView,
-    required this.onDuplicate,
-  });
+  const _TicketCard({required this.ticket, required this.onView});
 
   final SavedTicket ticket;
   final VoidCallback onView;
-  final VoidCallback onDuplicate;
 
   @override
   Widget build(BuildContext context) {
@@ -201,11 +182,6 @@ class _TicketCard extends StatelessWidget {
                     onPressed: onView,
                     icon: const Icon(Icons.visibility_outlined),
                     label: Text(l.viewTicket),
-                  ),
-                  TextButton.icon(
-                    onPressed: onDuplicate,
-                    icon: const Icon(Icons.copy_rounded),
-                    label: Text(l.duplicateTicket),
                   ),
                 ],
               );

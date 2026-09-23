@@ -82,7 +82,6 @@ void main() {
         await orders.saveItem(
           name: 'Mushroom toastie',
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
-          isFavourite: true,
         );
       }
       if (page == 1 || page == 3) {

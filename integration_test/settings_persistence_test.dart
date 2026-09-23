@@ -63,7 +63,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      orders.addAdHocItem('Pane tostato');
+      await orders.saveItem(name: 'Pane tostato');
+      orders.addCatalogueItem(orders.items.single);
       orders.setReference('Tavolo 9');
       orders.setOrderNote('Senza cipolla');
       await orders.flushWrites();

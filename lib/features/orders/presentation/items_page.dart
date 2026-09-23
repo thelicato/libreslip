@@ -18,7 +18,6 @@ class ItemsPage extends StatefulWidget {
 class _ItemsPageState extends State<ItemsPage> {
   String _query = '';
   String? _categoryId;
-  bool _favouritesOnly = false;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -33,9 +32,7 @@ class _ItemsPageState extends State<ItemsPage> {
             (item.category?.name.toLowerCase().contains(query) ?? false);
         final matchesCategory =
             _categoryId == null || item.category?.id == _categoryId;
-        return matchesQuery &&
-            matchesCategory &&
-            (!_favouritesOnly || item.isFavourite);
+        return matchesQuery && matchesCategory;
       }).toList();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,13 +84,6 @@ class _ItemsPageState extends State<ItemsPage> {
                     ],
                     onChanged: (value) => setState(() => _categoryId = value),
                   ),
-                ),
-                FilterChip(
-                  selected: _favouritesOnly,
-                  avatar: const Icon(Icons.star_outline_rounded),
-                  label: Text(l.favourites),
-                  onSelected: (value) =>
-                      setState(() => _favouritesOnly = value),
                 ),
               ],
             ),
@@ -147,7 +137,6 @@ class _ItemsPageState extends State<ItemsPage> {
     final l = AppLocalizations.of(context);
     final name = TextEditingController(text: item?.name);
     final category = TextEditingController(text: item?.category?.name);
-    var favourite = item?.isFavourite ?? false;
     var imagePath = item?.imagePath;
     var chosenImage = false;
     final formKey = GlobalKey<FormState>();
@@ -267,14 +256,6 @@ class _ItemsPageState extends State<ItemsPage> {
                           ? l.categoryTooLong
                           : null,
                     ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: favourite,
-                      title: Text(l.favouriteItem),
-                      subtitle: Text(l.favouriteItemBody),
-                      onChanged: (value) =>
-                          setDialogState(() => favourite = value),
-                    ),
                   ],
                 ),
               ),
@@ -292,7 +273,6 @@ class _ItemsPageState extends State<ItemsPage> {
                   existing: item,
                   name: name.text,
                   categoryName: category.text,
-                  isFavourite: favourite,
                   imagePath: imagePath,
                 );
                 if (succeeded && dialogContext.mounted) {
@@ -368,20 +348,9 @@ class _ItemCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        if (item.isFavourite)
-                          Icon(
-                            Icons.star_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                      ],
+                    Text(
+                      item.name,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     if (item.category != null) ...[
                       const SizedBox(height: 5),

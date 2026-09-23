@@ -6,7 +6,7 @@ A private, local order-ticket app for Android 14 and later, built with Flutter. 
 
 ## Current milestone
 
-Task 4 adds ticket output to the reusable item and persistent order workflow. Tickets have a bilingual 58 mm preview, configurable heading, optional app-private logo and footer, and local PDF sharing. Android printer setup lists bonded devices and connects to the NETUM NT-1809DD through Bluetooth Classic SPP. A separate test ticket verifies the connection before printing saved tickets.
+Task 4 adds ticket output to the reusable item and persistent order workflow. Compose presents one automatically persisted working ticket and Print ticket saves its immutable snapshot before creating a durable print attempt. Optional reference, preparation-note and order-note fields can be hidden through SQLite-backed settings. Tickets have a bilingual 58 mm preview, configurable heading, optional app-private logo and footer, and local PDF sharing. Android printer setup lists bonded devices and connects to the NETUM NT-1809DD through Bluetooth Classic SPP.
 
 Items, drafts, ticket snapshots and durable print attempts use a versioned transactional SQLite database. Draft-to-ticket conversion is atomic and idempotent, so retrying the same conversion cannot create a second ticket. Catalogue edits do not rewrite saved ticket content. Queued, sending, failed, uncertain and transmitted print states are distinct; interrupted sends are never retried automatically.
 

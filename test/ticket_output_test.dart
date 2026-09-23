@@ -73,7 +73,6 @@ void main() {
               ticket: _ticket,
               settings: const AppSettings(footer: 'Prepared with care'),
               output: output,
-              onDuplicate: () {},
             ),
           ),
         ),

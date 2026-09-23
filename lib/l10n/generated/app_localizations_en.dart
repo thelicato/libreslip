@@ -165,7 +165,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Build orders with items, quantities and notes. Ticket creation and printing will be available in a future update.';
 
   @override
-  String get itemsTitle => 'Your favourites, close to hand.';
+  String get itemsTitle => 'Your reusable items, close to hand.';
 
   @override
   String get itemsBody =>
@@ -176,7 +176,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketsBody =>
-      'Your saved tickets will live here. Order history, duplicates and reprints will be available in a future update.';
+      'Saved tickets and explicit print attempts stay together in your local history.';
 
   @override
   String get backOverview => 'Back to overview';
@@ -196,8 +196,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Build an order and keep every detail safe as you work.';
 
   @override
-  String get itemsSubtitle =>
-      'Reusable favourites for faster ticket composition.';
+  String get itemsSubtitle => 'Reusable items for faster ticket composition.';
 
   @override
   String get ticketsSubtitle =>
@@ -329,6 +328,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderNotes => 'Order notes';
 
   @override
+  String get orderFields => 'Order fields';
+
+  @override
+  String get orderFieldsBody =>
+      'Choose which optional fields appear while composing a ticket.';
+
+  @override
+  String get preparationNotes => 'Preparation notes';
+
+  @override
   String get orderNotesHint => 'Optional notes for the whole order';
 
   @override
@@ -336,7 +345,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get draftEmptyBody =>
-      'Choose a reusable item or add a one-off item. Your draft is saved on this phone as you work.';
+      'Choose a reusable item. Your work is saved on this phone as you compose the ticket.';
 
   @override
   String get quantity => 'Quantity';
@@ -351,13 +360,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeLine => 'Remove line';
 
   @override
-  String get saveTicket => 'Save ticket';
+  String get saveTicket => 'Print ticket';
 
   @override
   String get ticketSaved => 'Ticket saved to history.';
 
   @override
-  String get ticketNeedsItem => 'Add at least one item before saving.';
+  String get ticketNeedsItem => 'Add at least one item before printing.';
 
   @override
   String get draftSaveError =>
@@ -375,7 +384,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyTicketsBody =>
-      'When you save a composed order, its item names, quantities, notes and heading appear here as a fixed snapshot.';
+      'When you print a composed order, it is saved here before the print attempt begins.';
 
   @override
   String ticketNumber(int number) {

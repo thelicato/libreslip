@@ -10,7 +10,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 3;
+  static const databaseVersion = 4;
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -172,6 +172,25 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         'ON print_jobs(ticket_id, created_at DESC)',
       );
     }
+    if (oldVersion < 4 && newVersion >= 4) {
+      await database.execute('''
+        CREATE TABLE order_feature_settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          order_reference_enabled INTEGER NOT NULL DEFAULT 1
+            CHECK (order_reference_enabled IN (0, 1)),
+          preparation_notes_enabled INTEGER NOT NULL DEFAULT 1
+            CHECK (preparation_notes_enabled IN (0, 1)),
+          order_notes_enabled INTEGER NOT NULL DEFAULT 1
+            CHECK (order_notes_enabled IN (0, 1))
+        )
+      ''');
+      await database.insert('order_feature_settings', {
+        'id': 1,
+        'order_reference_enabled': 1,
+        'preparation_notes_enabled': 1,
+        'order_notes_enabled': 1,
+      });
+    }
   }
 
   @override
@@ -188,6 +207,55 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   }
 
   @override
+  Future<OrderFeatureSettings> loadFeatureSettings() async {
+    try {
+      final rows = await (await _db).query(
+        'order_feature_settings',
+        where: 'id = 1',
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        throw const OrderStorageException(
+          'The order feature settings could not be found.',
+        );
+      }
+      final row = rows.single;
+      return OrderFeatureSettings(
+        orderReferenceEnabled: row['order_reference_enabled'] == 1,
+        preparationNotesEnabled: row['preparation_notes_enabled'] == 1,
+        orderNotesEnabled: row['order_notes_enabled'] == 1,
+      );
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not read order feature settings.',
+        error,
+      );
+    }
+  }
+
+  @override
+  Future<void> saveFeatureSettings(OrderFeatureSettings settings) async {
+    try {
+      final changed = await (await _db).update('order_feature_settings', {
+        'order_reference_enabled': settings.orderReferenceEnabled ? 1 : 0,
+        'preparation_notes_enabled': settings.preparationNotesEnabled ? 1 : 0,
+        'order_notes_enabled': settings.orderNotesEnabled ? 1 : 0,
+      }, where: 'id = 1');
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'The order feature settings could not be found.',
+        );
+      }
+    } catch (error) {
+      throw OrderStorageException(
+        'Could not save order feature settings.',
+        error,
+      );
+    }
+  }
+
+  @override
   Future<List<CatalogueItem>> loadItems() async {
     try {
       final rows = await (await _db).rawQuery('''
@@ -195,7 +263,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         FROM items i
         LEFT JOIN categories c ON c.id = i.category_id
         WHERE i.archived = 0
-        ORDER BY i.is_favourite DESC, i.name COLLATE NOCASE
+        ORDER BY i.name COLLATE NOCASE
       ''');
       return rows.map(_itemFromRow).toList(growable: false);
     } catch (error) {
@@ -208,7 +276,6 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
     String? id,
     required String name,
     String? categoryName,
-    required bool isFavourite,
     String? imagePath,
   }) async {
     final cleanName = name.trim();
@@ -249,7 +316,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
           'name': cleanName,
           'category_id': categoryId,
           'archived': 0,
-          'is_favourite': isFavourite ? 1 : 0,
+          'is_favourite': 0,
           'image_path': imagePath,
           'updated_at': now,
         };
@@ -305,24 +372,12 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   }
 
   @override
-  Future<OrderDraft> createDraft({SavedTicket? fromTicket}) async {
+  Future<OrderDraft> createDraft() async {
     final now = DateTime.now().toUtc();
     final draft = OrderDraft(
       id: createLocalId(),
       createdAt: now,
       updatedAt: now,
-      reference: fromTicket?.reference ?? '',
-      orderNote: fromTicket?.orderNote ?? '',
-      lines: [
-        for (final line in fromTicket?.lines ?? const <TicketLine>[])
-          TicketLine(
-            id: createLocalId(),
-            catalogueItemId: line.catalogueItemId,
-            name: line.name,
-            quantity: line.quantity,
-            preparationNote: line.preparationNote,
-          ),
-      ],
     );
     await saveDraft(draft);
     return draft;
@@ -711,7 +766,6 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
             id: row['category_id']! as String,
             name: row['category_name']! as String,
           ),
-    isFavourite: row['is_favourite'] == 1,
     imagePath: row['image_path'] as String?,
   );
 

@@ -167,7 +167,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Crea ordini con articoli, quantità e note. Creazione e stampa delle comande saranno disponibili in un prossimo aggiornamento.';
 
   @override
-  String get itemsTitle => 'I tuoi preferiti, a portata di mano.';
+  String get itemsTitle => 'I tuoi articoli riutilizzabili, a portata di mano.';
 
   @override
   String get itemsBody =>
@@ -178,7 +178,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ticketsBody =>
-      'Le tue comande salvate troveranno posto qui. Storico, copie e ristampe saranno disponibili in un prossimo aggiornamento.';
+      'Le comande salvate e i tentativi di stampa espliciti restano insieme nello storico locale.';
 
   @override
   String get backOverview => 'Torna alla panoramica';
@@ -199,7 +199,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get itemsSubtitle =>
-      'I preferiti riutilizzabili per comporre le comande più velocemente.';
+      'Articoli riutilizzabili per comporre le comande più velocemente.';
 
   @override
   String get ticketsSubtitle =>
@@ -331,6 +331,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get orderNotes => 'Note dell’ordine';
 
   @override
+  String get orderFields => 'Campi dell’ordine';
+
+  @override
+  String get orderFieldsBody =>
+      'Scegli quali campi facoltativi mostrare durante la composizione.';
+
+  @override
+  String get preparationNotes => 'Note di preparazione';
+
+  @override
   String get orderNotesHint => 'Note facoltative per l’intero ordine';
 
   @override
@@ -338,7 +348,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get draftEmptyBody =>
-      'Scegli un articolo riutilizzabile o aggiungine uno occasionale. La bozza viene salvata su questo telefono mentre lavori.';
+      'Scegli un articolo riutilizzabile. Il lavoro viene salvato sul telefono mentre componi la comanda.';
 
   @override
   String get quantity => 'Quantità';
@@ -353,13 +363,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get removeLine => 'Rimuovi riga';
 
   @override
-  String get saveTicket => 'Salva comanda';
+  String get saveTicket => 'Stampa comanda';
 
   @override
   String get ticketSaved => 'Comanda salvata nello storico.';
 
   @override
-  String get ticketNeedsItem => 'Aggiungi almeno un articolo prima di salvare.';
+  String get ticketNeedsItem =>
+      'Aggiungi almeno un articolo prima di stampare.';
 
   @override
   String get draftSaveError =>
@@ -377,7 +388,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get emptyTicketsBody =>
-      'Quando salvi un ordine, nomi, quantità, note e intestazione vengono conservati qui come istantanea fissa.';
+      'Quando stampi un ordine composto, la comanda viene salvata qui prima del tentativo di stampa.';
 
   @override
   String ticketNumber(int number) {

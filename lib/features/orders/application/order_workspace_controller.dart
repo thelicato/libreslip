@@ -19,6 +19,7 @@ class OrderWorkspaceController extends ChangeNotifier {
   List<ItemCategory> categories = const [];
   List<OrderDraft> drafts = const [];
   List<SavedTicket> tickets = const [];
+  OrderFeatureSettings featureSettings = const OrderFeatureSettings();
   String? activeDraftId;
   Future<void> _writeChain = Future<void>.value();
 
@@ -54,45 +55,26 @@ class OrderWorkspaceController extends ChangeNotifier {
   Future<void> _refresh() async {
     items = await _repository.loadItems();
     categories = await _repository.loadCategories();
+    featureSettings = await _repository.loadFeatureSettings();
     drafts = await _repository.loadDrafts();
     tickets = await _repository.loadTickets();
   }
 
-  void selectDraft(String id) {
-    if (drafts.any((draft) => draft.id == id)) {
-      activeDraftId = id;
-      notifyListeners();
-    }
-  }
-
-  Future<void> createDraft() async {
-    await _perform(() async {
-      final draft = await _repository.createDraft();
-      drafts = [draft, ...drafts];
-      activeDraftId = draft.id;
-    });
-  }
-
-  Future<void> deleteActiveDraft() async {
-    final draft = activeDraft;
-    if (draft == null) return;
-    await flushWrites();
-    await _perform(() async {
-      await _repository.deleteDraft(draft.id);
-      drafts = drafts.where((entry) => entry.id != draft.id).toList();
-      if (drafts.isEmpty) {
-        final replacement = await _repository.createDraft();
-        drafts = [replacement];
-      }
-      activeDraftId = drafts.first.id;
-    });
-  }
+  Future<bool> updateFeatureSettings(OrderFeatureSettings next) =>
+      _perform(() async {
+        await flushWrites();
+        await _repository.saveFeatureSettings(next);
+        featureSettings = next;
+        drafts = await _repository.loadDrafts();
+        if (!drafts.any((draft) => draft.id == activeDraftId)) {
+          activeDraftId = drafts.isEmpty ? null : drafts.first.id;
+        }
+      });
 
   Future<bool> saveItem({
     CatalogueItem? existing,
     required String name,
     String? categoryName,
-    required bool isFavourite,
     String? imagePath,
   }) async {
     final previousImage = existing?.imagePath;
@@ -101,7 +83,6 @@ class OrderWorkspaceController extends ChangeNotifier {
         id: existing?.id,
         name: name,
         categoryName: categoryName,
-        isFavourite: isFavourite,
         imagePath: imagePath,
       );
       items = await _repository.loadItems();
@@ -158,21 +139,6 @@ class OrderWorkspaceController extends ChangeNotifier {
     );
   }
 
-  void addAdHocItem(String name) {
-    final draft = activeDraft;
-    final cleanName = name.trim();
-    if (draft == null || cleanName.isEmpty || cleanName.length > 80) return;
-    _replaceActive(
-      draft.copyWith(
-        updatedAt: DateTime.now().toUtc(),
-        lines: [
-          ...draft.lines,
-          TicketLine(id: createLocalId(), name: cleanName, quantity: 1),
-        ],
-      ),
-    );
-  }
-
   void setQuantity(String lineId, int quantity) {
     final draft = activeDraft;
     if (draft == null || quantity < 1 || quantity > 999) return;
@@ -189,7 +155,11 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setPreparationNote(String lineId, String note) {
     final draft = activeDraft;
-    if (draft == null || note.length > 300) return;
+    if (draft == null ||
+        !featureSettings.preparationNotesEnabled ||
+        note.length > 300) {
+      return;
+    }
     _replaceActive(
       draft.copyWith(
         updatedAt: DateTime.now().toUtc(),
@@ -217,7 +187,11 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setReference(String reference) {
     final draft = activeDraft;
-    if (draft == null || reference.length > 80) return;
+    if (draft == null ||
+        !featureSettings.orderReferenceEnabled ||
+        reference.length > 80) {
+      return;
+    }
     _replaceActive(
       draft.copyWith(reference: reference, updatedAt: DateTime.now().toUtc()),
     );
@@ -225,7 +199,11 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setOrderNote(String note) {
     final draft = activeDraft;
-    if (draft == null || note.length > 500) return;
+    if (draft == null ||
+        !featureSettings.orderNotesEnabled ||
+        note.length > 500) {
+      return;
+    }
     _replaceActive(
       draft.copyWith(orderNote: note, updatedAt: DateTime.now().toUtc()),
     );
@@ -272,9 +250,23 @@ class OrderWorkspaceController extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+    final features = featureSettings;
+    final ticketDraft = draft.copyWith(
+      reference: features.orderReferenceEnabled ? draft.reference : '',
+      orderNote: features.orderNotesEnabled ? draft.orderNote : '',
+      lines: [
+        for (final line in draft.lines)
+          features.preparationNotesEnabled
+              ? line
+              : line.copyWith(preparationNote: ''),
+      ],
+    );
     SavedTicket? ticket;
     final success = await _perform(() async {
-      ticket = await _repository.convertDraftToTicket(draft, heading: heading);
+      ticket = await _repository.convertDraftToTicket(
+        ticketDraft,
+        heading: heading,
+      );
       drafts = await _repository.loadDrafts();
       tickets = await _repository.loadTickets();
       if (drafts.isEmpty) {
@@ -284,14 +276,6 @@ class OrderWorkspaceController extends ChangeNotifier {
       activeDraftId = drafts.first.id;
     });
     return success ? ticket : null;
-  }
-
-  Future<void> duplicateTicket(SavedTicket ticket) async {
-    await _perform(() async {
-      final draft = await _repository.createDraft(fromTicket: ticket);
-      drafts = [draft, ...drafts];
-      activeDraftId = draft.id;
-    });
   }
 
   Future<bool> _perform(Future<void> Function() operation) async {

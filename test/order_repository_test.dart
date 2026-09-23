@@ -76,7 +76,6 @@ void main() {
     final item = await repository.saveItem(
       name: 'Mushroom toastie',
       categoryName: 'Kitchen',
-      isFavourite: true,
     );
     final blank = await repository.createDraft();
     final draft = blank.copyWith(
@@ -103,7 +102,6 @@ void main() {
       id: item.id,
       name: 'Renamed toastie',
       categoryName: 'Lunch',
-      isFavourite: false,
     );
     await repository.archiveItem(item.id);
     final restored = (await repository.loadTickets()).single;
@@ -223,6 +221,43 @@ void main() {
     },
   );
 
+  test('composition feature settings default on and survive restart', () async {
+    final first = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: databasePath,
+    );
+    await first.open();
+    expect(
+      await first.loadFeatureSettings(),
+      isA<OrderFeatureSettings>()
+          .having((value) => value.orderReferenceEnabled, 'reference', isTrue)
+          .having(
+            (value) => value.preparationNotesEnabled,
+            'preparation notes',
+            isTrue,
+          )
+          .having((value) => value.orderNotesEnabled, 'order notes', isTrue),
+    );
+    const disabled = OrderFeatureSettings(
+      orderReferenceEnabled: false,
+      preparationNotesEnabled: false,
+      orderNotesEnabled: false,
+    );
+    await first.saveFeatureSettings(disabled);
+    await first.close();
+
+    final second = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: databasePath,
+    );
+    addTearDown(second.close);
+    await second.open();
+    final restored = await second.loadFeatureSettings();
+    expect(restored.orderReferenceEnabled, isFalse);
+    expect(restored.preparationNotesEnabled, isFalse);
+    expect(restored.orderNotesEnabled, isFalse);
+  });
+
   test(
     'version 1 databases migrate in place without losing catalogue data',
     () async {
@@ -260,8 +295,11 @@ void main() {
       expect(items, hasLength(1));
       expect(items.single.name, 'Still water');
       expect(items.single.category!.name, 'Counter');
-      expect(items.single.isFavourite, isFalse);
       expect(items.single.imagePath, isNull);
+      final features = await repository.loadFeatureSettings();
+      expect(features.orderReferenceEnabled, isTrue);
+      expect(features.preparationNotesEnabled, isTrue);
+      expect(features.orderNotesEnabled, isTrue);
       await repository.close();
 
       final database = await databaseFactoryFfiNoIsolate.openDatabase(

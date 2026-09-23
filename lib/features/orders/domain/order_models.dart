@@ -22,29 +22,48 @@ class CatalogueItem {
     required this.id,
     required this.name,
     this.category,
-    this.isFavourite = false,
     this.imagePath,
   });
 
   final String id;
   final String name;
   final ItemCategory? category;
-  final bool isFavourite;
   final String? imagePath;
 
   CatalogueItem copyWith({
     String? name,
     ItemCategory? category,
     bool clearCategory = false,
-    bool? isFavourite,
     String? imagePath,
     bool clearImage = false,
   }) => CatalogueItem(
     id: id,
     name: name ?? this.name,
     category: clearCategory ? null : category ?? this.category,
-    isFavourite: isFavourite ?? this.isFavourite,
     imagePath: clearImage ? null : imagePath ?? this.imagePath,
+  );
+}
+
+class OrderFeatureSettings {
+  const OrderFeatureSettings({
+    this.orderReferenceEnabled = true,
+    this.preparationNotesEnabled = true,
+    this.orderNotesEnabled = true,
+  });
+
+  final bool orderReferenceEnabled;
+  final bool preparationNotesEnabled;
+  final bool orderNotesEnabled;
+
+  OrderFeatureSettings copyWith({
+    bool? orderReferenceEnabled,
+    bool? preparationNotesEnabled,
+    bool? orderNotesEnabled,
+  }) => OrderFeatureSettings(
+    orderReferenceEnabled: orderReferenceEnabled ?? this.orderReferenceEnabled,
+    preparationNotesEnabled:
+        preparationNotesEnabled ?? this.preparationNotesEnabled,
+    orderNotesEnabled: orderNotesEnabled ?? this.orderNotesEnabled,
   );
 }
 
@@ -137,6 +156,10 @@ abstract interface class OrderRepository {
 
   Future<List<ItemCategory>> loadCategories();
 
+  Future<OrderFeatureSettings> loadFeatureSettings();
+
+  Future<void> saveFeatureSettings(OrderFeatureSettings settings);
+
   Future<List<OrderDraft>> loadDrafts();
 
   Future<List<SavedTicket>> loadTickets();
@@ -145,13 +168,12 @@ abstract interface class OrderRepository {
     String? id,
     required String name,
     String? categoryName,
-    required bool isFavourite,
     String? imagePath,
   });
 
   Future<void> archiveItem(String id);
 
-  Future<OrderDraft> createDraft({SavedTicket? fromTicket});
+  Future<OrderDraft> createDraft();
 
   Future<void> saveDraft(OrderDraft draft);
 

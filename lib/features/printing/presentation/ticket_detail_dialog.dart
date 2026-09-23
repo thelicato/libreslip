@@ -13,13 +13,11 @@ class TicketDetailDialog extends StatelessWidget {
     super.key,
     required this.ticket,
     required this.settings,
-    required this.onDuplicate,
     this.output,
   });
 
   final SavedTicket ticket;
   final AppSettings settings;
-  final VoidCallback onDuplicate;
   final TicketOutputController? output;
 
   @override
@@ -52,8 +50,6 @@ class TicketDetailDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _SnapshotNotice(),
-              const SizedBox(height: 18),
               Center(child: TicketPreview(document: document)),
               if (controller != null) ...[
                 const SizedBox(height: 22),
@@ -96,11 +92,10 @@ class TicketDetailDialog extends StatelessWidget {
           ),
         ),
       ),
+      actionsAlignment: MainAxisAlignment.start,
+      actionsOverflowAlignment: OverflowBarAlignment.start,
+      actionsPadding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
       actions: [
-        TextButton(
-          onPressed: working ? null : onDuplicate,
-          child: Text(l.duplicateTicket),
-        ),
         if (controller != null)
           OutlinedButton.icon(
             onPressed: working
@@ -243,40 +238,6 @@ class _PrintOutcomeNotice extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 4),
             Text(body),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SnapshotNotice extends StatelessWidget {
-  const _SnapshotNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Material(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            const Icon(Icons.lock_clock_outlined),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l.savedSnapshot,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  Text(l.savedSnapshotBody),
-                ],
-              ),
-            ),
           ],
         ),
       ),

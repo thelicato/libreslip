@@ -35,6 +35,34 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
 
   void _select(int index) => setState(() => _selected = index);
 
+  double _navLabelFontSize(
+    BuildContext context,
+    double width,
+    List<String> labels,
+  ) {
+    final direction = Directionality.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    final baseStyle = Theme.of(context).textTheme.labelMedium;
+    final maximum = baseStyle?.fontSize ?? 12;
+    final available = width / labels.length - 8;
+    for (var size = maximum; size >= 4; size -= 0.25) {
+      final fits = labels.every((label) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: label,
+            style: baseStyle?.copyWith(fontSize: size),
+          ),
+          maxLines: 1,
+          textDirection: direction,
+          textScaler: scaler,
+        )..layout();
+        return painter.width <= available;
+      });
+      if (fits) return size;
+    }
+    return 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -54,7 +82,8 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
       0 => OverviewPage(onSelect: _select),
       1 => ComposePage(
         controller: widget.orders,
-        heading: widget.settings.settings.heading,
+        settings: widget.settings.settings,
+        output: widget.ticketOutput,
       ),
       2 => ItemsPage(controller: widget.orders),
       3 => TicketsPage(
@@ -63,7 +92,11 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         output: widget.ticketOutput,
         onOpenCompose: () => _select(1),
       ),
-      4 => SettingsPage(controller: widget.settings, printer: widget.printer),
+      4 => SettingsPage(
+        controller: widget.settings,
+        orders: widget.orders,
+        printer: widget.printer,
+      ),
       _ => OverviewPage(onSelect: _select),
     };
     final subtitle = switch (_selected) {
@@ -85,21 +118,35 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
           child: Scaffold(
             bottomNavigationBar: wide
                 ? null
-                : NavigationBar(
-                    animationDuration: MediaQuery.disableAnimationsOf(context)
-                        ? Duration.zero
-                        : const Duration(milliseconds: 300),
-                    selectedIndex: _selected,
-                    onDestinationSelected: _select,
-                    destinations: [
-                      for (var i = 0; i < labels.length; i++)
-                        NavigationDestination(
-                          key: ValueKey('nav-$i'),
-                          icon: Icon(icons[i]),
-                          label: labels[i],
-                          tooltip: labels[i],
+                : NavigationBarTheme(
+                    data: NavigationBarThemeData(
+                      labelTextStyle: WidgetStatePropertyAll(
+                        Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontSize: _navLabelFontSize(
+                            context,
+                            constraints.maxWidth,
+                            labels,
+                          ),
+                          height: 1,
                         ),
-                    ],
+                      ),
+                    ),
+                    child: NavigationBar(
+                      animationDuration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 300),
+                      selectedIndex: _selected,
+                      onDestinationSelected: _select,
+                      destinations: [
+                        for (var i = 0; i < labels.length; i++)
+                          NavigationDestination(
+                            key: ValueKey('nav-$i'),
+                            icon: Icon(icons[i]),
+                            label: labels[i],
+                            tooltip: labels[i],
+                          ),
+                      ],
+                    ),
                   ),
             body: SafeArea(
               bottom: wide,
@@ -147,46 +194,6 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                                   style: Theme.of(context).textTheme.labelMedium
                                       ?.copyWith(letterSpacing: 1.8),
                                 ),
-                              const Spacer(),
-                              Tooltip(
-                                message: l.onThisPhone,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surface,
-                                    borderRadius: BorderRadius.circular(40),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.phonelink_lock_rounded,
-                                        size: 17,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                      if (constraints.maxWidth > 500 &&
-                                          MediaQuery.textScalerOf(context)
-                                                  .scale(1) <
-                                              1.6) ...[
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          l.onThisPhone,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelMedium,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),

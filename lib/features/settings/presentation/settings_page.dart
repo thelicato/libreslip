@@ -3,13 +3,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../orders/application/order_workspace_controller.dart';
 import '../../printing/application/printer_controller.dart';
 import '../../printing/presentation/printer_setup_card.dart';
 import '../application/settings_controller.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.controller, this.printer});
+  const SettingsPage({
+    super.key,
+    required this.controller,
+    required this.orders,
+    this.printer,
+  });
   final SettingsController controller;
+  final OrderWorkspaceController orders;
   final PrinterController? printer;
 
   @override
@@ -20,7 +27,7 @@ class SettingsPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (controller.saveFailed)
+        if (controller.saveFailed || orders.saveFailed)
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: Semantics(
@@ -39,32 +46,31 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
         _SettingsSection(
-          title: l.ticketHeader,
-          subtitle: l.ticketHeaderBody,
-          icon: Icons.short_text_rounded,
-          child: ListTile(
-            key: const ValueKey('edit-heading'),
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              settings.heading.isEmpty ? l.defaultHeading : settings.heading,
-            ),
-            subtitle: Text(l.heading),
-            trailing: IconButton(
-              tooltip: l.editHeading,
-              onPressed: controller.saving ? null : () => _editName(context),
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            onTap: controller.saving ? null : () => _editName(context),
-          ),
-        ),
-        const SizedBox(height: 20),
-        _SettingsSection(
           title: l.ticketTemplate,
           subtitle: l.ticketTemplateBody,
           icon: Icons.receipt_long_outlined,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              ListTile(
+                key: const ValueKey('edit-heading'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  settings.heading.isEmpty
+                      ? l.defaultHeading
+                      : settings.heading,
+                ),
+                subtitle: Text(l.heading),
+                trailing: IconButton(
+                  tooltip: l.editHeading,
+                  onPressed: controller.saving
+                      ? null
+                      : () => _editName(context),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                onTap: controller.saving ? null : () => _editName(context),
+              ),
+              const Divider(height: 28),
               ListTile(
                 key: const ValueKey('edit-footer'),
                 contentPadding: EdgeInsets.zero,
@@ -85,6 +91,55 @@ class SettingsPage extends StatelessWidget {
               ),
               const Divider(height: 28),
               _LogoEditor(controller: controller),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        _SettingsSection(
+          title: l.orderFields,
+          subtitle: l.orderFieldsBody,
+          icon: Icons.tune_rounded,
+          child: Column(
+            children: [
+              SwitchListTile(
+                key: const ValueKey('toggle-order-reference'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.orderReferenceEnabled,
+                title: Text(l.orderReference),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(
+                          orderReferenceEnabled: value,
+                        ),
+                      ),
+              ),
+              SwitchListTile(
+                key: const ValueKey('toggle-preparation-notes'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.preparationNotesEnabled,
+                title: Text(l.preparationNotes),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(
+                          preparationNotesEnabled: value,
+                        ),
+                      ),
+              ),
+              SwitchListTile(
+                key: const ValueKey('toggle-order-notes'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.orderNotesEnabled,
+                title: Text(l.orderNotes),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(
+                          orderNotesEnabled: value,
+                        ),
+                      ),
+              ),
             ],
           ),
         ),
@@ -146,49 +201,6 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 20),
           PrinterSetupCard(controller: printer!),
         ],
-        const SizedBox(height: 24),
-        Semantics(
-          liveRegion: true,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (controller.saving)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                Icon(
-                  controller.saveFailed
-                      ? Icons.error_outline
-                      : Icons.check_circle_outline_rounded,
-                  size: 20,
-                  color: controller.saveFailed
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary,
-                ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  controller.saving
-                      ? l.saving
-                      : (controller.saveFailed ? l.saveError : l.savedLocally),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Text(l.privacyTitle, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 6),
-        Text(
-          l.privacyBody,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
       ],
     );
   }

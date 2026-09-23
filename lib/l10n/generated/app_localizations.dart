@@ -403,7 +403,7 @@ abstract class AppLocalizations {
   /// No description provided for @itemsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your favourites, close to hand.'**
+  /// **'Your reusable items, close to hand.'**
   String get itemsTitle;
 
   /// No description provided for @itemsBody.
@@ -421,7 +421,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketsBody.
   ///
   /// In en, this message translates to:
-  /// **'Your saved tickets will live here. Order history, duplicates and reprints will be available in a future update.'**
+  /// **'Saved tickets and explicit print attempts stay together in your local history.'**
   String get ticketsBody;
 
   /// No description provided for @backOverview.
@@ -457,7 +457,7 @@ abstract class AppLocalizations {
   /// No description provided for @itemsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Reusable favourites for faster ticket composition.'**
+  /// **'Reusable items for faster ticket composition.'**
   String get itemsSubtitle;
 
   /// No description provided for @ticketsSubtitle.
@@ -700,6 +700,24 @@ abstract class AppLocalizations {
   /// **'Order notes'**
   String get orderNotes;
 
+  /// No description provided for @orderFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Order fields'**
+  String get orderFields;
+
+  /// No description provided for @orderFieldsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which optional fields appear while composing a ticket.'**
+  String get orderFieldsBody;
+
+  /// No description provided for @preparationNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparation notes'**
+  String get preparationNotes;
+
   /// No description provided for @orderNotesHint.
   ///
   /// In en, this message translates to:
@@ -715,7 +733,7 @@ abstract class AppLocalizations {
   /// No description provided for @draftEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a reusable item or add a one-off item. Your draft is saved on this phone as you work.'**
+  /// **'Choose a reusable item. Your work is saved on this phone as you compose the ticket.'**
   String get draftEmptyBody;
 
   /// No description provided for @quantity.
@@ -745,7 +763,7 @@ abstract class AppLocalizations {
   /// No description provided for @saveTicket.
   ///
   /// In en, this message translates to:
-  /// **'Save ticket'**
+  /// **'Print ticket'**
   String get saveTicket;
 
   /// No description provided for @ticketSaved.
@@ -757,7 +775,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketNeedsItem.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one item before saving.'**
+  /// **'Add at least one item before printing.'**
   String get ticketNeedsItem;
 
   /// No description provided for @draftSaveError.
@@ -787,7 +805,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyTicketsBody.
   ///
   /// In en, this message translates to:
-  /// **'When you save a composed order, its item names, quantities, notes and heading appear here as a fixed snapshot.'**
+  /// **'When you print a composed order, it is saved here before the print attempt begins.'**
   String get emptyTicketsBody;
 
   /// No description provided for @ticketNumber.
