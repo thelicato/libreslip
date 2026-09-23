@@ -6,6 +6,8 @@ import 'app/libreslip_app.dart';
 import 'features/orders/application/order_workspace_controller.dart';
 import 'features/orders/data/item_image_store.dart';
 import 'features/orders/data/sqlite_order_repository.dart';
+import 'features/printing/application/printer_controller.dart';
+import 'features/printing/data/android_bluetooth_printer_transport.dart';
 import 'features/settings/application/settings_controller.dart';
 import 'features/settings/data/settings_repository.dart';
 import 'features/settings/domain/app_settings.dart';
@@ -21,7 +23,8 @@ void main() {
     SqliteOrderRepository(),
     imageStore: LocalItemImageStore(),
   );
-  runApp(LibreSlipApp(settings: settings, orders: orders));
+  final printer = PrinterController(AndroidBluetoothPrinterTransport());
+  runApp(LibreSlipApp(settings: settings, orders: orders, printer: printer));
   unawaited(settings.load());
   unawaited(orders.load());
 }

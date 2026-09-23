@@ -443,6 +443,99 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get searchTickets => 'Cerca comande';
+
+  @override
+  String get printerSetup => 'Connessione stampante';
+
+  @override
+  String get printerSetupBody =>
+      'Connetti una stampante Bluetooth Classic già associata. LibreSlip non si riconnette e non ripete mai l’invio da solo.';
+
+  @override
+  String get bluetoothUnsupported =>
+      'Il Bluetooth non è disponibile su questo telefono.';
+
+  @override
+  String get bluetoothPermissionTitle =>
+      'Consenti accesso ai dispositivi vicini';
+
+  @override
+  String get bluetoothPermissionBody =>
+      'Android richiede questa autorizzazione per vedere e connettere le stampanti già associate.';
+
+  @override
+  String get allowBluetooth => 'Consenti accesso';
+
+  @override
+  String get bluetoothOffTitle => 'Il Bluetooth è disattivato';
+
+  @override
+  String get bluetoothOffBody =>
+      'Attiva il Bluetooth, poi torna qui e aggiorna l’elenco dei dispositivi associati.';
+
+  @override
+  String get openBluetoothSettings => 'Apri impostazioni Bluetooth';
+
+  @override
+  String get refreshPrinters => 'Aggiorna stampanti';
+
+  @override
+  String get pairedDevices => 'Dispositivi associati';
+
+  @override
+  String get noPairedPrinters =>
+      'Nessun dispositivo Bluetooth associato trovato.';
+
+  @override
+  String get pairPrinterBody =>
+      'Associa la NETUM NT-1809DD nelle impostazioni Android. LibreSlip non cerca dispositivi nelle vicinanze.';
+
+  @override
+  String get connectPrinter => 'Connetti';
+
+  @override
+  String get connectingPrinter => 'Connessione…';
+
+  @override
+  String connectedPrinter(String name) {
+    return 'Connessa a $name';
+  }
+
+  @override
+  String get disconnectPrinter => 'Disconnetti';
+
+  @override
+  String get testTicket => 'Stampa test di connessione';
+
+  @override
+  String get sendingTestTicket => 'Invio comanda di prova…';
+
+  @override
+  String get testTicketSent => 'Byte di prova inviati';
+
+  @override
+  String get testTicketSentBody =>
+      'Controlla la carta. La trasmissione Bluetooth è riuscita, ma LibreSlip non può confermare che la stampante abbia stampato.';
+
+  @override
+  String get testTicketFailed =>
+      'Nessun dato inviato. Controlla che la stampante sia accesa e vicina, poi riconnettila.';
+
+  @override
+  String get testTicketUncertain =>
+      'La connessione è caduta dopo l’invio di alcuni byte. La stampante potrebbe aver stampato parte o tutto il test. Controlla la carta prima di riprovare.';
+
+  @override
+  String get printerConnectionFailed =>
+      'Impossibile connettere il dispositivo associato. Controlla che la stampante sia accesa, vicina e non connessa a un altro telefono.';
+
+  @override
+  String get printerOperationFailed =>
+      'Operazione della stampante non riuscita. Aggiorna l’elenco e riprova.';
+
+  @override
+  String get testTicketSafety =>
+      'Il test usa ESC/POS, fa avanzare la carta e non invia comandi di taglio o apertura cassetto.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

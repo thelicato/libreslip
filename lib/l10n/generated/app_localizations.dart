@@ -891,6 +891,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search tickets'**
   String get searchTickets;
+
+  /// No description provided for @printerSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer connection'**
+  String get printerSetup;
+
+  /// No description provided for @printerSetupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect a paired Bluetooth Classic printer. LibreSlip will never reconnect or resend by itself.'**
+  String get printerSetupBody;
+
+  /// No description provided for @bluetoothUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth is not available on this phone.'**
+  String get bluetoothUnsupported;
+
+  /// No description provided for @bluetoothPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow nearby-device access'**
+  String get bluetoothPermissionTitle;
+
+  /// No description provided for @bluetoothPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Android requires this permission to see and connect to printers you have already paired.'**
+  String get bluetoothPermissionBody;
+
+  /// No description provided for @allowBluetooth.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access'**
+  String get allowBluetooth;
+
+  /// No description provided for @bluetoothOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth is switched off'**
+  String get bluetoothOffTitle;
+
+  /// No description provided for @bluetoothOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Bluetooth on, then return here and refresh the paired-device list.'**
+  String get bluetoothOffBody;
+
+  /// No description provided for @openBluetoothSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Bluetooth settings'**
+  String get openBluetoothSettings;
+
+  /// No description provided for @refreshPrinters.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh printers'**
+  String get refreshPrinters;
+
+  /// No description provided for @pairedDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired devices'**
+  String get pairedDevices;
+
+  /// No description provided for @noPairedPrinters.
+  ///
+  /// In en, this message translates to:
+  /// **'No paired Bluetooth devices were found.'**
+  String get noPairedPrinters;
+
+  /// No description provided for @pairPrinterBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair the NETUM NT-1809DD in Android settings first. LibreSlip does not scan for nearby devices.'**
+  String get pairPrinterBody;
+
+  /// No description provided for @connectPrinter.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectPrinter;
+
+  /// No description provided for @connectingPrinter.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get connectingPrinter;
+
+  /// No description provided for @connectedPrinter.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {name}'**
+  String connectedPrinter(String name);
+
+  /// No description provided for @disconnectPrinter.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get disconnectPrinter;
+
+  /// No description provided for @testTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Print connection test'**
+  String get testTicket;
+
+  /// No description provided for @sendingTestTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending test ticket…'**
+  String get sendingTestTicket;
+
+  /// No description provided for @testTicketSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Test bytes sent'**
+  String get testTicketSent;
+
+  /// No description provided for @testTicketSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the paper. Bluetooth transmission succeeded, but LibreSlip cannot confirm that the printer physically printed it.'**
+  String get testTicketSentBody;
+
+  /// No description provided for @testTicketFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was sent. Check that the printer is on and nearby, then reconnect.'**
+  String get testTicketFailed;
+
+  /// No description provided for @testTicketUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection failed after some bytes were sent. The printer may have printed part or all of the test. Check the paper before trying again.'**
+  String get testTicketUncertain;
+
+  /// No description provided for @printerConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to this paired device. Check that the printer is on, nearby and not connected to another phone.'**
+  String get printerConnectionFailed;
+
+  /// No description provided for @printerOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The printer operation failed. Refresh the list and try again.'**
+  String get printerOperationFailed;
+
+  /// No description provided for @testTicketSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'The test uses ESC/POS, feeds paper and never sends a cutter or cash-drawer command.'**
+  String get testTicketSafety;
 }
 
 class _AppLocalizationsDelegate

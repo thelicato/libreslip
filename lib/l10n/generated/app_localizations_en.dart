@@ -440,6 +440,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchTickets => 'Search tickets';
+
+  @override
+  String get printerSetup => 'Printer connection';
+
+  @override
+  String get printerSetupBody =>
+      'Connect a paired Bluetooth Classic printer. LibreSlip will never reconnect or resend by itself.';
+
+  @override
+  String get bluetoothUnsupported =>
+      'Bluetooth is not available on this phone.';
+
+  @override
+  String get bluetoothPermissionTitle => 'Allow nearby-device access';
+
+  @override
+  String get bluetoothPermissionBody =>
+      'Android requires this permission to see and connect to printers you have already paired.';
+
+  @override
+  String get allowBluetooth => 'Allow access';
+
+  @override
+  String get bluetoothOffTitle => 'Bluetooth is switched off';
+
+  @override
+  String get bluetoothOffBody =>
+      'Switch Bluetooth on, then return here and refresh the paired-device list.';
+
+  @override
+  String get openBluetoothSettings => 'Open Bluetooth settings';
+
+  @override
+  String get refreshPrinters => 'Refresh printers';
+
+  @override
+  String get pairedDevices => 'Paired devices';
+
+  @override
+  String get noPairedPrinters => 'No paired Bluetooth devices were found.';
+
+  @override
+  String get pairPrinterBody =>
+      'Pair the NETUM NT-1809DD in Android settings first. LibreSlip does not scan for nearby devices.';
+
+  @override
+  String get connectPrinter => 'Connect';
+
+  @override
+  String get connectingPrinter => 'Connecting…';
+
+  @override
+  String connectedPrinter(String name) {
+    return 'Connected to $name';
+  }
+
+  @override
+  String get disconnectPrinter => 'Disconnect';
+
+  @override
+  String get testTicket => 'Print connection test';
+
+  @override
+  String get sendingTestTicket => 'Sending test ticket…';
+
+  @override
+  String get testTicketSent => 'Test bytes sent';
+
+  @override
+  String get testTicketSentBody =>
+      'Check the paper. Bluetooth transmission succeeded, but LibreSlip cannot confirm that the printer physically printed it.';
+
+  @override
+  String get testTicketFailed =>
+      'Nothing was sent. Check that the printer is on and nearby, then reconnect.';
+
+  @override
+  String get testTicketUncertain =>
+      'The connection failed after some bytes were sent. The printer may have printed part or all of the test. Check the paper before trying again.';
+
+  @override
+  String get printerConnectionFailed =>
+      'Could not connect to this paired device. Check that the printer is on, nearby and not connected to another phone.';
+
+  @override
+  String get printerOperationFailed =>
+      'The printer operation failed. Refresh the list and try again.';
+
+  @override
+  String get testTicketSafety =>
+      'The test uses ESC/POS, feeds paper and never sends a cutter or cash-drawer command.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

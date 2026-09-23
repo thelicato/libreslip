@@ -3,15 +3,22 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/brand_mark.dart';
 import '../features/orders/application/order_workspace_controller.dart';
+import '../features/printing/application/printer_controller.dart';
 import '../features/settings/application/settings_controller.dart';
 import '../features/workspace/presentation/workspace_shell.dart';
 import '../l10n/generated/app_localizations.dart';
 
 class LibreSlipApp extends StatelessWidget {
-  const LibreSlipApp({super.key, required this.settings, required this.orders});
+  const LibreSlipApp({
+    super.key,
+    required this.settings,
+    required this.orders,
+    this.printer,
+  });
 
   final SettingsController settings;
   final OrderWorkspaceController orders;
+  final PrinterController? printer;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -34,7 +41,7 @@ class LibreSlipApp extends StatelessWidget {
           ? Duration.zero
           : kThemeAnimationDuration,
       home: settings.loaded && orders.loaded
-          ? WorkspaceShell(settings: settings, orders: orders)
+          ? WorkspaceShell(settings: settings, orders: orders, printer: printer)
           : _StartupScreen(settings: settings, orders: orders),
     ),
   );

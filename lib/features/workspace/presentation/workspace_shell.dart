@@ -7,6 +7,7 @@ import '../../orders/application/order_workspace_controller.dart';
 import '../../orders/presentation/compose_page.dart';
 import '../../orders/presentation/items_page.dart';
 import '../../orders/presentation/tickets_page.dart';
+import '../../printing/application/printer_controller.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/settings_page.dart';
 import 'overview_page.dart';
@@ -16,9 +17,11 @@ class WorkspaceShell extends StatefulWidget {
     super.key,
     required this.settings,
     required this.orders,
+    this.printer,
   });
   final SettingsController settings;
   final OrderWorkspaceController orders;
+  final PrinterController? printer;
 
   @override
   State<WorkspaceShell> createState() => _WorkspaceShellState();
@@ -55,7 +58,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         controller: widget.orders,
         onOpenCompose: () => _select(1),
       ),
-      4 => SettingsPage(controller: widget.settings),
+      4 => SettingsPage(controller: widget.settings, printer: widget.printer),
       _ => OverviewPage(onSelect: _select),
     };
     final subtitle = switch (_selected) {

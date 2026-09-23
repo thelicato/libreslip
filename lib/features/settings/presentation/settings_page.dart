@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../printing/application/printer_controller.dart';
+import '../../printing/presentation/printer_setup_card.dart';
 import '../application/settings_controller.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key, required this.controller});
+  const SettingsPage({super.key, required this.controller, this.printer});
   final SettingsController controller;
+  final PrinterController? printer;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +109,10 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+        if (printer != null) ...[
+          const SizedBox(height: 20),
+          PrinterSetupCard(controller: printer!),
+        ],
         const SizedBox(height: 24),
         Semantics(
           liveRegion: true,
