@@ -8,6 +8,7 @@ import 'package:libreslip/features/orders/application/order_workspace_controller
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/printing/domain/print_job.dart';
+import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/data/settings_repository.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
@@ -60,6 +61,13 @@ void main() {
           heading: 'Bottega Libertà',
           language: 'it',
           themeMode: ThemeMode.dark,
+          typography: TicketTypography(
+            heading: 20,
+            details: 10,
+            items: 12,
+            notes: 9,
+            footer: 11,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -109,6 +117,11 @@ void main() {
       expect(restored!.heading, 'Bottega Libertà');
       expect(restored.language, 'it');
       expect(restored.themeMode, ThemeMode.dark);
+      expect(restored.typography.heading, 20);
+      expect(restored.typography.details, 10);
+      expect(restored.typography.items, 12);
+      expect(restored.typography.notes, 9);
+      expect(restored.typography.footer, 11);
       await tester.pumpWidget(const SizedBox.shrink());
       await orderRepository.close();
       final reopenedRepository = SqliteOrderRepository(

@@ -573,7 +573,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketTemplateBody =>
-      'Add an optional logo and footer to the saved heading and ticket snapshot.';
+      'Configure the saved heading, logo, footer and printed text sizes.';
+
+  @override
+  String get ticketTextSizes => 'Printed text sizes';
+
+  @override
+  String get ticketTextSizesBody =>
+      'Choose a bounded size for each type of ticket content.';
+
+  @override
+  String get ticketHeadingSize => 'Heading';
+
+  @override
+  String get orderDetailsSize => 'Order details';
+
+  @override
+  String get itemLinesSize => 'Item lines';
+
+  @override
+  String get notesSize => 'Notes';
+
+  @override
+  String get footerSize => 'Footer';
 
   @override
   String get ticketFooter => 'Ticket footer';

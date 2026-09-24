@@ -66,6 +66,14 @@ void main() {
         find.byKey(ValueKey('compose-item-${orders.items.single.id}')),
       );
       await tester.pump();
+      final lineId = orders.activeDraft!.lines.single.id;
+      final lineWidth = tester
+          .getSize(find.byKey(ValueKey('order-line-$lineId')))
+          .width;
+      final stepperWidth = tester
+          .getSize(find.byKey(ValueKey('quantity-stepper-$lineId')))
+          .width;
+      expect(stepperWidth, lineWidth - 30);
       final draftId = orders.activeDraft!.id;
       await tester.enterText(
         find.byKey(ValueKey('reference-$draftId')),

@@ -1,4 +1,5 @@
 import '../../orders/domain/order_models.dart';
+import 'ticket_typography.dart';
 
 class TicketDocument {
   const TicketDocument({
@@ -11,6 +12,7 @@ class TicketDocument {
     required this.ticketLabel,
     required this.footer,
     required this.lines,
+    this.typography = const TicketTypography(),
     this.reference = '',
     this.orderNote = '',
     this.logoPath,
@@ -27,6 +29,7 @@ class TicketDocument {
   final String lineNotePrefix;
   final String footer;
   final String? logoPath;
+  final TicketTypography typography;
   final List<TicketDocumentLine> lines;
 
   factory TicketDocument.fromTicket({
@@ -39,6 +42,7 @@ class TicketDocument {
     required String lineNotePrefix,
     required String footer,
     String? logoPath,
+    TicketTypography typography = const TicketTypography(),
   }) => TicketDocument(
     heading: ticket.heading.isEmpty ? fallbackHeading : ticket.heading,
     ticketLabel: ticketLabel,
@@ -51,6 +55,7 @@ class TicketDocument {
     lineNotePrefix: lineNotePrefix,
     footer: footer,
     logoPath: logoPath,
+    typography: typography,
     lines: [
       for (final line in ticket.lines)
         TicketDocumentLine(

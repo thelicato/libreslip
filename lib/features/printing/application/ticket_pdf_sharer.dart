@@ -56,8 +56,31 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
         logo = null;
       }
     }
-    final base = pw.TextStyle(font: _regular, fontSize: 8);
-    final bold = pw.TextStyle(font: _bold, fontSize: 8);
+    final typography = document.typography;
+    final details = pw.TextStyle(
+      font: _regular,
+      fontSize: typography.details.toDouble(),
+    );
+    final detailsBold = pw.TextStyle(
+      font: _bold,
+      fontSize: typography.details.toDouble(),
+    );
+    final itemsBold = pw.TextStyle(
+      font: _bold,
+      fontSize: typography.items.toDouble(),
+    );
+    final notes = pw.TextStyle(
+      font: _regular,
+      fontSize: typography.notes.toDouble(),
+    );
+    final notesBold = pw.TextStyle(
+      font: _bold,
+      fontSize: typography.notes.toDouble(),
+    );
+    final footer = pw.TextStyle(
+      font: _regular,
+      fontSize: typography.footer.toDouble(),
+    );
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat(
@@ -73,22 +96,25 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
             child: pw.Text(
               document.heading,
               textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(font: _bold, fontSize: 14),
+              style: pw.TextStyle(
+                font: _bold,
+                fontSize: typography.heading.toDouble(),
+              ),
             ),
           ),
           pw.SizedBox(height: 2 * PdfPageFormat.mm),
           pw.Center(
             child: pw.Text(
               '${document.ticketLabel} #${document.ticketNumber}',
-              style: bold,
+              style: detailsBold,
             ),
           ),
-          pw.Center(child: pw.Text(document.createdAt, style: base)),
+          pw.Center(child: pw.Text(document.createdAt, style: details)),
           if (document.reference.isNotEmpty) ...[
             pw.SizedBox(height: 2 * PdfPageFormat.mm),
             pw.Text(
               '${document.referenceLabel}: ${document.reference}',
-              style: bold,
+              style: detailsBold,
             ),
           ],
           pw.Divider(),
@@ -98,13 +124,13 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('${line.quantity} x ${line.name}', style: bold),
+                  pw.Text('${line.quantity} x ${line.name}', style: itemsBold),
                   if (line.note.isNotEmpty)
                     pw.Padding(
                       padding: const pw.EdgeInsets.only(left: 10, top: 2),
                       child: pw.Text(
                         '${document.lineNotePrefix}: ${line.note}',
-                        style: base,
+                        style: notes,
                       ),
                     ),
                 ],
@@ -112,9 +138,9 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
             ),
           if (document.orderNote.isNotEmpty) ...[
             pw.Divider(),
-            pw.Text(document.orderNotesLabel, style: bold),
+            pw.Text(document.orderNotesLabel, style: notesBold),
             pw.SizedBox(height: 2),
-            pw.Text(document.orderNote, style: base),
+            pw.Text(document.orderNote, style: notes),
           ],
           if (document.footer.isNotEmpty) ...[
             pw.Divider(),
@@ -122,7 +148,7 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
               child: pw.Text(
                 document.footer,
                 textAlign: pw.TextAlign.center,
-                style: base,
+                style: footer,
               ),
             ),
           ],

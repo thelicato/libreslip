@@ -6,17 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
 import '../domain/ticket_document.dart';
+import '../domain/ticket_typography.dart';
 
 class TicketPrinterProfile {
   const TicketPrinterProfile({
     this.widthDots = 384,
     this.charactersPerLine = 32,
     this.codePage = 19,
+    this.dpi = 203,
   });
 
   final int widthDots;
   final int charactersPerLine;
   final int codePage;
+  final int dpi;
 }
 
 class EscPosTicketEncoder {
@@ -31,6 +34,7 @@ class EscPosTicketEncoder {
     command([0x1B, 0x40]);
     command([0x1B, 0x74, profile.codePage]);
 
+    final typography = document.typography;
     final logoPath = document.logoPath;
     if (logoPath != null) {
       final raster = await _logoRaster(logoPath);
@@ -46,39 +50,79 @@ class EscPosTicketEncoder {
       align: TextAlign.center,
       bold: true,
       doubleSize: true,
+      fontSize: typography.heading,
+      nativeFontSize: TicketTypography.defaultHeading,
     );
     await _writeStyled(
       output,
       '${document.ticketLabel} #${document.ticketNumber}',
       align: TextAlign.center,
       bold: true,
+      fontSize: typography.details,
+      nativeFontSize: TicketTypography.defaultDetails,
     );
-    await _writeStyled(output, document.createdAt, align: TextAlign.center);
+    await _writeStyled(
+      output,
+      document.createdAt,
+      align: TextAlign.center,
+      fontSize: typography.details,
+      nativeFontSize: TicketTypography.defaultDetails,
+    );
     _line(output, '');
     if (document.reference.isNotEmpty) {
       await _writeStyled(
         output,
         '${document.referenceLabel}: ${document.reference}',
         bold: true,
+        fontSize: typography.details,
+        nativeFontSize: TicketTypography.defaultDetails,
       );
     }
     _line(output, '-' * profile.charactersPerLine);
 
     for (final line in document.lines) {
-      await _writeStyled(output, '${line.quantity} x ${line.name}', bold: true);
+      await _writeStyled(
+        output,
+        '${line.quantity} x ${line.name}',
+        bold: true,
+        fontSize: typography.items,
+        nativeFontSize: TicketTypography.defaultItems,
+      );
       if (line.note.isNotEmpty) {
-        await _writeStyled(output, '${document.lineNotePrefix}: ${line.note}');
+        await _writeStyled(
+          output,
+          '${document.lineNotePrefix}: ${line.note}',
+          fontSize: typography.notes,
+          nativeFontSize: TicketTypography.defaultNotes,
+        );
       }
     }
 
     if (document.orderNote.isNotEmpty) {
       _line(output, '-' * profile.charactersPerLine);
-      await _writeStyled(output, document.orderNotesLabel, bold: true);
-      await _writeStyled(output, document.orderNote);
+      await _writeStyled(
+        output,
+        document.orderNotesLabel,
+        bold: true,
+        fontSize: typography.notes,
+        nativeFontSize: TicketTypography.defaultNotes,
+      );
+      await _writeStyled(
+        output,
+        document.orderNote,
+        fontSize: typography.notes,
+        nativeFontSize: TicketTypography.defaultNotes,
+      );
     }
     if (document.footer.isNotEmpty) {
       _line(output, '-' * profile.charactersPerLine);
-      await _writeStyled(output, document.footer, align: TextAlign.center);
+      await _writeStyled(
+        output,
+        document.footer,
+        align: TextAlign.center,
+        fontSize: typography.footer,
+        nativeFontSize: TicketTypography.defaultFooter,
+      );
     }
     command([0x1B, 0x61, 0x00]);
     command([0x1B, 0x45, 0x00]);
@@ -93,6 +137,8 @@ class EscPosTicketEncoder {
     TextAlign align = TextAlign.left,
     bool bold = false,
     bool doubleSize = false,
+    required int fontSize,
+    required int nativeFontSize,
   }) async {
     if (text.isEmpty) return;
     final alignment = switch (align) {
@@ -104,7 +150,7 @@ class EscPosTicketEncoder {
     output.add([0x1B, 0x45, bold ? 1 : 0]);
     output.add([0x1D, 0x21, doubleSize ? 0x11 : 0x00]);
 
-    if (_canEncode(text)) {
+    if (fontSize == nativeFontSize && _canEncode(text)) {
       final width = doubleSize
           ? profile.charactersPerLine ~/ 2
           : profile.charactersPerLine;
@@ -117,7 +163,7 @@ class EscPosTicketEncoder {
     output.add([0x1B, 0x45, 0x00]);
     output.add([0x1D, 0x21, 0x00]);
     output.add(
-      await _textRaster(text, align: align, bold: bold, doubleSize: doubleSize),
+      await _textRaster(text, align: align, bold: bold, fontSize: fontSize),
     );
   }
 
@@ -157,7 +203,7 @@ class EscPosTicketEncoder {
     String text, {
     required TextAlign align,
     required bool bold,
-    required bool doubleSize,
+    required int fontSize,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)..drawColor(Colors.white, BlendMode.src);
@@ -167,7 +213,7 @@ class EscPosTicketEncoder {
         style: TextStyle(
           color: Colors.black,
           fontFamily: 'RobotoTicket',
-          fontSize: doubleSize ? 30 : 20,
+          fontSize: fontSize * profile.dpi / 72,
           fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
           height: 1.2,
         ),

@@ -183,6 +183,7 @@ class TicketDetailDialog extends StatelessWidget {
       lineNotePrefix: l.lineNoteLabel,
       footer: settings.footer,
       logoPath: settings.logoPath,
+      typography: settings.typography,
     );
   }
 }

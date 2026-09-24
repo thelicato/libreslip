@@ -186,6 +186,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('printed ticket font controls are bounded and persist', (
+    tester,
+  ) async {
+    final controller = await openApp(tester);
+    await tester.tap(find.byKey(const ValueKey('nav-4')));
+    await tester.pumpAndSettle();
+    for (final key in [
+      'font-size-heading',
+      'font-size-details',
+      'font-size-items',
+      'font-size-notes',
+      'font-size-footer',
+    ]) {
+      expect(find.byKey(ValueKey(key)), findsOneWidget);
+    }
+
+    final headingField = find.byKey(const ValueKey('font-size-heading'));
+    await tester.ensureVisible(headingField);
+    await tester.tap(
+      find.descendant(
+        of: headingField,
+        matching: find.byType(DropdownButton<int>),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('20 pt').last);
+    await tester.pumpAndSettle();
+    expect(controller.settings.typography.heading, 20);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'storage failure displays retry instead of an editable workspace',
     (tester) async {

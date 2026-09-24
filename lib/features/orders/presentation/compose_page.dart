@@ -225,6 +225,7 @@ class _ComposePageState extends State<ComposePage> {
       lineNotePrefix: l.lineNoteLabel,
       footer: widget.settings.footer,
       logoPath: widget.settings.logoPath,
+      typography: widget.settings.typography,
     );
   }
 }
@@ -503,6 +504,7 @@ class _OrderLineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Container(
+      key: ValueKey('order-line-${line.id}'),
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -528,10 +530,10 @@ class _OrderLineCard extends StatelessWidget {
             ],
           ),
           Material(
+            key: ValueKey('quantity-stepper-${line.id}'),
             color: Theme.of(context).colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(14),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   onPressed: line.quantity > 1
@@ -540,8 +542,7 @@ class _OrderLineCard extends StatelessWidget {
                   tooltip: l.decreaseQuantity,
                   icon: const Icon(Icons.remove_rounded),
                 ),
-                SizedBox(
-                  width: 44,
+                Expanded(
                   child: Text(
                     '${line.quantity}',
                     textAlign: TextAlign.center,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../printing/application/printer_controller.dart';
+import '../../printing/domain/ticket_typography.dart';
 import '../../printing/presentation/printer_setup_card.dart';
 import '../application/settings_controller.dart';
 
@@ -91,6 +92,89 @@ class SettingsPage extends StatelessWidget {
               ),
               const Divider(height: 28),
               _LogoEditor(controller: controller),
+              const Divider(height: 32),
+              Text(
+                l.ticketTextSizes,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              Text(l.ticketTextSizesBody),
+              const SizedBox(height: 12),
+              _TicketFontSizeField(
+                key: const ValueKey('font-size-heading'),
+                label: l.ticketHeadingSize,
+                value: settings.typography.heading,
+                minimum: TicketTypography.minHeading,
+                maximum: TicketTypography.maxHeading,
+                enabled: !controller.saving,
+                onChanged: (value) => controller.update(
+                  controller.settings.copyWith(
+                    typography: controller.settings.typography.copyWith(
+                      heading: value,
+                    ),
+                  ),
+                ),
+              ),
+              _TicketFontSizeField(
+                key: const ValueKey('font-size-details'),
+                label: l.orderDetailsSize,
+                value: settings.typography.details,
+                minimum: TicketTypography.minDetails,
+                maximum: TicketTypography.maxDetails,
+                enabled: !controller.saving,
+                onChanged: (value) => controller.update(
+                  controller.settings.copyWith(
+                    typography: controller.settings.typography.copyWith(
+                      details: value,
+                    ),
+                  ),
+                ),
+              ),
+              _TicketFontSizeField(
+                key: const ValueKey('font-size-items'),
+                label: l.itemLinesSize,
+                value: settings.typography.items,
+                minimum: TicketTypography.minItems,
+                maximum: TicketTypography.maxItems,
+                enabled: !controller.saving,
+                onChanged: (value) => controller.update(
+                  controller.settings.copyWith(
+                    typography: controller.settings.typography.copyWith(
+                      items: value,
+                    ),
+                  ),
+                ),
+              ),
+              _TicketFontSizeField(
+                key: const ValueKey('font-size-notes'),
+                label: l.notesSize,
+                value: settings.typography.notes,
+                minimum: TicketTypography.minNotes,
+                maximum: TicketTypography.maxNotes,
+                enabled: !controller.saving,
+                onChanged: (value) => controller.update(
+                  controller.settings.copyWith(
+                    typography: controller.settings.typography.copyWith(
+                      notes: value,
+                    ),
+                  ),
+                ),
+              ),
+              _TicketFontSizeField(
+                key: const ValueKey('font-size-footer'),
+                label: l.footerSize,
+                value: settings.typography.footer,
+                minimum: TicketTypography.minFooter,
+                maximum: TicketTypography.maxFooter,
+                enabled: !controller.saving,
+                onChanged: (value) => controller.update(
+                  controller.settings.copyWith(
+                    typography: controller.settings.typography.copyWith(
+                      footer: value,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -305,6 +389,43 @@ class _LogoEditor extends StatelessWidget {
       ],
     );
   }
+}
+
+class _TicketFontSizeField extends StatelessWidget {
+  const _TicketFontSizeField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.minimum,
+    required this.maximum,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int value;
+  final int minimum;
+  final int maximum;
+  final bool enabled;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    trailing: DropdownButton<int>(
+      value: value,
+      onChanged: enabled
+          ? (next) {
+              if (next != null) onChanged(next);
+            }
+          : null,
+      items: [
+        for (var size = minimum; size <= maximum; size++)
+          DropdownMenuItem(value: size, child: Text('$size pt')),
+      ],
+    ),
+  );
 }
 
 class _SettingsSection extends StatelessWidget {

@@ -581,7 +581,29 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ticketTemplateBody =>
-      'Aggiungi logo e piè di pagina facoltativi all’intestazione e all’istantanea della comanda.';
+      'Configura intestazione, logo, piè di pagina e dimensioni del testo stampato.';
+
+  @override
+  String get ticketTextSizes => 'Dimensioni del testo stampato';
+
+  @override
+  String get ticketTextSizesBody =>
+      'Scegli una dimensione limitata per ogni tipo di contenuto della comanda.';
+
+  @override
+  String get ticketHeadingSize => 'Intestazione';
+
+  @override
+  String get orderDetailsSize => 'Dettagli dell’ordine';
+
+  @override
+  String get itemLinesSize => 'Righe degli articoli';
+
+  @override
+  String get notesSize => 'Note';
+
+  @override
+  String get footerSize => 'Piè di pagina';
 
   @override
   String get ticketFooter => 'Piè di pagina';

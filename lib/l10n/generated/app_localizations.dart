@@ -1123,8 +1123,50 @@ abstract class AppLocalizations {
   /// No description provided for @ticketTemplateBody.
   ///
   /// In en, this message translates to:
-  /// **'Add an optional logo and footer to the saved heading and ticket snapshot.'**
+  /// **'Configure the saved heading, logo, footer and printed text sizes.'**
   String get ticketTemplateBody;
+
+  /// No description provided for @ticketTextSizes.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed text sizes'**
+  String get ticketTextSizes;
+
+  /// No description provided for @ticketTextSizesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a bounded size for each type of ticket content.'**
+  String get ticketTextSizesBody;
+
+  /// No description provided for @ticketHeadingSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get ticketHeadingSize;
+
+  /// No description provided for @orderDetailsSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Order details'**
+  String get orderDetailsSize;
+
+  /// No description provided for @itemLinesSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Item lines'**
+  String get itemLinesSize;
+
+  /// No description provided for @notesSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesSize;
+
+  /// No description provided for @footerSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Footer'**
+  String get footerSize;
 
   /// No description provided for @ticketFooter.
   ///

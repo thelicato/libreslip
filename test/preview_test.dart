@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 
@@ -74,7 +75,19 @@ void main() {
       tester.view.physicalSize = size;
       final controller = SettingsController(
         MemorySettingsRepository()
-          ..stored = AppSettings(language: language, themeMode: mode),
+          ..stored = AppSettings(
+            language: language,
+            themeMode: mode,
+            typography: name == 'ticket-preview-phone-it'
+                ? const TicketTypography(
+                    heading: 20,
+                    details: 10,
+                    items: 12,
+                    notes: 9,
+                    footer: 11,
+                  )
+                : const TicketTypography(),
+          ),
       );
       await controller.load();
       final orders = await createMemoryOrders();

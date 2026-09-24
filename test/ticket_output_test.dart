@@ -10,7 +10,9 @@ import 'package:libreslip/features/printing/application/ticket_pdf_sharer.dart';
 import 'package:libreslip/features/printing/domain/print_job.dart';
 import 'package:libreslip/features/printing/domain/printer_transport.dart';
 import 'package:libreslip/features/printing/domain/ticket_document.dart';
+import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/printing/presentation/ticket_detail_dialog.dart';
+import 'package:libreslip/features/printing/presentation/ticket_preview.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 import 'package:libreslip/l10n/generated/app_localizations.dart';
 
@@ -30,6 +32,14 @@ void main() {
       ))!;
       expect(_contains(raster, [0x1D, 0x76, 0x30, 0x00]), isTrue);
       expect(raster.length, greaterThan(italian.length));
+
+      final custom = (await tester.runAsync(
+        () => encoder.encode(
+          _document(typography: const TicketTypography(items: 18)),
+        ),
+      ))!;
+      expect(_contains(custom, [0x1D, 0x76, 0x30, 0x00]), isTrue);
+      expect(custom.length, greaterThan(italian.length));
     },
   );
 
@@ -38,7 +48,16 @@ void main() {
     (tester) async {
       final bytes = (await tester.runAsync(
         () => LocalTicketPdfSharer().build(
-          _document(name: 'Caffè più tè'),
+          _document(
+            name: 'Caffè più tè',
+            typography: const TicketTypography(
+              heading: 20,
+              details: 10,
+              items: 12,
+              notes: 9,
+              footer: 11,
+            ),
+          ),
           subject: 'LibreSlip ticket 7',
         ),
       ))!;
@@ -47,6 +66,52 @@ void main() {
       expect(String.fromCharCodes(bytes.take(4)), '%PDF');
     },
   );
+
+  testWidgets('ticket preview uses every configured text size', (tester) async {
+    const typography = TicketTypography(
+      heading: 20,
+      details: 10,
+      items: 12,
+      notes: 9,
+      footer: 11,
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SingleChildScrollView(
+          child: TicketPreview(
+            document: TicketDocument(
+              heading: 'Bottega',
+              ticketLabel: 'ORDER TICKET',
+              ticketNumber: '7',
+              createdAt: '23 September 2026 12:00',
+              referenceLabel: 'Reference',
+              reference: 'Table 4',
+              orderNotesLabel: 'Order notes',
+              orderNote: 'Together',
+              lineNotePrefix: 'Note',
+              footer: 'Prepared with care',
+              typography: typography,
+              lines: [
+                TicketDocumentLine(
+                  quantity: 2,
+                  name: 'Toastie',
+                  note: 'No onion',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    double sizeOf(String text) =>
+        tester.widget<Text>(find.text(text)).style!.fontSize!;
+    expect(sizeOf('Bottega'), 20 * TicketTypography.previewScale);
+    expect(sizeOf('ORDER TICKET #7'), 10 * TicketTypography.previewScale);
+    expect(sizeOf('Toastie'), 12 * TicketTypography.previewScale);
+    expect(sizeOf('Note: No onion'), 9 * TicketTypography.previewScale);
+    expect(sizeOf('Prepared with care'), 11 * TicketTypography.previewScale);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'saved ticket preview queues once and remains usable on a phone',
@@ -207,7 +272,10 @@ final _ticket = SavedTicket(
   ],
 );
 
-TicketDocument _document({String name = 'Toastie'}) => TicketDocument(
+TicketDocument _document({
+  String name = 'Toastie',
+  TicketTypography typography = const TicketTypography(),
+}) => TicketDocument(
   heading: 'Bottega',
   ticketLabel: 'ORDER TICKET',
   ticketNumber: '7',
@@ -218,6 +286,7 @@ TicketDocument _document({String name = 'Toastie'}) => TicketDocument(
   orderNote: 'Together',
   lineNotePrefix: 'Note',
   footer: 'Prepared with care',
+  typography: typography,
   lines: [TicketDocumentLine(quantity: 2, name: name, note: 'No onion')],
 );
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 
@@ -14,6 +15,13 @@ void main() {
       heading: 'Caffè Libertà',
       footer: 'Preparato con cura',
       logoPath: '/private/ticket-logo.png',
+      typography: TicketTypography(
+        heading: 20,
+        details: 10,
+        items: 12,
+        notes: 9,
+        footer: 11,
+      ),
       language: 'it',
       themeMode: ThemeMode.dark,
     );
@@ -25,6 +33,11 @@ void main() {
     expect(decoded.copyWith(language: 'en').heading, 'Caffè Libertà');
     expect(decoded.footer, 'Preparato con cura');
     expect(decoded.logoPath, '/private/ticket-logo.png');
+    expect(decoded.typography.heading, 20);
+    expect(decoded.typography.details, 10);
+    expect(decoded.typography.items, 12);
+    expect(decoded.typography.notes, 9);
+    expect(decoded.typography.footer, 11);
   });
 
   test('version 1 preferences migrate with an empty footer and no logo', () {
@@ -36,11 +49,42 @@ void main() {
     });
     expect(legacy.footer, isEmpty);
     expect(legacy.logoPath, isNull);
+    expect(legacy.typography.toJson(), const TicketTypography().toJson());
+  });
+
+  test('version 2 preferences migrate with default ticket typography', () {
+    final legacy = AppSettings.fromJson({
+      'version': 2,
+      'heading': 'Corner & Co.',
+      'footer': 'Thank you',
+      'logoPath': null,
+      'language': 'en',
+      'theme': 'system',
+    });
+    expect(legacy.typography.toJson(), const TicketTypography().toJson());
+  });
+
+  test('ticket typography enforces hard minimum and maximum sizes', () {
+    expect(
+      () => TicketTypography.fromJson({
+        ...const TicketTypography().toJson(),
+        'heading': TicketTypography.maxHeading + 1,
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => TicketTypography.fromJson({
+        ...const TicketTypography().toJson(),
+        'notes': TicketTypography.minNotes - 1,
+      }),
+      throwsFormatException,
+    );
   });
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 3},
+      {...const AppSettings().toJson(), 'version': 4},
+      {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
       {...const AppSettings().toJson(), 'heading': List.filled(61, 'x').join()},
