@@ -23,6 +23,7 @@ class PrinterController extends ChangeNotifier {
   BluetoothHostStatus hostStatus = BluetoothHostStatus.ready;
   List<PairedPrinter> devices = const [];
   String? connectedAddress;
+  int? batteryPercentage;
   String? connectingAddress;
   PrinterOperation operation = PrinterOperation.idle;
   TestPrintOutcome testOutcome = TestPrintOutcome.none;
@@ -47,9 +48,7 @@ class PrinterController extends ChangeNotifier {
     notifyListeners();
     try {
       final state = await _transport.getState();
-      hostStatus = state.status;
-      devices = state.devices;
-      connectedAddress = state.connectedAddress;
+      _applyState(state);
     } on PrinterTransportException catch (error) {
       lastErrorCode = error.code;
     } catch (_) {
@@ -89,14 +88,23 @@ class PrinterController extends ChangeNotifier {
     try {
       await _transport.connect(device.address);
       connectedAddress = device.address;
+      batteryPercentage = null;
+      try {
+        _applyState(await _transport.getState());
+        connectedAddress ??= device.address;
+      } catch (_) {
+        // The established socket remains usable even if status refresh fails.
+      }
       return true;
     } on PrinterTransportException catch (error) {
       lastErrorCode = error.code;
       connectedAddress = null;
+      batteryPercentage = null;
       return false;
     } catch (_) {
       lastErrorCode = 'connectionFailed';
       connectedAddress = null;
+      batteryPercentage = null;
       return false;
     } finally {
       operation = PrinterOperation.idle;
@@ -114,6 +122,7 @@ class PrinterController extends ChangeNotifier {
       lastErrorCode = error.code;
     } finally {
       connectedAddress = null;
+      batteryPercentage = null;
       testOutcome = TestPrintOutcome.none;
       notifyListeners();
     }
@@ -173,5 +182,15 @@ class PrinterController extends ChangeNotifier {
       // A failed transport is already unusable.
     }
     connectedAddress = null;
+    batteryPercentage = null;
+  }
+
+  void _applyState(BluetoothHostState state) {
+    hostStatus = state.status;
+    devices = state.devices;
+    connectedAddress = state.connectedAddress;
+    batteryPercentage = state.connectedAddress == null
+        ? null
+        : state.batteryPercentage;
   }
 }

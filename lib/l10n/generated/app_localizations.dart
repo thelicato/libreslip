@@ -220,6 +220,138 @@ abstract class AppLocalizations {
   /// **'Your orders, neatly kept in one place.'**
   String get ticketsCardBody;
 
+  /// No description provided for @printerOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer'**
+  String get printerOverviewTitle;
+
+  /// No description provided for @printerOverviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Current LibreSlip Bluetooth connection.'**
+  String get printerOverviewBody;
+
+  /// No description provided for @printerConnectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get printerConnectedStatus;
+
+  /// No description provided for @printerDisconnectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get printerDisconnectedStatus;
+
+  /// No description provided for @printerPermissionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission required'**
+  String get printerPermissionStatus;
+
+  /// No description provided for @printerBluetoothOffStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth is off'**
+  String get printerBluetoothOffStatus;
+
+  /// No description provided for @printerUnavailableStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get printerUnavailableStatus;
+
+  /// No description provided for @printerConnectedDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {name}'**
+  String printerConnectedDevice(String name);
+
+  /// No description provided for @printerBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer battery'**
+  String get printerBattery;
+
+  /// No description provided for @printerBatteryPercentage.
+  ///
+  /// In en, this message translates to:
+  /// **'{percentage}%'**
+  String printerBatteryPercentage(int percentage);
+
+  /// No description provided for @printerBatteryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reported by this printer. Check its battery indicator.'**
+  String get printerBatteryUnavailable;
+
+  /// No description provided for @managePrinter.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage printer'**
+  String get managePrinter;
+
+  /// No description provided for @refreshPrinterStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh status'**
+  String get refreshPrinterStatus;
+
+  /// No description provided for @statisticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket activity'**
+  String get statisticsTitle;
+
+  /// No description provided for @statisticsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts saved tickets by creation date. No prices or sales are recorded.'**
+  String get statisticsBody;
+
+  /// No description provided for @startDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get startDate;
+
+  /// No description provided for @endDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get endDate;
+
+  /// No description provided for @noDateLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get noDateLimit;
+
+  /// No description provided for @clearDateFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear dates'**
+  String get clearDateFilters;
+
+  /// No description provided for @savedTicketsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved tickets'**
+  String get savedTicketsStat;
+
+  /// No description provided for @ticketItemsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Items on tickets'**
+  String get ticketItemsStat;
+
+  /// No description provided for @averageItemsStat.
+  ///
+  /// In en, this message translates to:
+  /// **'Items per ticket'**
+  String get averageItemsStat;
+
   /// No description provided for @previewLabel.
   ///
   /// In en, this message translates to:

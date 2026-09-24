@@ -71,6 +71,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ticketsCardBody => 'Your orders, neatly kept in one place.';
 
   @override
+  String get printerOverviewTitle => 'Printer';
+
+  @override
+  String get printerOverviewBody => 'Current LibreSlip Bluetooth connection.';
+
+  @override
+  String get printerConnectedStatus => 'Connected';
+
+  @override
+  String get printerDisconnectedStatus => 'Not connected';
+
+  @override
+  String get printerPermissionStatus => 'Permission required';
+
+  @override
+  String get printerBluetoothOffStatus => 'Bluetooth is off';
+
+  @override
+  String get printerUnavailableStatus => 'Unavailable';
+
+  @override
+  String printerConnectedDevice(String name) {
+    return 'Connected to $name';
+  }
+
+  @override
+  String get printerBattery => 'Printer battery';
+
+  @override
+  String printerBatteryPercentage(int percentage) {
+    return '$percentage%';
+  }
+
+  @override
+  String get printerBatteryUnavailable =>
+      'Not reported by this printer. Check its battery indicator.';
+
+  @override
+  String get managePrinter => 'Manage printer';
+
+  @override
+  String get refreshPrinterStatus => 'Refresh status';
+
+  @override
+  String get statisticsTitle => 'Ticket activity';
+
+  @override
+  String get statisticsBody =>
+      'Counts saved tickets by creation date. No prices or sales are recorded.';
+
+  @override
+  String get startDate => 'Start date';
+
+  @override
+  String get endDate => 'End date';
+
+  @override
+  String get noDateLimit => 'No limit';
+
+  @override
+  String get clearDateFilters => 'Clear dates';
+
+  @override
+  String get savedTicketsStat => 'Saved tickets';
+
+  @override
+  String get ticketItemsStat => 'Items on tickets';
+
+  @override
+  String get averageItemsStat => 'Items per ticket';
+
+  @override
   String get previewLabel => 'Workspace preview';
 
   @override

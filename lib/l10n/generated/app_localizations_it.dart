@@ -71,6 +71,79 @@ class AppLocalizationsIt extends AppLocalizations {
   String get ticketsCardBody => 'I tuoi ordini, raccolti in un unico posto.';
 
   @override
+  String get printerOverviewTitle => 'Stampante';
+
+  @override
+  String get printerOverviewBody =>
+      'Connessione Bluetooth attualmente usata da LibreSlip.';
+
+  @override
+  String get printerConnectedStatus => 'Connessa';
+
+  @override
+  String get printerDisconnectedStatus => 'Non connessa';
+
+  @override
+  String get printerPermissionStatus => 'Autorizzazione necessaria';
+
+  @override
+  String get printerBluetoothOffStatus => 'Bluetooth disattivato';
+
+  @override
+  String get printerUnavailableStatus => 'Non disponibile';
+
+  @override
+  String printerConnectedDevice(String name) {
+    return 'Connessa a $name';
+  }
+
+  @override
+  String get printerBattery => 'Batteria stampante';
+
+  @override
+  String printerBatteryPercentage(int percentage) {
+    return '$percentage%';
+  }
+
+  @override
+  String get printerBatteryUnavailable =>
+      'Non comunicata dalla stampante. Controlla l’indicatore della batteria.';
+
+  @override
+  String get managePrinter => 'Gestisci stampante';
+
+  @override
+  String get refreshPrinterStatus => 'Aggiorna stato';
+
+  @override
+  String get statisticsTitle => 'Attività delle comande';
+
+  @override
+  String get statisticsBody =>
+      'Conta le comande salvate in base alla data di creazione. Non registra prezzi o vendite.';
+
+  @override
+  String get startDate => 'Data iniziale';
+
+  @override
+  String get endDate => 'Data finale';
+
+  @override
+  String get noDateLimit => 'Nessun limite';
+
+  @override
+  String get clearDateFilters => 'Azzera date';
+
+  @override
+  String get savedTicketsStat => 'Comande salvate';
+
+  @override
+  String get ticketItemsStat => 'Articoli nelle comande';
+
+  @override
+  String get averageItemsStat => 'Articoli per comanda';
+
+  @override
   String get previewLabel => 'Anteprima dello spazio';
 
   @override

@@ -31,10 +31,14 @@ class AndroidBluetoothPrinterTransport implements PrinterTransport {
           );
         })
         .toList(growable: false);
+    final battery = map['batteryPercentage'] as int?;
     return BluetoothHostState(
       status: status,
       devices: devices,
       connectedAddress: map['connectedAddress'] as String?,
+      batteryPercentage: battery != null && battery >= 0 && battery <= 100
+          ? battery
+          : null,
     );
   }
 

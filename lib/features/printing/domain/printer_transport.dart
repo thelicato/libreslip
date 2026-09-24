@@ -14,11 +14,18 @@ class BluetoothHostState {
     required this.status,
     this.devices = const [],
     this.connectedAddress,
-  });
+    this.batteryPercentage,
+  }) : assert(
+         batteryPercentage == null ||
+             (batteryPercentage >= 0 && batteryPercentage <= 100),
+       );
 
   final BluetoothHostStatus status;
   final List<PairedPrinter> devices;
   final String? connectedAddress;
+
+  /// Present only when the transport has documented battery telemetry.
+  final int? batteryPercentage;
 }
 
 abstract interface class PrinterTransport {

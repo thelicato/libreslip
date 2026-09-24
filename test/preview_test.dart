@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/portability/application/portability_controller.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
+import 'package:libreslip/features/printing/application/printer_controller.dart';
+import 'package:libreslip/features/printing/domain/printer_transport.dart';
 import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
@@ -61,6 +63,13 @@ void main() {
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
+      (
+        'overview-dashboard-phone-it',
+        const Size(520, 1200),
+        'it',
+        ThemeMode.light,
+        0,
+      ),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
       ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 2),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
@@ -99,11 +108,19 @@ void main() {
         controller,
         orders,
       );
+      final printer = PrinterController(_PreviewPrinterTransport());
       if (page >= 1 && page <= 3) {
         await orders.saveItem(
           name: 'Mushroom toastie',
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
         );
+      }
+      if (name == 'overview-dashboard-phone-it') {
+        await orders.saveItem(name: 'Toast ai funghi', categoryName: 'Cucina');
+        orders.addCatalogueItem(orders.items.single);
+        orders.setQuantity(orders.activeDraft!.lines.single.id, 3);
+        await orders.flushWrites();
+        await orders.saveActiveTicket(heading: 'Bottega Libertà');
       }
       if (page == 2 || page == 3) {
         orders.addCatalogueItem(orders.items.single);
@@ -123,6 +140,7 @@ void main() {
           child: LibreSlipApp(
             settings: controller,
             orders: orders,
+            printer: printer,
             portability: portability,
           ),
         ),
@@ -134,6 +152,13 @@ void main() {
       }
       if (name == 'ticket-preview-phone-it') {
         await tester.tap(find.text('Comanda 1'));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'overview-dashboard-phone-it') {
+        await tester.drag(
+          find.byKey(const ValueKey('page-0')),
+          const Offset(0, -760),
+        );
         await tester.pumpAndSettle();
       }
       if (name == 'portability-phone-en') {
@@ -157,8 +182,35 @@ void main() {
       });
       await tester.pumpWidget(const SizedBox.shrink());
       portability.dispose();
+      printer.dispose();
       controller.dispose();
       orders.dispose();
     }
   });
+}
+
+class _PreviewPrinterTransport implements PrinterTransport {
+  @override
+  Future<void> connect(String address) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<BluetoothHostState> getState() async => const BluetoothHostState(
+    status: BluetoothHostStatus.ready,
+    devices: [
+      PairedPrinter(name: 'NETUM NT-1809DD', address: '00:11:22:33:44:55'),
+    ],
+  );
+
+  @override
+  Future<void> openBluetoothSettings() async {}
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
+      bytes.length;
 }

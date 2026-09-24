@@ -1,20 +1,111 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../orders/application/order_workspace_controller.dart';
+import '../../printing/application/printer_controller.dart';
+import '../../printing/domain/printer_transport.dart';
+import '../application/ticket_statistics.dart';
 
-class OverviewPage extends StatelessWidget {
-  const OverviewPage({super.key, required this.onSelect});
+class OverviewPage extends StatefulWidget {
+  const OverviewPage({
+    super.key,
+    required this.onSelect,
+    required this.orders,
+    this.printer,
+  });
+
   final ValueChanged<int> onSelect;
+  final OrderWorkspaceController orders;
+  final PrinterController? printer;
+
+  @override
+  State<OverviewPage> createState() => _OverviewPageState();
+}
+
+class _OverviewPageState extends State<OverviewPage> {
+  DateTime? _startDate;
+  DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshPrinter());
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.printer != widget.printer) _refreshPrinter();
+  }
+
+  void _refreshPrinter() {
+    final printer = widget.printer;
+    if (mounted && printer != null) unawaited(printer.refresh());
+  }
+
+  Future<void> _pickDate({required bool start}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = start ? _startDate : _endDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? today,
+      firstDate: DateTime(2000),
+      lastDate: today,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (start) {
+        _startDate = picked;
+        if (_endDate != null && picked.isAfter(_endDate!)) {
+          _endDate = picked;
+        }
+      } else {
+        _endDate = picked;
+        if (_startDate != null && picked.isBefore(_startDate!)) {
+          _startDate = picked;
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final statistics = TicketStatistics.calculate(
+      widget.orders.tickets,
+      startDate: _startDate,
+      endDate: _endDate,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _WelcomeCard(onPersonalise: () => onSelect(4)),
+        _WelcomeCard(onPersonalise: () => widget.onSelect(4)),
+        const SizedBox(height: 24),
+        _PrinterStatusCard(
+          controller: widget.printer,
+          onManage: () => widget.onSelect(4),
+          onRefresh: _refreshPrinter,
+        ),
+        const SizedBox(height: 24),
+        _StatisticsCard(
+          statistics: statistics,
+          startDate: _startDate,
+          endDate: _endDate,
+          onPickStart: () => _pickDate(start: true),
+          onPickEnd: () => _pickDate(start: false),
+          onClear: _startDate == null && _endDate == null
+              ? null
+              : () => setState(() {
+                  _startDate = null;
+                  _endDate = null;
+                }),
+        ),
         const SizedBox(height: 32),
         Text(l.workspaceTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: 4),
@@ -38,27 +129,474 @@ class OverviewPage extends StatelessWidget {
                   icon: Icons.note_add_outlined,
                   title: l.compose,
                   body: l.composeCardBody,
-                  onTap: () => onSelect(2),
+                  onTap: () => widget.onSelect(2),
                 ),
                 _WorkspaceCard(
                   width: width,
                   icon: Icons.grid_view_rounded,
                   title: l.items,
                   body: l.itemsCardBody,
-                  onTap: () => onSelect(1),
+                  onTap: () => widget.onSelect(1),
                 ),
                 _WorkspaceCard(
                   width: width,
                   icon: Icons.receipt_long_outlined,
                   title: l.tickets,
                   body: l.ticketsCardBody,
-                  onTap: () => onSelect(3),
+                  onTap: () => widget.onSelect(3),
                 ),
               ],
             );
           },
         ),
       ],
+    );
+  }
+}
+
+class _PrinterStatusCard extends StatelessWidget {
+  const _PrinterStatusCard({
+    required this.controller,
+    required this.onManage,
+    required this.onRefresh,
+  });
+
+  final PrinterController? controller;
+  final VoidCallback onManage;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final printer = controller;
+    if (printer == null) {
+      return _build(context, null);
+    }
+    return ListenableBuilder(
+      listenable: printer,
+      builder: (context, _) => _build(context, printer),
+    );
+  }
+
+  Widget _build(BuildContext context, PrinterController? printer) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final connected = printer?.connected ?? false;
+    final (status, colour, icon) = switch (printer?.hostStatus) {
+      BluetoothHostStatus.unsupported => (
+        l.printerUnavailableStatus,
+        theme.colorScheme.error,
+        Icons.bluetooth_disabled_rounded,
+      ),
+      BluetoothHostStatus.permissionRequired => (
+        l.printerPermissionStatus,
+        theme.colorScheme.tertiary,
+        Icons.lock_outline_rounded,
+      ),
+      BluetoothHostStatus.disabled => (
+        l.printerBluetoothOffStatus,
+        theme.colorScheme.tertiary,
+        Icons.bluetooth_disabled_rounded,
+      ),
+      _ when printer?.operation == PrinterOperation.connecting => (
+        l.connectingPrinter,
+        theme.colorScheme.tertiary,
+        Icons.bluetooth_searching_rounded,
+      ),
+      _ when connected => (
+        l.printerConnectedStatus,
+        theme.colorScheme.primary,
+        Icons.bluetooth_connected_rounded,
+      ),
+      _ => (
+        printer == null
+            ? l.printerUnavailableStatus
+            : l.printerDisconnectedStatus,
+        theme.colorScheme.onSurfaceVariant,
+        Icons.bluetooth_rounded,
+      ),
+    };
+    final name = printer?.connectedPrinter?.name;
+    final battery = printer?.batteryPercentage;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.print_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.printerOverviewTitle,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        l.printerOverviewBody,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colour.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(icon, size: 18, color: colour),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          status,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colour,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (connected && name != null)
+                  Text(
+                    l.printerConnectedDevice(name),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+              ],
+            ),
+            const Divider(height: 32),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  battery == null
+                      ? Icons.battery_unknown_rounded
+                      : Icons.battery_std_rounded,
+                  size: 21,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.printerBattery, style: theme.textTheme.labelLarge),
+                      const SizedBox(height: 3),
+                      Text(
+                        battery == null
+                            ? l.printerBatteryUnavailable
+                            : l.printerBatteryPercentage(battery),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final manage = FilledButton.tonal(
+                  onPressed: onManage,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.tune_rounded),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(l.managePrinter)),
+                    ],
+                  ),
+                );
+                final refresh = OutlinedButton(
+                  key: const ValueKey('refresh-printer-status'),
+                  onPressed: printer == null || printer.busy ? null : onRefresh,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (printer?.operation == PrinterOperation.refreshing)
+                        const SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        const Icon(Icons.refresh_rounded),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(l.refreshPrinterStatus)),
+                    ],
+                  ),
+                );
+                if (constraints.maxWidth >= 480) {
+                  return Row(
+                    children: [
+                      Expanded(child: manage),
+                      const SizedBox(width: 10),
+                      Expanded(child: refresh),
+                    ],
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [manage, const SizedBox(height: 10), refresh],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatisticsCard extends StatelessWidget {
+  const _StatisticsCard({
+    required this.statistics,
+    required this.startDate,
+    required this.endDate,
+    required this.onPickStart,
+    required this.onPickEnd,
+    required this.onClear,
+  });
+
+  final TicketStatistics statistics;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final VoidCallback onPickStart;
+  final VoidCallback onPickEnd;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final integers = NumberFormat.decimalPattern(locale);
+    final average = NumberFormat('0.#', locale);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.insights_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l.statisticsTitle,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        l.statisticsBody,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 620;
+                final width = wide
+                    ? (constraints.maxWidth - 12) / 2
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _DateFilterButton(
+                      width: width,
+                      label: l.startDate,
+                      value: _formatDate(context, startDate),
+                      onPressed: onPickStart,
+                      valueKey: const ValueKey('statistics-start-date'),
+                    ),
+                    _DateFilterButton(
+                      width: width,
+                      label: l.endDate,
+                      value: _formatDate(context, endDate),
+                      onPressed: onPickEnd,
+                      valueKey: const ValueKey('statistics-end-date'),
+                    ),
+                  ],
+                );
+              },
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                key: const ValueKey('clear-statistics-dates'),
+                onPressed: onClear,
+                icon: const Icon(Icons.filter_alt_off_outlined),
+                label: Text(l.clearDateFilters),
+              ),
+            ),
+            const SizedBox(height: 6),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 720 ? 3 : 1;
+                final width =
+                    (constraints.maxWidth - 12 * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _StatisticMetric(
+                      key: const ValueKey('statistic-tickets'),
+                      width: width,
+                      value: integers.format(statistics.ticketCount),
+                      label: l.savedTicketsStat,
+                    ),
+                    _StatisticMetric(
+                      key: const ValueKey('statistic-items'),
+                      width: width,
+                      value: integers.format(statistics.itemQuantity),
+                      label: l.ticketItemsStat,
+                    ),
+                    _StatisticMetric(
+                      key: const ValueKey('statistic-average'),
+                      width: width,
+                      value: average.format(statistics.averageItemsPerTicket),
+                      label: l.averageItemsStat,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(BuildContext context, DateTime? value) {
+    if (value == null) return AppLocalizations.of(context).noDateLimit;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.yMMMd(locale).format(value);
+  }
+}
+
+class _DateFilterButton extends StatelessWidget {
+  const _DateFilterButton({
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.onPressed,
+    required this.valueKey,
+  });
+
+  final double width;
+  final String label;
+  final String value;
+  final VoidCallback onPressed;
+  final Key valueKey;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: width,
+    child: OutlinedButton(
+      key: valueKey,
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_today_outlined, size: 19),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.labelSmall),
+                const SizedBox(height: 2),
+                Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _StatisticMetric extends StatelessWidget {
+  const _StatisticMetric({
+    super.key,
+    required this.width,
+    required this.value,
+    required this.label,
+  });
+
+  final double width;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: width,
+      constraints: const BoxConstraints(minHeight: 104),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(value, style: theme.textTheme.headlineMedium),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -6,7 +6,7 @@ A private, local order-ticket app for Android 14 and later, built with Flutter. 
 
 ## Current milestone
 
-LibreSlip 0.6.0 is the task 6 release candidate for the complete offline order-ticket workflow. It combines reusable items, persistent composition, immutable ticket history, Bluetooth Classic printing, local PDF sharing and validated configuration or full-backup ZIP portability. Android integration coverage exercises preference retention, SQLite restart recovery, interrupted print handling and restoration into a fresh database.
+LibreSlip 0.7.0 adds an operational Overview dashboard to the complete offline order-ticket workflow. It shows LibreSlip’s current Bluetooth printer connection, reports battery data only when a supported transport supplies it, and provides inclusive start and end date filters for saved-ticket count, item quantities and average items per ticket. These are preparation-workflow counts only: LibreSlip records no prices, sales or financial totals.
 
 Individual saved tickets or all previous tickets can be deleted with confirmation. Their dependent print-attempt history is removed transactionally, while the current draft and order number remain unchanged. Bluetooth pairing credentials are never archived and must be re-established on another phone.
 
@@ -16,9 +16,9 @@ The user reported successful physical operation with the NETUM NT-1809DD during 
 
 The latest review artefacts are generated in `dist/`:
 
-- `LibreSlip-task-06-release-candidate.zip`: complete release-candidate source and documentation.
-- `LibreSlip-task-06-release-candidate-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
-- `LibreSlip-task-06-release-candidate-SHA256SUMS.txt`: integrity checksums for both files.
+- `LibreSlip-task-07-dashboard.zip`: complete dashboard-milestone source and documentation.
+- `LibreSlip-task-07-dashboard-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
+- `LibreSlip-task-07-dashboard-SHA256SUMS.txt`: integrity checksums for both files.
 
 The source-delivery ZIP is separate from ZIP files exported inside LibreSlip. The preview supports local item, ticket, PDF, Bluetooth Classic printing and validated portability workflows. Its temporary validation certificate is not the future production certificate, so it must not be used as an upgrade baseline for public releases.
 
@@ -76,8 +76,8 @@ Update `VERSION`, commit it, then push the matching numeric `vX.Y.Z` tag. `.gith
 
 ```sh
 # After updating and committing VERSION.
-git tag v0.6.0
-git push origin v0.6.0
+git tag v0.7.0
+git push origin v0.7.0
 ```
 
 Release notes are generated from Conventional Commits since the previous tag. The workflow stops before building or publishing if a signing secret is missing or invalid.
@@ -95,4 +95,4 @@ Release notes are generated from Conventional Commits since the previous tag. Th
 - [Italian item shelf](docs/previews/items-tablet-it.png)
 - [Ticket history preview](docs/previews/tickets-tablet-en.png)
 
-Task 6 completes the current delivery plan. Further changes should remain coherent, reviewable milestones and include a conventional commit name.
+Task 7 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.

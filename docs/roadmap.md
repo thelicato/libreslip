@@ -10,6 +10,7 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | 4. Ticket layout and NETUM printing | Bilingual 58 mm ticket preview, header/logo/footer settings, Bluetooth Classic SPP, setup/test ticket, durable print jobs, reconnect, explicit reprint and PDF sharing. Verify the user's physical printer. | Complete |
 | 5. ZIP portability | Configuration/full-backup export, validated staged import, preview, confirmation and rollback. Verify fresh-install restore, corruption, malicious paths, interruption and round trips. | Complete |
 | 6. Release verification and packaging | Accessibility, both languages, offline operation, process recovery, hardware evidence, build instructions, installable APK, source ZIP and checksums. | Complete |
+| 7. Overview dashboard | Current LibreSlip printer connection, honest battery availability, and inclusive start/end date filters for non-financial ticket and item counts. | Complete |
 
 ## Scope boundaries
 
@@ -17,6 +18,6 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-LibreSlip 0.6.0 completes the current delivery plan as an Android 14+ release candidate. The app supports reusable items, one automatically persisted composition, immutable saved-ticket snapshots, resettable visible order numbering, transactional ticket deletion, Bluetooth Classic printing, local PDF sharing, and validated configuration or full-backup ZIP portability. It retains no payment, checkout, stock or other POS capability.
+LibreSlip 0.7.0 adds a responsive Overview dashboard without expanding into POS reporting. It displays the current in-app Bluetooth socket state and connected device name, refreshes explicitly and when the Overview opens, and clears state after disconnect or transmission failure. Battery percentage is an optional transport value, but the NETUM NT-1809DD documentation and Android Bluetooth Classic public API provide no reliable percentage, so this printer shows an honest unavailable message and directs the operator to its physical indicator.
 
-Final validation covers formatting, static analysis, the full host test suite, representative responsive renders, Android DataStore and SQLite recovery, a full backup restored into an independent empty Android database, an offline release cold start, permission denial, APK identity and privacy configuration. The user's earlier task 4 report remains the physical NETUM NT-1809DD evidence; task 6 does not claim a new hardware run. Hecate-style local and Docker build entry points, strict release signing, a single `VERSION` source and tagged GitHub APK releases are documented in [development instructions](development.md). Detailed evidence and remaining platform-owned limitations are in [milestone validation](validation.md).
+The same dashboard filters immutable saved-ticket snapshots by inclusive local start and end dates. It reports saved-ticket count, summed item quantities and average items per ticket only. It never derives revenue, sales, prices or other financial measures. Task 6 release verification remains valid for the underlying workflow; task 7 adds focused calculation, printer-state, localisation and responsive rendering coverage. See [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).

@@ -82,7 +82,11 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         ? (heading.isEmpty ? l.defaultHeading : heading)
         : labels[_selected];
     final page = switch (_selected) {
-      0 => OverviewPage(onSelect: _select),
+      0 => OverviewPage(
+        onSelect: _select,
+        orders: widget.orders,
+        printer: widget.printer,
+      ),
       1 => ItemsPage(controller: widget.orders),
       2 => ComposePage(
         controller: widget.orders,
@@ -101,7 +105,11 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         printer: widget.printer,
         portability: widget.portability,
       ),
-      _ => OverviewPage(onSelect: _select),
+      _ => OverviewPage(
+        onSelect: _select,
+        orders: widget.orders,
+        printer: widget.printer,
+      ),
     };
     final subtitle = switch (_selected) {
       0 => l.overviewSubtitle,
