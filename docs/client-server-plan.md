@@ -99,6 +99,8 @@ Configuration export may include the selected mode and non-secret server prefere
 
 ### Task 10: mode and protocol foundation
 
+Implemented in LibreSlip 0.10.0 without enabling networking.
+
 - Add Client and Server mode selection with confirmation and persistence.
 - Define and test the versioned protocol, limits, checksums and idempotency identifiers.
 - Add database migrations for outbox and inbox domains.

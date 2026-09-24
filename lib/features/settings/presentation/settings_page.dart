@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/network_mode_controller.dart';
+import '../../networking/presentation/mode_settings_card.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../portability/application/portability_controller.dart';
 import '../../portability/presentation/portability_settings_card.dart';
@@ -16,11 +18,13 @@ class SettingsPage extends StatelessWidget {
     super.key,
     required this.controller,
     required this.orders,
+    this.networking,
     this.printer,
     this.portability,
   });
   final SettingsController controller;
   final OrderWorkspaceController orders;
+  final NetworkModeController? networking;
   final PrinterController? printer;
   final PortabilityController? portability;
 
@@ -231,6 +235,10 @@ class SettingsPage extends StatelessWidget {
             ],
           ),
         ),
+        if (networking != null) ...[
+          const SizedBox(height: 20),
+          ModeSettingsCard(controller: networking!),
+        ],
         const SizedBox(height: 20),
         _SettingsSection(
           title: l.language,

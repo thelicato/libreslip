@@ -1743,6 +1743,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show fewer'**
   String get showFewerItemStatistics;
+
+  /// No description provided for @appMode.
+  ///
+  /// In en, this message translates to:
+  /// **'App mode'**
+  String get appMode;
+
+  /// No description provided for @appModeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether this device creates orders or prepares to receive them.'**
+  String get appModeBody;
+
+  /// No description provided for @clientMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Client'**
+  String get clientMode;
+
+  /// No description provided for @clientModeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create, print and keep tickets locally. A server connection will always be optional.'**
+  String get clientModeBody;
+
+  /// No description provided for @serverMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get serverMode;
+
+  /// No description provided for @serverModeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare this device for the focused receive-and-Done workflow. Receiving is not available yet.'**
+  String get serverModeBody;
+
+  /// No description provided for @switchToServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Server mode?'**
+  String get switchToServerTitle;
+
+  /// No description provided for @switchToServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your client items, drafts and ticket history stay on this phone. This foundation release does not receive orders or start a network listener.'**
+  String get switchToServerBody;
+
+  /// No description provided for @switchToClientTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Client mode?'**
+  String get switchToClientTitle;
+
+  /// No description provided for @switchToClientBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Server foundation data stays on this phone. Client mode restores the current catalogue, composition, printing and history workspace.'**
+  String get switchToClientBody;
+
+  /// No description provided for @switchMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch mode'**
+  String get switchMode;
+
+  /// No description provided for @modeSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'The app mode could not be saved. Nothing was switched.'**
+  String get modeSaveError;
+
+  /// No description provided for @serverFoundationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server mode'**
+  String get serverFoundationTitle;
+
+  /// No description provided for @serverFoundationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The local foundation is ready, but order receiving is not operational yet.'**
+  String get serverFoundationSubtitle;
+
+  /// No description provided for @serverFoundationReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Foundation ready'**
+  String get serverFoundationReady;
+
+  /// No description provided for @serverFoundationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'LibreSlip has stored this mode and prepared its local inbox safely. No network listener is running, no device can pair and no orders can be received in this milestone.'**
+  String get serverFoundationBody;
 }
 
 class _AppLocalizationsDelegate

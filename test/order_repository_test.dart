@@ -424,6 +424,9 @@ void main() {
       expect(features.orderReferenceEnabled, isTrue);
       expect(features.preparationNotesEnabled, isTrue);
       expect(features.orderNotesEnabled, isTrue);
+      final network = await repository.loadNetworkConfiguration();
+      expect(network.mode.name, 'client');
+      expect(network.installationId, hasLength(32));
       await repository.close();
 
       final database = await databaseFactoryFfiNoIsolate.openDatabase(

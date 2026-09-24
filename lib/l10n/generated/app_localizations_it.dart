@@ -937,6 +937,62 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showFewerItemStatistics => 'Mostra meno';
+
+  @override
+  String get appMode => 'Modalità app';
+
+  @override
+  String get appModeBody =>
+      'Scegli se questo dispositivo crea gli ordini o si prepara a riceverli.';
+
+  @override
+  String get clientMode => 'Client';
+
+  @override
+  String get clientModeBody =>
+      'Crea, stampa e conserva le comande in locale. La connessione a un server sarà sempre facoltativa.';
+
+  @override
+  String get serverMode => 'Server';
+
+  @override
+  String get serverModeBody =>
+      'Prepara il dispositivo per il flusso essenziale di ricezione e completamento. La ricezione non è ancora disponibile.';
+
+  @override
+  String get switchToServerTitle => 'Passare alla modalità Server?';
+
+  @override
+  String get switchToServerBody =>
+      'Articoli, bozze e storico del Client restano su questo telefono. Questa versione di base non riceve ordini e non avvia connessioni di rete.';
+
+  @override
+  String get switchToClientTitle => 'Passare alla modalità Client?';
+
+  @override
+  String get switchToClientBody =>
+      'I dati di base del Server restano su questo telefono. La modalità Client ripristina catalogo, composizione, stampa e storico attuali.';
+
+  @override
+  String get switchMode => 'Cambia modalità';
+
+  @override
+  String get modeSaveError =>
+      'Impossibile salvare la modalità dell’app. Non è stato modificato nulla.';
+
+  @override
+  String get serverFoundationTitle => 'Modalità Server';
+
+  @override
+  String get serverFoundationSubtitle =>
+      'La base locale è pronta, ma la ricezione degli ordini non è ancora operativa.';
+
+  @override
+  String get serverFoundationReady => 'Base pronta';
+
+  @override
+  String get serverFoundationBody =>
+      'LibreSlip ha salvato questa modalità e predisposto in sicurezza la casella locale. In questa fase non è attiva alcuna connessione di rete, nessun dispositivo può associarsi e non è possibile ricevere ordini.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

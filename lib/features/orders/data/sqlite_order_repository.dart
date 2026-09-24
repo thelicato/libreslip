@@ -4,14 +4,17 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../networking/domain/network_models.dart';
 import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
 
-class SqliteOrderRepository implements OrderRepository, PrintJobStore {
+class SqliteOrderRepository
+    implements OrderRepository, PrintJobStore, NetworkConfigurationStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 5;
+  static const databaseVersion = 6;
+  static const portableSchemaVersions = {5, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -55,6 +58,16 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
           },
           where: 'status = ?',
           whereArgs: [printJobStatusValue(PrintJobStatus.sending)],
+        );
+        await transaction.update(
+          'server_delivery_outbox',
+          {
+            'status': 'pending',
+            'error_code': 'interrupted',
+            'updated_at': _timestamp(DateTime.now()),
+          },
+          where: 'status = ?',
+          whereArgs: ['sending'],
         );
       });
     } catch (error) {
@@ -204,6 +217,159 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         INSERT INTO counters(name, next_value)
         SELECT 'order', next_value FROM counters WHERE name = 'ticket'
       ''');
+    }
+    if (oldVersion < 6 && newVersion >= 6) {
+      await database.execute('''
+        CREATE TABLE network_settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          app_mode TEXT NOT NULL DEFAULT 'client'
+            CHECK (app_mode IN ('client', 'server')),
+          installation_id TEXT NOT NULL UNIQUE
+            CHECK (length(installation_id) BETWEEN 16 AND 128),
+          server_name TEXT NOT NULL DEFAULT 'LibreSlip Server'
+            CHECK (length(server_name) BETWEEN 1 AND 80)
+        )
+      ''');
+      await database.insert('network_settings', {
+        'id': 1,
+        'app_mode': 'client',
+        'installation_id': createInstallationId(),
+        'server_name': 'LibreSlip Server',
+      });
+      await database.execute('''
+        CREATE TABLE network_destinations (
+          id TEXT PRIMARY KEY,
+          display_name TEXT NOT NULL
+            CHECK (length(display_name) BETWEEN 1 AND 80),
+          base_url TEXT NOT NULL CHECK (length(base_url) BETWEEN 1 AND 2048),
+          certificate_fingerprint TEXT NOT NULL UNIQUE
+            CHECK (length(certificate_fingerprint) = 64),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+      await database.execute('''
+        CREATE TABLE server_delivery_outbox (
+          id TEXT PRIMARY KEY,
+          destination_id TEXT NOT NULL
+            REFERENCES network_destinations(id) ON DELETE RESTRICT,
+          client_installation_id TEXT NOT NULL,
+          ticket_id TEXT NOT NULL,
+          payload_json TEXT NOT NULL CHECK (length(payload_json) <= 65536),
+          payload_checksum TEXT NOT NULL CHECK (length(payload_checksum) = 64),
+          status TEXT NOT NULL CHECK (
+            status IN ('pending', 'sending', 'delivered', 'failed')
+          ),
+          attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+          error_code TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          delivered_at TEXT,
+          UNIQUE(destination_id, ticket_id),
+          UNIQUE(client_installation_id, id)
+        )
+      ''');
+      await database.execute('''
+        CREATE INDEX server_delivery_outbox_status_index
+        ON server_delivery_outbox(status, created_at)
+      ''');
+      await database.execute('''
+        CREATE TABLE server_clients (
+          installation_id TEXT PRIMARY KEY,
+          display_name TEXT NOT NULL
+            CHECK (length(display_name) BETWEEN 1 AND 80),
+          certificate_fingerprint TEXT NOT NULL UNIQUE
+            CHECK (length(certificate_fingerprint) = 64),
+          paired_at TEXT NOT NULL,
+          last_seen_at TEXT
+        )
+      ''');
+      await database.execute('''
+        CREATE TABLE server_orders (
+          id TEXT PRIMARY KEY,
+          client_installation_id TEXT NOT NULL
+            REFERENCES server_clients(installation_id) ON DELETE RESTRICT,
+          delivery_id TEXT NOT NULL,
+          client_ticket_id TEXT NOT NULL,
+          display_number INTEGER NOT NULL CHECK (display_number > 0),
+          source_created_at TEXT NOT NULL,
+          received_at TEXT NOT NULL,
+          heading_snapshot TEXT NOT NULL
+            CHECK (length(heading_snapshot) <= 60),
+          reference_snapshot TEXT NOT NULL
+            CHECK (length(reference_snapshot) <= 80),
+          order_note_snapshot TEXT NOT NULL
+            CHECK (length(order_note_snapshot) <= 500),
+          payload_checksum TEXT NOT NULL CHECK (length(payload_checksum) = 64),
+          status TEXT NOT NULL DEFAULT 'received'
+            CHECK (status IN ('received', 'done')),
+          completed_at TEXT,
+          UNIQUE(client_installation_id, delivery_id)
+        )
+      ''');
+      await database.execute('''
+        CREATE INDEX server_orders_status_index
+        ON server_orders(status, received_at DESC)
+      ''');
+      await database.execute('''
+        CREATE TABLE server_order_lines (
+          id TEXT PRIMARY KEY,
+          order_id TEXT NOT NULL
+            REFERENCES server_orders(id) ON DELETE CASCADE,
+          name_snapshot TEXT NOT NULL
+            CHECK (length(name_snapshot) BETWEEN 1 AND 80),
+          quantity INTEGER NOT NULL CHECK (quantity BETWEEN 1 AND 999),
+          preparation_note TEXT NOT NULL DEFAULT ''
+            CHECK (length(preparation_note) <= 300),
+          position INTEGER NOT NULL CHECK (position >= 0),
+          UNIQUE(order_id, position)
+        )
+      ''');
+    }
+  }
+
+  @override
+  Future<NetworkConfiguration> loadNetworkConfiguration() async {
+    try {
+      final rows = await (await _db).query(
+        'network_settings',
+        where: 'id = 1',
+        limit: 1,
+      );
+      if (rows.length != 1) {
+        throw const OrderStorageException(
+          'The network configuration could not be found.',
+        );
+      }
+      final row = rows.single;
+      return NetworkConfiguration(
+        mode: LibreSlipModeValue.parse(row['app_mode']! as String),
+        installationId: row['installation_id']! as String,
+        serverName: row['server_name']! as String,
+      );
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not read the network configuration.',
+        error,
+      );
+    }
+  }
+
+  @override
+  Future<void> saveLibreSlipMode(LibreSlipMode mode) async {
+    try {
+      final changed = await (await _db).update('network_settings', {
+        'app_mode': mode.value,
+      }, where: 'id = 1');
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'The network configuration could not be found.',
+        );
+      }
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not save the app mode.', error);
     }
   }
 
@@ -688,7 +854,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
     Map<String, Object?> snapshot,
   ) async {
     try {
-      if (snapshot['schemaVersion'] != databaseVersion ||
+      if (!portableSchemaVersions.contains(snapshot['schemaVersion']) ||
           snapshot['tables'] is! Map<String, dynamic>) {
         throw const FormatException('Unsupported database snapshot');
       }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/network_mode_controller.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../orders/presentation/compose_page.dart';
 import '../../orders/presentation/items_page.dart';
@@ -19,12 +20,14 @@ class WorkspaceShell extends StatefulWidget {
     super.key,
     required this.settings,
     required this.orders,
+    this.networking,
     this.printer,
     this.ticketOutput,
     this.portability,
   });
   final SettingsController settings;
   final OrderWorkspaceController orders;
+  final NetworkModeController? networking;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
@@ -102,6 +105,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
       4 => SettingsPage(
         controller: widget.settings,
         orders: widget.orders,
+        networking: widget.networking,
         printer: widget.printer,
         portability: widget.portability,
       ),

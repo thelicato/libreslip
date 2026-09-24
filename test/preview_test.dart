@@ -7,6 +7,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/networking/application/network_mode_controller.dart';
+import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/portability/application/portability_controller.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
 import 'package:libreslip/features/printing/application/printer_controller.dart';
@@ -83,6 +85,13 @@ void main() {
       ),
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
       ('portability-phone-en', const Size(520, 1100), 'en', ThemeMode.light, 4),
+      (
+        'server-foundation-phone-it',
+        const Size(520, 1100),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
     ]) {
       tester.view.physicalSize = size;
       final settingsStore = MemorySettingsRepository()
@@ -103,6 +112,11 @@ void main() {
       await controller.load();
       final environment = await createMemoryOrderEnvironment();
       final orders = environment.controller;
+      final networking = NetworkModeController(environment.repository);
+      await networking.load();
+      if (page == 5) {
+        await networking.setMode(LibreSlipMode.server);
+      }
       final portability = PortabilityController(
         PortabilityService(environment.repository, settingsStore),
         controller,
@@ -140,13 +154,14 @@ void main() {
           child: LibreSlipApp(
             settings: controller,
             orders: orders,
+            networking: networking,
             printer: printer,
             portability: portability,
           ),
         ),
       );
       await tester.pumpAndSettle();
-      if (page != 0) {
+      if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
         await tester.pumpAndSettle();
       }
@@ -183,6 +198,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       portability.dispose();
       printer.dispose();
+      networking.dispose();
       controller.dispose();
       orders.dispose();
     }

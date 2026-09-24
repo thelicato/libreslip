@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/networking/application/network_mode_controller.dart';
 import 'package:libreslip/features/printing/application/printer_controller.dart';
 import 'package:libreslip/features/printing/application/ticket_output_controller.dart';
 import 'package:libreslip/features/printing/domain/printer_transport.dart';
@@ -28,11 +29,17 @@ Future<SettingsController> openApp(
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   final store = repository ?? (MemorySettingsRepository()..stored = settings);
   final controller = SettingsController(store);
-  final orders = await createMemoryOrders();
+  final environment = await createMemoryOrderEnvironment();
+  final orders = environment.controller;
+  final networking = NetworkModeController(environment.repository);
   addTearDown(controller.dispose);
   addTearDown(orders.dispose);
+  addTearDown(networking.dispose);
   await controller.load();
-  await tester.pumpWidget(LibreSlipApp(settings: controller, orders: orders));
+  await networking.load();
+  await tester.pumpWidget(
+    LibreSlipApp(settings: controller, orders: orders, networking: networking),
+  );
   await tester.pumpAndSettle();
   return controller;
 }

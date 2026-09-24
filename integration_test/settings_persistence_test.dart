@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/networking/application/network_mode_controller.dart';
+import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/orders/application/order_workspace_controller.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
@@ -49,13 +51,21 @@ void main() {
     await deleteDatabase(databasePath);
     final orderRepository = SqliteOrderRepository(databasePath: databasePath);
     final orders = OrderWorkspaceController(orderRepository);
+    final networking = NetworkModeController(orderRepository);
     await orders.load();
+    await networking.load();
     addTearDown(() async {
       await orderRepository.close();
       await deleteDatabase(databasePath);
     });
     await controller.load();
-    await tester.pumpWidget(LibreSlipApp(settings: controller, orders: orders));
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: controller,
+        orders: orders,
+        networking: networking,
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Your workspace'), findsOneWidget);
     await controller.update(
@@ -116,6 +126,7 @@ void main() {
       printerAddress: '00:11:22:33:44:55',
       printerName: 'NT-1809DD',
     );
+    expect(await networking.setMode(LibreSlipMode.server), isTrue);
     final restored = await LocalSettingsRepository().load();
     expect(restored!.heading, 'Bottega Libertà');
     expect(restored.language, 'it');
@@ -131,6 +142,13 @@ void main() {
       databasePath: databasePath,
     );
     await reopenedRepository.open();
+    final reopenedNetworking = NetworkModeController(reopenedRepository);
+    await reopenedNetworking.load();
+    expect(reopenedNetworking.mode, LibreSlipMode.server);
+    expect(
+      reopenedNetworking.configuration!.installationId,
+      networking.configuration!.installationId,
+    );
     final recoveredDrafts = await reopenedRepository.loadDrafts();
     expect(recoveredDrafts.single.id, draftId);
     expect(recoveredDrafts.single.reference, 'Tavolo 9');
@@ -202,10 +220,16 @@ void main() {
     expect(await freshRepository.loadPrintJobs(), hasLength(1));
     expect(await freshRepository.loadNextOrderNumber(), 2);
     expect(
+      (await freshRepository.loadNetworkConfiguration()).mode,
+      LibreSlipMode.client,
+    );
+    expect(
       (await freshRepository.loadFeatureSettings()).preparationNotesEnabled,
       isFalse,
     );
     await reopenedRepository.close();
+    reopenedNetworking.dispose();
+    networking.dispose();
     controller.dispose();
     orders.dispose();
   });

@@ -191,8 +191,9 @@ class PortabilityService {
         manifest['archiveKind'] as String? ?? '',
       );
       if (kind == PortableArchiveKind.fullBackup &&
-          manifest['databaseSchemaVersion'] !=
-              SqliteOrderRepository.databaseVersion) {
+          !SqliteOrderRepository.portableSchemaVersions.contains(
+            manifest['databaseSchemaVersion'],
+          )) {
         throw const PortabilityException('unsupportedDatabase');
       }
       _validateInventory(entries, manifest['files']! as List);
@@ -502,7 +503,9 @@ class PortabilityService {
     Map<String, dynamic> snapshot,
     Map<String, Uint8List> entries,
   ) {
-    if (snapshot['schemaVersion'] != SqliteOrderRepository.databaseVersion ||
+    if (!SqliteOrderRepository.portableSchemaVersions.contains(
+          snapshot['schemaVersion'],
+        ) ||
         snapshot['tables'] is! Map<String, dynamic>) {
       throw const PortabilityException('unsupportedDatabase');
     }

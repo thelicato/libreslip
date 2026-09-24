@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import 'app/libreslip_app.dart';
+import 'features/networking/application/network_mode_controller.dart';
 import 'features/orders/application/order_workspace_controller.dart';
 import 'features/orders/data/item_image_store.dart';
 import 'features/orders/data/sqlite_order_repository.dart';
@@ -30,6 +31,7 @@ void main() {
     repository,
     imageStore: LocalItemImageStore(),
   );
+  final networking = NetworkModeController(repository);
   final printer = PrinterController(AndroidBluetoothPrinterTransport());
   final ticketOutput = TicketOutputController(
     store: repository,
@@ -44,6 +46,7 @@ void main() {
     LibreSlipApp(
       settings: settings,
       orders: orders,
+      networking: networking,
       printer: printer,
       ticketOutput: ticketOutput,
       portability: portability,
@@ -54,6 +57,7 @@ void main() {
     await portability.recoverAtStartup();
     await settings.load();
     await orders.load();
+    await networking.load();
     await ticketOutput.load();
   }());
 }

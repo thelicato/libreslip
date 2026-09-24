@@ -926,6 +926,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showFewerItemStatistics => 'Show fewer';
+
+  @override
+  String get appMode => 'App mode';
+
+  @override
+  String get appModeBody =>
+      'Choose whether this device creates orders or prepares to receive them.';
+
+  @override
+  String get clientMode => 'Client';
+
+  @override
+  String get clientModeBody =>
+      'Create, print and keep tickets locally. A server connection will always be optional.';
+
+  @override
+  String get serverMode => 'Server';
+
+  @override
+  String get serverModeBody =>
+      'Prepare this device for the focused receive-and-Done workflow. Receiving is not available yet.';
+
+  @override
+  String get switchToServerTitle => 'Switch to Server mode?';
+
+  @override
+  String get switchToServerBody =>
+      'Your client items, drafts and ticket history stay on this phone. This foundation release does not receive orders or start a network listener.';
+
+  @override
+  String get switchToClientTitle => 'Switch to Client mode?';
+
+  @override
+  String get switchToClientBody =>
+      'Server foundation data stays on this phone. Client mode restores the current catalogue, composition, printing and history workspace.';
+
+  @override
+  String get switchMode => 'Switch mode';
+
+  @override
+  String get modeSaveError =>
+      'The app mode could not be saved. Nothing was switched.';
+
+  @override
+  String get serverFoundationTitle => 'Server mode';
+
+  @override
+  String get serverFoundationSubtitle =>
+      'The local foundation is ready, but order receiving is not operational yet.';
+
+  @override
+  String get serverFoundationReady => 'Foundation ready';
+
+  @override
+  String get serverFoundationBody =>
+      'LibreSlip has stored this mode and prepared its local inbox safely. No network listener is running, no device can pair and no orders can be received in this milestone.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
