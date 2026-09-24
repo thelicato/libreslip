@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-This milestone was developed with Flutter 3.47.2 stable (revision `d3b14c876900e553bc736ca19295fc09e3853e8e`), Dart 3.13.2, Java 21.0.7, Gradle 9.3.1, Android Gradle Plugin 9.1.0 and Kotlin 2.4.0. The application identifier is `io.thelicato.libreslip` and the Dart package is `libreslip`. The Android minimum is API 34 (Android 14); compilation and target SDK versions are API 36, as selected by this Flutter SDK. Use the committed `pubspec.lock` to reproduce dependency resolution.
+This milestone was developed with Flutter 3.47.2 stable (revision `d3b14c876900e553bc736ca19295fc09e3853e8e`), Dart 3.13.2, Java 21.0.12.1, Gradle 9.3.1, Android Gradle Plugin 9.1.0 and Kotlin 2.4.0. The application identifier is `io.thelicato.libreslip` and the Dart package is `libreslip`. The Android minimum is API 34 (Android 14); compilation and target SDK versions are API 36, as selected by this Flutter SDK. Use the committed `pubspec.lock` to reproduce dependency resolution.
 
 ## Run and build
 
@@ -37,7 +37,7 @@ Production builds require `android/key.properties` and its referenced keystore, 
 
 `VERSION` is the only release version that is edited manually. It must use `X.Y.Z`; GitHub release tags must match it as `vX.Y.Z`. The GitHub workflow supplies its monotonically increasing run number as Android's build number.
 
-To exercise Android DataStore and SQLite through their real platform implementations, select an isolated emulator or test device. The integration test restores the previous preference document and removes its dedicated database when it finishes.
+To exercise Android DataStore, SQLite and full-backup restore through their real platform implementations, select an isolated emulator or test device. The integration test verifies restart recovery and restores a validated archive into an independent empty database. It restores the previous preference document and removes its dedicated files when it finishes.
 
 ```sh
 flutter test integration_test/settings_persistence_test.dart -d DEVICE_ID
@@ -73,7 +73,7 @@ Generate review images with the installed Flutter SDK fonts:
 flutter test test/preview_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true
 ```
 
-Images are written under `build/previews`. This optional capture is skipped during normal tests; it is a review aid rather than a pixel-perfect golden assertion. The task 5 review set also includes the portability Settings card and ticket-history deletion controls.
+Images are written under `build/previews`. This optional capture is skipped during normal tests; it is a review aid rather than a pixel-perfect golden assertion. The task 6 review set includes Compose, ticket preview, ticket history, Italian dark-theme Settings and the portability Settings card.
 
 ## Package a milestone
 
@@ -81,4 +81,4 @@ Images are written under `build/previews`. This optional capture is skipped duri
 python3 tool/package_milestone.py --include-apk
 ```
 
-The script writes the build-automation refinement source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes `VERSION`, build and CI automation, the lockfile, bundled font licence and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the in-app backup format. APK packaging reads the expected version from `VERSION`, checks the application identifier and positive build number, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs. `--include-apk` therefore requires a fresh, correctly signed production build.
+The script writes the task 6 release-candidate source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes `VERSION`, build and CI automation, the lockfile, bundled font licence and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the in-app backup format. APK packaging reads the expected version from `VERSION`, checks the application identifier and positive build number, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs. `--include-apk` therefore requires a fresh, correctly signed production build.

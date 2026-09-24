@@ -6,19 +6,19 @@ A private, local order-ticket app for Android 14 and later, built with Flutter. 
 
 ## Current milestone
 
-Task 5 adds local portability to the item, ticket and Bluetooth printing workflow. Settings can be exported as a versioned configuration ZIP, while a full backup also contains a consistent SQLite snapshot, saved ticket history, print attempts and referenced images. Imports validate checksums, paths, sizes, contents and relationships before showing an explicit replacement preview. A durable recovery journal restores the pre-import state if replacement is interrupted.
+LibreSlip 0.6.0 is the task 6 release candidate for the complete offline order-ticket workflow. It combines reusable items, persistent composition, immutable ticket history, Bluetooth Classic printing, local PDF sharing and validated configuration or full-backup ZIP portability. Android integration coverage exercises preference retention, SQLite restart recovery, interrupted print handling and restoration into a fresh database.
 
-Individual saved tickets or all previous tickets can now be deleted with confirmation. Their dependent print-attempt history is removed transactionally, while the current draft and order number remain unchanged. Bluetooth pairing credentials are never archived and must be re-established on another phone.
+Individual saved tickets or all previous tickets can be deleted with confirmation. Their dependent print-attempt history is removed transactionally, while the current draft and order number remain unchanged. Bluetooth pairing credentials are never archived and must be re-established on another phone.
 
-The user reported successful physical operation with the NETUM NT-1809DD. Successful byte transmission cannot prove that paper was produced, so the interface asks the operator to check it. Saving, printing, exporting or restoring a ticket never creates a sale or financial transaction.
+The user reported successful physical operation with the NETUM NT-1809DD during task 4. Successful byte transmission cannot prove that paper was produced, so the interface asks the operator to check it. Saving, printing, exporting or restoring a ticket never creates a sale or financial transaction.
 
 ## Downloads
 
 The latest review artefacts are generated in `dist/`:
 
-- `LibreSlip-task-05-build-automation.zip`: complete source and documentation after the build-automation refinement.
-- `LibreSlip-task-05-build-automation-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
-- `LibreSlip-task-05-build-automation-SHA256SUMS.txt`: integrity checksums for both files.
+- `LibreSlip-task-06-release-candidate.zip`: complete release-candidate source and documentation.
+- `LibreSlip-task-06-release-candidate-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
+- `LibreSlip-task-06-release-candidate-SHA256SUMS.txt`: integrity checksums for both files.
 
 The source-delivery ZIP is separate from ZIP files exported inside LibreSlip. The preview supports local item, ticket, PDF, Bluetooth Classic printing and validated portability workflows. Its temporary validation certificate is not the future production certificate, so it must not be used as an upgrade baseline for public releases.
 
@@ -76,8 +76,8 @@ Update `VERSION`, commit it, then push the matching numeric `vX.Y.Z` tag. `.gith
 
 ```sh
 # After updating and committing VERSION.
-git tag v0.5.0
-git push origin v0.5.0
+git tag v0.6.0
+git push origin v0.6.0
 ```
 
 Release notes are generated from Conventional Commits since the previous tag. The workflow stops before building or publishing if a signing secret is missing or invalid.
@@ -95,4 +95,4 @@ Release notes are generated from Conventional Commits since the previous tag. Th
 - [Italian item shelf](docs/previews/items-tablet-it.png)
 - [Ticket history preview](docs/previews/tickets-tablet-en.png)
 
-Development stops after each coherent task and supplies a conventional commit name. The next task is final release verification and packaging.
+Task 6 completes the current delivery plan. Further changes should remain coherent, reviewable milestones and include a conventional commit name.

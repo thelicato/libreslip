@@ -1,44 +1,28 @@
-# ZIP portability milestone validation
+# Release candidate validation
 
-Validated on 24 September 2026 for LibreSlip 0.5.0+5, Android application identifier `io.thelicato.libreslip`.
+Validated on 24 September 2026 for LibreSlip 0.6.0, Android application identifier `io.thelicato.libreslip`.
 
 | Check | Result |
 | --- | --- |
 | Dart formatting | Passed, 48 Dart files checked. |
 | Static analysis | Passed with no issues. |
 | Unit and widget tests | All 57 active tests passed; the normal run skipped only the opt-in render capture. |
-| Configuration ZIP round trip | Passed: settings format 3, locale, theme, heading, footer, bounded typography, logo reference and SQLite order-field switches were exported, inspected and restored without replacing items or ticket history. |
-| Full-backup round trip | Passed: a consistent schema 5 snapshot restored items, categories, drafts, ticket snapshots, print attempts, counters, feature switches, settings, logo and item images. A separate empty SQLite database and settings store verified the fresh-install restore path. |
-| Archive integrity and hostile input | Passed for SHA-256 inventory verification, count mismatches, path traversal, duplicate paths and altered payloads. Implementation also bounds compressed and expanded size, entry count, individual file size and compression ratio, and rejects absolute paths, drive paths, backslashes, links, directories, unknown paths, unknown file types, unsupported format/schema versions and invalid relationships. |
-| Replacement and interruption safety | Passed: a forced settings-write failure restored the pre-import database, and a simulated pending journal on cold start restored settings, SQLite state and removed partial staged assets. SQLite replacement itself is one transaction. |
-| Ticket deletion | Passed at repository and widget levels. Deleting one ticket removes its dependent print attempts; deleting all tickets clears history. Neither operation updates the visible order counter or the monotonic internal ticket counter, and the current draft remains available. |
-| Ticket snapshot and duplicate protection | Passed: catalogue edits do not change saved tickets, conversion retry returns the same ticket, reprint creates another attempt without another ticket, and history deletion does not cause number reuse. |
-| Responsive localisation | Passed in British English and Italian on small phone, landscape, tablet and doubled-text layouts. Every new string has matching localisation metadata and placeholders. |
-| Representative renders | Fresh portability Settings and ticket-history renders completed without framework errors and were visually inspected. Controls fit the existing Material 3 cards, destructive actions are distinct and the phone navigation remains one line. |
-| Android platform integration | Passed on a read-only Android 14 API 34 emulator using real DataStore and SQLite implementations. Existing preference, typography, schema 5, restart and reset-number assertions passed after close and reopen. The test restored its prior preference document and removed its dedicated database. |
-| Release APK | Built successfully. Verified version 0.5.0+5, application identifier `io.thelicato.libreslip`, minimum API 34 and target API 36. Flutter and Gradle APK outputs had identical SHA-256 hashes before packaging. |
-| Privacy configuration | The release requests Bluetooth connection only, plus Android's app-local dynamic-receiver signature permission. It requests no internet, location or broad storage permission; automatic cloud backup and device transfer remain disabled. |
-| Physical NETUM NT-1809DD | The user's earlier task 4 report confirms the implemented Bluetooth printing workflow on the physical printer. Task 5 does not change transport behaviour, and no new hardware test was required or claimed. |
+| Accessibility and responsive localisation | Passed in British English and Italian on small phone, landscape, tablet and doubled-text layouts. Controls retain semantic labels, readable contrast and 48 logical pixel targets; translated bottom labels remain on one line. |
+| Representative renders | Fresh Compose, ticket preview, item shelf, ticket history, Italian dark-theme Settings and portability renders completed without framework errors. Compose, Settings and portability views were visually inspected with no clipping or misplaced controls observed. |
+| Android restart recovery | Passed on a read-only Android 14 API 34 emulator using real DataStore and SQLite implementations. Italian, dark appearance, printed-ticket typography, reusable item, active composition, optional-field settings, ticket snapshots and reset numbering survived close and reopen. An interrupted sending job reopened as uncertain and was not resent. |
+| Android full-backup restore | Passed on the same emulator. A full backup was created and validated from the reopened store, then restored into an independent empty SQLite database and settings repository. Item, active draft, two ticket snapshots, print attempt, optional-field setting and next visible order number matched the source. |
+| Configuration and full-backup safety | Passed in host tests for round trips, fresh-install restore, counters, settings, images, SHA-256 inventory, path traversal, duplicate paths, altered payloads, invalid relationships, rollback after a forced write failure and pending-journal recovery after interruption. |
+| Ticket integrity | Passed: catalogue edits do not change saved tickets, conversion retry returns the same ticket, reprint creates another attempt without another ticket, deletion removes dependent print attempts and deleting history does not alter the draft or current order number. |
+| Build and CI automation | Local debug and production entry points, strict signing failure, tagged workflow syntax, tag/version gate and keystore-helper syntax passed during the build-automation refinement. `VERSION` is the single manually edited release version. |
+| Release APK | Passed with a temporary development validation certificate. Verified version 0.6.0, application identifier `io.thelicato.libreslip`, minimum API 34, target API 36 and APK Signature Scheme v2. Flutter and Gradle APK outputs matched before packaging. |
+| Offline cold launch | Passed on Android 14 after Wi-Fi and mobile data were disabled. A fresh release install launched, survived force-stop and launched again without network access or a fatal process error. |
+| Permission denial | Passed on Android 14 with `BLUETOOTH_CONNECT` denied. LibreSlip cold-launched and remained running; printer permission is requested only when the operator opens printer setup. |
+| Privacy configuration | The release requests Bluetooth connection only, plus Android's app-local dynamic-receiver signature permission. It requests no internet, location or broad storage permission. Automatic cloud backup and device transfer are disabled and all data domains are excluded. |
+| Physical NETUM NT-1809DD | The user's task 4 report confirms the implemented Bluetooth printing workflow on the physical printer. Task 6 did not repeat that manual test and makes no new paper-output claim. |
+| Delivery artefacts | The source ZIP uses a `LibreSlip/` root and excludes caches, build state, SDK paths, signing material and previous archives. The development-signed preview APK and both-file SHA-256 list were generated by the stale-APK guarded packager. |
 
-The archive tests call the same codec, validation, staging and restore service used by the app. The fresh-install check uses an independent empty database and settings store on the development host rather than a second physical phone. The Android document picker and share-sheet interaction were compiled into the APK but were not manually exercised on a handset during this milestone. Export cancellation and destination behaviour therefore remain platform-owned and unobserved here.
+The Android document picker and share-sheet interaction were compiled into the release APK but were not manually exercised on a handset during task 6. Export cancellation and destination behaviour therefore remain platform-owned and unobserved here. The GitHub workflow was linted locally but was not executed on GitHub because no tag was pushed and no repository secrets were changed. Docker image selection was checked during the preceding automation refinement, but the final APK was built with the documented local path.
 
-The source archive format is documented in [archive format](archive-format.md). Bluetooth pairing is excluded by design and must be re-established after restore. Configuration import replaces settings and order-field options only; full backup import replaces settings, catalogue, drafts, history and print attempts. Both paths require a validated preview and explicit in-app confirmation.
+The physical printer result is user-reported evidence from task 4. A transmitted state still means that the phone completed its socket write, not that LibreSlip can prove paper output. The app never automatically retries an uncertain print. USB printing remains outside the current implementation.
 
-A transmitted printer state still means that the phone completed its socket write, not that paper output was confirmed. LibreSlip never automatically retries an uncertain print and never records a sale, payment or financial transaction. USB printing remains outside this milestone.
-
-## Build automation follow-up
-
-Validated on 24 September 2026 without advancing task 6.
-
-| Check | Result |
-| --- | --- |
-| Single version source | Passed: root `VERSION` contains `0.5.0`; local builds, tagged workflow builds, archive manifests and milestone APK validation read it. `pubspec.yaml` carries no competing release version. |
-| Local debug build | Passed through `python3 build.py local debug`; APK metadata reported `io.thelicato.libreslip`, version name 0.5.0 and minimum API 34. |
-| Release signing enforcement | Passed: a production build without signing configuration stopped with the documented error and did not fall back to the debug key. |
-| Signed production build | Passed with a temporary two-day validation certificate stored outside the repository. APK Signature Scheme v2 verification passed; the temporary keystore was then deleted. This certificate is not a production release identity. |
-| GitHub workflow | `actionlint` passed. The matching `v0.5.0` tag gate passed and a mismatched `v0.5.1` tag was rejected. The workflow otherwise mirrors Hecate's tagged Android release flow with LibreSlip names and without Hecate's VPN-specific JNI check. |
-| Keystore helper | Shell syntax passed. A non-interactive invocation was rejected before creating files, and overwrite protection remains in the interactive path. |
-| Flutter validation | Formatting passed for 48 Dart files, static analysis passed with no issues and all 57 active tests passed. |
-| Release APK privacy | The temporary-key release APK requests Bluetooth connection only, plus Android's app-local dynamic-receiver signature permission. It has no internet, location or broad storage permission. |
-
-The GitHub workflow was not executed on GitHub because no tag was pushed and no repository secrets were changed. Docker image selection logic was checked against the locked SDK constraints, but a complete Docker APK build was not repeated locally. Production release secrets and the long-lived keystore must be created and configured by the repository owner.
+The preview APK uses a disposable certificate created only for validation and is not a production upgrade baseline. The repository owner must generate and securely back up the long-lived release keystore, configure the documented GitHub secrets, and publish only from a matching `v0.6.0` tag.

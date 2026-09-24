@@ -14,8 +14,8 @@ if (keystorePropertiesFile.exists()) {
 }
 
 fun signingValue(propertyName: String, environmentName: String): String? =
-    keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
-        ?: System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+    System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 
 val releaseStoreFilePath = signingValue("storeFile", "LIBRESLIP_KEYSTORE_PATH")
 val releaseStorePassword = signingValue("storePassword", "LIBRESLIP_STORE_PASSWORD")
