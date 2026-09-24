@@ -1,8 +1,6 @@
 name: libreslip
 description: A private, local order-ticket printing workspace for Android.
 publish_to: 'none'
-version: 0.5.0+5
-
 environment:
   sdk: ^3.13.2
 
@@ -36,6 +34,7 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
+    - VERSION
     - assets/fonts/Roboto-LICENSE.txt
   fonts:
     - family: RobotoTicket

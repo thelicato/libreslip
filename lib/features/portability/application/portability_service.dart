@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
@@ -11,6 +10,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
 import '../../orders/data/sqlite_order_repository.dart';
 import '../../orders/domain/order_models.dart';
@@ -22,6 +22,7 @@ typedef SupportDirectoryProvider = Future<Directory> Function();
 typedef TemporaryDirectoryProvider = Future<Directory> Function();
 typedef ArchivePicker = Future<Uint8List?> Function();
 typedef ArchiveSharer = Future<void> Function(File file, String fileName);
+typedef AppVersionProvider = Future<String> Function();
 
 class PortabilityService {
   PortabilityService(
@@ -31,14 +32,15 @@ class PortabilityService {
     TemporaryDirectoryProvider? temporaryDirectory,
     ArchivePicker? picker,
     ArchiveSharer? sharer,
+    AppVersionProvider? appVersion,
   }) : _supportDirectory = supportDirectory ?? getApplicationSupportDirectory,
        _temporaryDirectory = temporaryDirectory ?? getTemporaryDirectory,
        _picker = picker ?? _pickArchive,
-       _sharer = sharer ?? _shareArchive;
+       _sharer = sharer ?? _shareArchive,
+       _appVersion = appVersion ?? _loadBundledVersion;
 
   static const formatName = 'libreslip-portability';
   static const formatVersion = 1;
-  static const appVersion = '0.5.0+5';
   static const _maxArchiveBytes = 32 * 1024 * 1024;
   static const _maxExpandedBytes = 64 * 1024 * 1024;
   static const _maxEntryBytes = 12 * 1024 * 1024;
@@ -51,11 +53,16 @@ class PortabilityService {
   final TemporaryDirectoryProvider _temporaryDirectory;
   final ArchivePicker _picker;
   final ArchiveSharer _sharer;
+  final AppVersionProvider _appVersion;
 
   Future<Uint8List> createArchive(PortableArchiveKind kind) async {
     try {
       final currentSettings = await _settings.load() ?? const AppSettings();
       final featureSettings = await _orders.loadFeatureSettings();
+      final appVersion = (await _appVersion()).trim();
+      if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(appVersion)) {
+        throw const PortabilityException('invalidAppVersion');
+      }
       final entries = <String, Uint8List>{};
       final portableSettings = Map<String, Object?>.from(
         currentSettings.toJson(),
@@ -708,6 +715,9 @@ class PortabilityService {
 
   static String _restoreId() =>
       DateTime.now().microsecondsSinceEpoch.toRadixString(16);
+
+  static Future<String> _loadBundledVersion() =>
+      rootBundle.loadString('VERSION');
 
   static Future<Uint8List?> _pickArchive() async {
     final file = await FilePicker.pickFile(

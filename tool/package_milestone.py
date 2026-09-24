@@ -11,9 +11,13 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = {
     '.gitignore', '.metadata', 'AGENTS.md', 'README.md',
-    'analysis_options.yaml', 'l10n.yaml', 'pubspec.yaml', 'pubspec.lock',
+    'analysis_options.yaml', 'build.py', 'l10n.yaml', 'pubspec.yaml',
+    'pubspec.lock', 'VERSION',
 }
-SOURCE_DIRS = {'android', 'assets', 'docs', 'lib', 'test', 'integration_test', 'tool'}
+SOURCE_DIRS = {
+    '.github', 'android', 'assets', 'docs', 'integration_test', 'lib',
+    'scripts', 'test', 'tool',
+}
 EXCLUDED_DIRS = {
     '.git', '.agents', '.codex', '.gradle', '.kotlin', '.cxx', '.idea',
     '.dart_tool', 'build', 'dist', '__pycache__', 'captures',
@@ -46,21 +50,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--include-apk', action='store_true')
     args = parser.parse_args()
+    version = (ROOT / 'VERSION').read_text().strip()
+    if not version or any(not part.isdigit() for part in version.split('.')) or len(version.split('.')) != 3:
+        raise RuntimeError('VERSION must use the X.Y.Z format')
     if args.include_apk:
         metadata_path = ROOT / 'build/app/outputs/apk/release/output-metadata.json'
         built = ROOT / 'build/app/outputs/flutter-apk/app-release.apk'
         canonical = metadata_path.parent / 'app-release.apk'
         if not metadata_path.is_file() or not built.is_file() or not canonical.is_file():
-            raise RuntimeError('Build a fresh LibreSlip 0.5.0+5 release before packaging')
+            raise RuntimeError(f'Build a fresh LibreSlip {version} release before packaging')
         metadata = json.loads(metadata_path.read_text())
         elements = metadata.get('elements', [])
         if (
             metadata.get('applicationId') != 'io.thelicato.libreslip'
             or len(elements) != 1
-            or elements[0].get('versionName') != '0.5.0'
-            or elements[0].get('versionCode') != 5
+            or elements[0].get('versionName') != version
+            or not isinstance(elements[0].get('versionCode'), int)
+            or elements[0].get('versionCode') < 1
         ):
-            raise RuntimeError('Build a fresh LibreSlip 0.5.0+5 release before packaging')
+            raise RuntimeError(f'Build a fresh LibreSlip {version} release before packaging')
         newest_source = max(path.stat().st_mtime for path in source_files())
         if built.stat().st_mtime < newest_source:
             raise RuntimeError('Release APK is older than the packaged source')
@@ -68,7 +76,7 @@ def main():
             raise RuntimeError('Flutter and Gradle APK outputs do not match')
     destination = ROOT / 'dist'
     destination.mkdir(exist_ok=True)
-    source = destination / 'LibreSlip-task-05-portability.zip'
+    source = destination / 'LibreSlip-task-05-build-automation.zip'
     included = list(source_files())
     with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in included:
@@ -83,7 +91,7 @@ def main():
     outputs = [source]
     if args.include_apk:
         built = ROOT / 'build/app/outputs/flutter-apk/app-release.apk'
-        apk = destination / 'LibreSlip-task-05-preview.apk'
+        apk = destination / 'LibreSlip-task-05-build-automation-preview.apk'
         shutil.copy2(built, apk)
         outputs.append(apk)
     checksums = []
@@ -91,7 +99,7 @@ def main():
         digest = hashlib.sha256(output.read_bytes()).hexdigest()
         checksums.append(f'{digest}  {output.name}\n')
         print(f'{output.relative_to(ROOT)} ({output.stat().st_size:,} bytes)')
-    (destination / 'LibreSlip-task-05-SHA256SUMS.txt').write_text(''.join(checksums))
+    (destination / 'LibreSlip-task-05-build-automation-SHA256SUMS.txt').write_text(''.join(checksums))
     print(f'Verified {len(included)} source files; SHA-256 checksums written.')
 
 

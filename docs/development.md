@@ -14,14 +14,28 @@ flutter gen-l10n
 flutter run
 ```
 
+Run validation directly:
+
 ```sh
 dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
-flutter build apk --release
 ```
 
-The APK is produced at `build/app/outputs/flutter-apk/app-release.apk`. Milestone builds use the development machine's debug signing key even in release mode. They are installable previews, not production-signed releases. Do not distribute private signing material. A preview rebuilt on another machine may need its own installation because the signing key differs.
+Use the Hecate-style build entry point for APKs:
+
+```sh
+python3 build.py local debug
+python3 build.py local prod
+python3 build.py docker debug
+python3 build.py docker prod
+```
+
+Local builds use the installed Flutter SDK. Docker builds select the oldest compatible stable Flutter and Dart pair from the constraints in `pubspec.lock` for which `ghcr.io/gmeligio/flutter-android` has an image. Both modes run `flutter pub get`, read the visible version from `VERSION`, and write the APK under `build/app/outputs/flutter-apk/`.
+
+Production builds require `android/key.properties` and its referenced keystore, or the four `LIBRESLIP_KEYSTORE_PATH`, `LIBRESLIP_STORE_PASSWORD`, `LIBRESLIP_KEY_ALIAS` and `LIBRESLIP_KEY_PASSWORD` environment variables. Missing release signing is a hard failure and never falls back to the debug certificate. Generate local files with `./scripts/generate_release_keystore.sh`, back them up securely, and never commit them.
+
+`VERSION` is the only release version that is edited manually. It must use `X.Y.Z`; GitHub release tags must match it as `vX.Y.Z`. The GitHub workflow supplies its monotonically increasing run number as Android's build number.
 
 To exercise Android DataStore and SQLite through their real platform implementations, select an isolated emulator or test device. The integration test restores the previous preference document and removes its dedicated database when it finishes.
 
@@ -67,4 +81,4 @@ Images are written under `build/previews`. This optional capture is skipped duri
 python3 tool/package_milestone.py --include-apk
 ```
 
-The script writes the task 5 source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes the lockfile, bundled font licence and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the planned in-app backup format. APK packaging checks the release application identifier, version name and version code, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs.
+The script writes the build-automation refinement source ZIP, preview APK and SHA-256 checksums to `dist/`. The source archive uses a `LibreSlip/` root, includes `VERSION`, build and CI automation, the lockfile, bundled font licence and Gradle wrapper, and excludes local SDK paths, caches, IDE files, generated plugin registration, signing material and previous archives. The source ZIP is separate from the in-app backup format. APK packaging reads the expected version from `VERSION`, checks the application identifier and positive build number, rejects an APK older than any packaged source, and requires matching Flutter and Gradle outputs. `--include-apk` therefore requires a fresh, correctly signed production build.

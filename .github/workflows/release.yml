@@ -1,0 +1,109 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate release version
+        id: release_version
+        run: |
+          release_version="$(<VERSION)"
+          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION must use the X.Y.Z format." >&2
+            exit 1
+          fi
+          if [[ "v$release_version" != "$GITHUB_REF_NAME" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match VERSION ($release_version)." >&2
+            exit 1
+          fi
+          echo "version=$release_version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.2
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze project
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Prepare release signing
+        env:
+          LIBRESLIP_KEYSTORE_BASE64: ${{ secrets.LIBRESLIP_KEYSTORE_BASE64 }}
+          LIBRESLIP_STORE_PASSWORD: ${{ secrets.LIBRESLIP_STORE_PASSWORD }}
+          LIBRESLIP_KEY_ALIAS: ${{ secrets.LIBRESLIP_KEY_ALIAS }}
+          LIBRESLIP_KEY_PASSWORD: ${{ secrets.LIBRESLIP_KEY_PASSWORD }}
+        run: |
+          : "${LIBRESLIP_KEYSTORE_BASE64:?Missing LIBRESLIP_KEYSTORE_BASE64 secret}"
+          : "${LIBRESLIP_STORE_PASSWORD:?Missing LIBRESLIP_STORE_PASSWORD secret}"
+          : "${LIBRESLIP_KEY_ALIAS:?Missing LIBRESLIP_KEY_ALIAS secret}"
+          : "${LIBRESLIP_KEY_PASSWORD:?Missing LIBRESLIP_KEY_PASSWORD secret}"
+          printf '%s' "$LIBRESLIP_KEYSTORE_BASE64" | base64 --decode \
+            > "$RUNNER_TEMP/libreslip-release.jks"
+          chmod 600 "$RUNNER_TEMP/libreslip-release.jks"
+          keytool -list \
+            -keystore "$RUNNER_TEMP/libreslip-release.jks" \
+            -storepass "$LIBRESLIP_STORE_PASSWORD" \
+            -alias "$LIBRESLIP_KEY_ALIAS" > /dev/null
+
+      - name: Build release APK
+        env:
+          LIBRESLIP_KEYSTORE_PATH: ${{ runner.temp }}/libreslip-release.jks
+          LIBRESLIP_STORE_PASSWORD: ${{ secrets.LIBRESLIP_STORE_PASSWORD }}
+          LIBRESLIP_KEY_ALIAS: ${{ secrets.LIBRESLIP_KEY_ALIAS }}
+          LIBRESLIP_KEY_PASSWORD: ${{ secrets.LIBRESLIP_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.release_version.outputs.version }}" \
+            --build-number="$GITHUB_RUN_NUMBER"
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "LibreSlip-${GITHUB_REF_NAME}.apk"
+
+      - name: Create GitHub release
+        run: npx --yes changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK to release
+        run: gh release upload "$GITHUB_REF_NAME" "LibreSlip-${GITHUB_REF_NAME}.apk" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

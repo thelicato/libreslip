@@ -36,6 +36,7 @@ void main() {
       settings,
       supportDirectory: () async => support,
       temporaryDirectory: () async => temporary,
+      appVersion: () => File('VERSION').readAsString(),
     );
   });
 
@@ -208,6 +209,7 @@ void main() {
       destinationSettings,
       supportDirectory: () async => destinationSupport,
       temporaryDirectory: () async => temporary,
+      appVersion: () => File('VERSION').readAsString(),
     );
     final preview = await destinationService.inspectArchive(bytes);
     await destinationService.restore(preview);

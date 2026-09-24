@@ -1,7 +1,42 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+fun signingValue(propertyName: String, environmentName: String): String? =
+    keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFilePath = signingValue("storeFile", "LIBRESLIP_KEYSTORE_PATH")
+val releaseStorePassword = signingValue("storePassword", "LIBRESLIP_STORE_PASSWORD")
+val releaseKeyAlias = signingValue("keyAlias", "LIBRESLIP_KEY_ALIAS")
+val releaseKeyPassword = signingValue("keyPassword", "LIBRESLIP_KEY_PASSWORD")
+val releaseSigningConfigured = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+if (releaseBuildRequested && !releaseSigningConfigured) {
+    throw GradleException(
+        "Release signing is not configured. Add android/key.properties or provide " +
+            "the LIBRESLIP_KEYSTORE_PATH, LIBRESLIP_STORE_PASSWORD, LIBRESLIP_KEY_ALIAS, " +
+            "and LIBRESLIP_KEY_PASSWORD environment variables.",
+    )
 }
 
 android {
@@ -20,18 +55,28 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 34
         targetSdk = flutter.targetSdkVersion
-        // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
-        // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
-        // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
-        // flag during build.
+        // Flutter supplies these values from build.py or the tagged release workflow.
+        // VERSION is the single manually edited visible release version.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseStoreFilePath!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Milestone previews use a local debug key, not a production signing key.
-            signingConfig = signingConfigs.getByName("debug")
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

@@ -25,3 +25,20 @@ The archive tests call the same codec, validation, staging and restore service u
 The source archive format is documented in [archive format](archive-format.md). Bluetooth pairing is excluded by design and must be re-established after restore. Configuration import replaces settings and order-field options only; full backup import replaces settings, catalogue, drafts, history and print attempts. Both paths require a validated preview and explicit in-app confirmation.
 
 A transmitted printer state still means that the phone completed its socket write, not that paper output was confirmed. LibreSlip never automatically retries an uncertain print and never records a sale, payment or financial transaction. USB printing remains outside this milestone.
+
+## Build automation follow-up
+
+Validated on 24 September 2026 without advancing task 6.
+
+| Check | Result |
+| --- | --- |
+| Single version source | Passed: root `VERSION` contains `0.5.0`; local builds, tagged workflow builds, archive manifests and milestone APK validation read it. `pubspec.yaml` carries no competing release version. |
+| Local debug build | Passed through `python3 build.py local debug`; APK metadata reported `io.thelicato.libreslip`, version name 0.5.0 and minimum API 34. |
+| Release signing enforcement | Passed: a production build without signing configuration stopped with the documented error and did not fall back to the debug key. |
+| Signed production build | Passed with a temporary two-day validation certificate stored outside the repository. APK Signature Scheme v2 verification passed; the temporary keystore was then deleted. This certificate is not a production release identity. |
+| GitHub workflow | `actionlint` passed. The matching `v0.5.0` tag gate passed and a mismatched `v0.5.1` tag was rejected. The workflow otherwise mirrors Hecate's tagged Android release flow with LibreSlip names and without Hecate's VPN-specific JNI check. |
+| Keystore helper | Shell syntax passed. A non-interactive invocation was rejected before creating files, and overwrite protection remains in the interactive path. |
+| Flutter validation | Formatting passed for 48 Dart files, static analysis passed with no issues and all 57 active tests passed. |
+| Release APK privacy | The temporary-key release APK requests Bluetooth connection only, plus Android's app-local dynamic-receiver signature permission. It has no internet, location or broad storage permission. |
+
+The GitHub workflow was not executed on GitHub because no tag was pushed and no repository secrets were changed. Docker image selection logic was checked against the locked SDK constraints, but a complete Docker APK build was not repeated locally. Production release secrets and the long-lived keystore must be created and configured by the repository owner.
