@@ -1765,7 +1765,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientModeBody.
   ///
   /// In en, this message translates to:
-  /// **'Create, print and keep tickets locally. A server connection will always be optional.'**
+  /// **'Create, print and keep tickets locally. Pairing with a local Server is always optional.'**
   String get clientModeBody;
 
   /// No description provided for @serverMode.
@@ -1983,6 +1983,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The order could not be marked Done. It remains in Received.'**
   String get markDoneFailed;
+
+  /// No description provided for @clientServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional order server'**
+  String get clientServerTitle;
+
+  /// No description provided for @clientServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.'**
+  String get clientServerBody;
+
+  /// No description provided for @noPairedServer.
+  ///
+  /// In en, this message translates to:
+  /// **'No server paired'**
+  String get noPairedServer;
+
+  /// No description provided for @pairServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair server'**
+  String get pairServer;
+
+  /// No description provided for @pairedServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired server'**
+  String get pairedServer;
+
+  /// No description provided for @serverAddressInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address'**
+  String get serverAddressInput;
+
+  /// No description provided for @serverAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'192.168.1.25:42837'**
+  String get serverAddressHint;
+
+  /// No description provided for @serverFingerprintInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate fingerprint'**
+  String get serverFingerprintInput;
+
+  /// No description provided for @serverFingerprintHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the fingerprint shown on the Server device'**
+  String get serverFingerprintHint;
+
+  /// No description provided for @clientDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'This device name'**
+  String get clientDeviceName;
+
+  /// No description provided for @clientDeviceNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Front counter'**
+  String get clientDeviceNameHint;
+
+  /// No description provided for @pairServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair with Server'**
+  String get pairServerTitle;
+
+  /// No description provided for @pairServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'On the Server device, open Client pairing. Enter its address, fingerprint and one-time code exactly as shown.'**
+  String get pairServerBody;
+
+  /// No description provided for @pair.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair'**
+  String get pair;
+
+  /// No description provided for @pairingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing…'**
+  String get pairingServer;
+
+  /// No description provided for @serverPaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Server paired'**
+  String get serverPaired;
+
+  /// No description provided for @unpairServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpair server'**
+  String get unpairServer;
+
+  /// No description provided for @unpairServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpair this server?'**
+  String get unpairServerTitle;
+
+  /// No description provided for @unpairServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New tickets will stop creating deliveries. Existing local tickets and delivery history stay on this phone.'**
+  String get unpairServerBody;
+
+  /// No description provided for @serverUnpaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Server unpaired'**
+  String get serverUnpaired;
+
+  /// No description provided for @pairingInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the local address, six-digit code, device name and certificate fingerprint.'**
+  String get pairingInvalid;
+
+  /// No description provided for @pairingCertificateError.
+  ///
+  /// In en, this message translates to:
+  /// **'The Server certificate does not match this fingerprint. Nothing was paired.'**
+  String get pairingCertificateError;
+
+  /// No description provided for @pairingDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The one-time code was rejected or has expired. Open a new pairing window on the Server.'**
+  String get pairingDenied;
+
+  /// No description provided for @pairingUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'The Server could not be reached. Keep both devices on the same local network and leave Server mode open.'**
+  String get pairingUnreachable;
+
+  /// No description provided for @pairingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The Server response was not valid for this LibreSlip version.'**
+  String get pairingFailed;
+
+  /// No description provided for @pairingStorageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing succeeded remotely, but could not be saved securely on this phone. Pair again with a new code.'**
+  String get pairingStorageFailed;
+
+  /// No description provided for @pendingDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get pendingDeliveries;
+
+  /// No description provided for @failedDeliveries.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get failedDeliveries;
+
+  /// No description provided for @serverDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Server delivery'**
+  String get serverDelivery;
+
+  /// No description provided for @deliveryPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get deliveryPending;
+
+  /// No description provided for @deliverySending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get deliverySending;
+
+  /// No description provided for @deliveryDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get deliveryDelivered;
+
+  /// No description provided for @deliveryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get deliveryFailed;
+
+  /// No description provided for @deliveryPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This ticket is saved locally and will be sent while LibreSlip is open and the paired Server is reachable.'**
+  String get deliveryPendingBody;
+
+  /// No description provided for @deliveryDeliveredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The paired Server acknowledged this immutable order.'**
+  String get deliveryDeliveredBody;
+
+  /// No description provided for @deliveryFailedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Local printing and history are unaffected. Check the Server and retry this same delivery safely.'**
+  String get deliveryFailedBody;
+
+  /// No description provided for @retryDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry delivery'**
+  String get retryDelivery;
+
+  /// No description provided for @retryingDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying…'**
+  String get retryingDelivery;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get fieldRequired;
+
+  /// No description provided for @defaultClientName.
+  ///
+  /// In en, this message translates to:
+  /// **'LibreSlip Client'**
+  String get defaultClientName;
 }
 
 class _AppLocalizationsDelegate

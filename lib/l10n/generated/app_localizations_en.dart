@@ -939,7 +939,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientModeBody =>
-      'Create, print and keep tickets locally. A server connection will always be optional.';
+      'Create, print and keep tickets locally. Pairing with a local Server is always optional.';
 
   @override
   String get serverMode => 'Server';
@@ -1060,6 +1060,139 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get markDoneFailed =>
       'The order could not be marked Done. It remains in Received.';
+
+  @override
+  String get clientServerTitle => 'Optional order server';
+
+  @override
+  String get clientServerBody =>
+      'Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.';
+
+  @override
+  String get noPairedServer => 'No server paired';
+
+  @override
+  String get pairServer => 'Pair server';
+
+  @override
+  String get pairedServer => 'Paired server';
+
+  @override
+  String get serverAddressInput => 'Server address';
+
+  @override
+  String get serverAddressHint => '192.168.1.25:42837';
+
+  @override
+  String get serverFingerprintInput => 'Certificate fingerprint';
+
+  @override
+  String get serverFingerprintHint =>
+      'Copy the fingerprint shown on the Server device';
+
+  @override
+  String get clientDeviceName => 'This device name';
+
+  @override
+  String get clientDeviceNameHint => 'Front counter';
+
+  @override
+  String get pairServerTitle => 'Pair with Server';
+
+  @override
+  String get pairServerBody =>
+      'On the Server device, open Client pairing. Enter its address, fingerprint and one-time code exactly as shown.';
+
+  @override
+  String get pair => 'Pair';
+
+  @override
+  String get pairingServer => 'Pairing…';
+
+  @override
+  String get serverPaired => 'Server paired';
+
+  @override
+  String get unpairServer => 'Unpair server';
+
+  @override
+  String get unpairServerTitle => 'Unpair this server?';
+
+  @override
+  String get unpairServerBody =>
+      'New tickets will stop creating deliveries. Existing local tickets and delivery history stay on this phone.';
+
+  @override
+  String get serverUnpaired => 'Server unpaired';
+
+  @override
+  String get pairingInvalid =>
+      'Check the local address, six-digit code, device name and certificate fingerprint.';
+
+  @override
+  String get pairingCertificateError =>
+      'The Server certificate does not match this fingerprint. Nothing was paired.';
+
+  @override
+  String get pairingDenied =>
+      'The one-time code was rejected or has expired. Open a new pairing window on the Server.';
+
+  @override
+  String get pairingUnreachable =>
+      'The Server could not be reached. Keep both devices on the same local network and leave Server mode open.';
+
+  @override
+  String get pairingFailed =>
+      'The Server response was not valid for this LibreSlip version.';
+
+  @override
+  String get pairingStorageFailed =>
+      'Pairing succeeded remotely, but could not be saved securely on this phone. Pair again with a new code.';
+
+  @override
+  String get pendingDeliveries => 'Waiting';
+
+  @override
+  String get failedDeliveries => 'Needs attention';
+
+  @override
+  String get serverDelivery => 'Server delivery';
+
+  @override
+  String get deliveryPending => 'Pending';
+
+  @override
+  String get deliverySending => 'Sending';
+
+  @override
+  String get deliveryDelivered => 'Delivered';
+
+  @override
+  String get deliveryFailed => 'Needs attention';
+
+  @override
+  String get deliveryPendingBody =>
+      'This ticket is saved locally and will be sent while LibreSlip is open and the paired Server is reachable.';
+
+  @override
+  String get deliveryDeliveredBody =>
+      'The paired Server acknowledged this immutable order.';
+
+  @override
+  String get deliveryFailedBody =>
+      'Local printing and history are unaffected. Check the Server and retry this same delivery safely.';
+
+  @override
+  String get retryDelivery => 'Retry delivery';
+
+  @override
+  String get retryingDelivery => 'Retrying…';
+
+  @override
+  String get fieldRequired => 'This field is required';
+
+  @override
+  String get defaultClientName => 'LibreSlip Client';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

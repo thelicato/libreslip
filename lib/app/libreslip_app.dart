@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/widgets/brand_mark.dart';
+import '../features/networking/application/client_delivery_controller.dart';
 import '../features/networking/application/network_mode_controller.dart';
 import '../features/networking/application/server_inbox_controller.dart';
 import '../features/networking/domain/network_models.dart';
@@ -21,6 +22,7 @@ class LibreSlipApp extends StatelessWidget {
     required this.orders,
     this.networking,
     this.serverInbox,
+    this.clientDelivery,
     this.printer,
     this.ticketOutput,
     this.portability,
@@ -30,13 +32,19 @@ class LibreSlipApp extends StatelessWidget {
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
   final ServerInboxController? serverInbox;
+  final ClientDeliveryController? clientDelivery;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([settings, orders, ?networking]),
+    listenable: Listenable.merge([
+      settings,
+      orders,
+      ?networking,
+      ?clientDelivery,
+    ]),
     builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appName,
@@ -57,7 +65,8 @@ class LibreSlipApp extends StatelessWidget {
       home:
           settings.loaded &&
               orders.loaded &&
-              (networking == null || networking!.loaded)
+              (networking == null || networking!.loaded) &&
+              (clientDelivery == null || clientDelivery!.loaded)
           ? networking?.mode == LibreSlipMode.server
                 ? ServerModeShell(
                     modeController: networking!,
@@ -67,6 +76,7 @@ class LibreSlipApp extends StatelessWidget {
                     settings: settings,
                     orders: orders,
                     networking: networking,
+                    clientDelivery: clientDelivery,
                     printer: printer,
                     ticketOutput: ticketOutput,
                     portability: portability,
@@ -75,6 +85,7 @@ class LibreSlipApp extends StatelessWidget {
               settings: settings,
               orders: orders,
               networking: networking,
+              clientDelivery: clientDelivery,
             ),
     ),
   );
@@ -85,17 +96,21 @@ class _StartupScreen extends StatelessWidget {
     required this.settings,
     required this.orders,
     required this.networking,
+    required this.clientDelivery,
   });
 
   final SettingsController settings;
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
+  final ClientDeliveryController? clientDelivery;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final storageFailed =
-        orders.loadFailed || (networking?.loadFailed ?? false);
+        orders.loadFailed ||
+        (networking?.loadFailed ?? false) ||
+        (clientDelivery?.loadFailed ?? false);
     final failed = settings.loadFailed || storageFailed;
     return Scaffold(
       body: SafeArea(
@@ -131,6 +146,9 @@ class _StartupScreen extends StatelessWidget {
                         if (orders.loadFailed) orders.load();
                         if (networking?.loadFailed ?? false) {
                           networking!.load();
+                        }
+                        if (clientDelivery?.loadFailed ?? false) {
+                          clientDelivery!.load();
                         }
                       },
                       icon: const Icon(Icons.refresh_rounded),

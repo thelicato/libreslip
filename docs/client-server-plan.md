@@ -118,10 +118,14 @@ Implemented in LibreSlip 0.11.0.
 
 ### Task 12: client delivery
 
-- Create outbox entries transactionally when a paired client finalises a ticket.
-- Deliver without blocking or changing local print outcome.
-- Show Pending, Delivered and Needs attention independently from print status.
-- Add explicit retry and safe recovery after process termination, lost acknowledgements and server restart.
+Implemented in LibreSlip 0.12.0.
+
+- Pair manually through a local IPv4 address, one-time code and exact SHA-256 certificate pin.
+- Keep the access token in Android keystore-backed encrypted storage and out of archives.
+- Create one stable outbox envelope transactionally when a paired client finalises a ticket.
+- Prioritise local printing, then deliver without changing its outcome.
+- Show Pending, Sending, Delivered and Needs attention independently from print status.
+- Retry explicitly with the same delivery identifier and recover interrupted sending as pending after restart.
 
 ### Task 13: discovery, portability and hardening
 

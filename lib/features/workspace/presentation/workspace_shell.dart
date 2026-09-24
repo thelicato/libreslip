@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/network_mode_controller.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../orders/presentation/compose_page.dart';
@@ -21,6 +22,7 @@ class WorkspaceShell extends StatefulWidget {
     required this.settings,
     required this.orders,
     this.networking,
+    this.clientDelivery,
     this.printer,
     this.ticketOutput,
     this.portability,
@@ -28,6 +30,7 @@ class WorkspaceShell extends StatefulWidget {
   final SettingsController settings;
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
+  final ClientDeliveryController? clientDelivery;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
@@ -95,17 +98,20 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         controller: widget.orders,
         settings: widget.settings.settings,
         output: widget.ticketOutput,
+        delivery: widget.clientDelivery,
       ),
       3 => TicketsPage(
         controller: widget.orders,
         settings: widget.settings.settings,
         output: widget.ticketOutput,
+        delivery: widget.clientDelivery,
         onOpenCompose: () => _select(2),
       ),
       4 => SettingsPage(
         controller: widget.settings,
         orders: widget.orders,
         networking: widget.networking,
+        delivery: widget.clientDelivery,
         printer: widget.printer,
         portability: widget.portability,
       ),

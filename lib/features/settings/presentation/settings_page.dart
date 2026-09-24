@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/network_mode_controller.dart';
+import '../../networking/presentation/client_server_settings_card.dart';
 import '../../networking/presentation/mode_settings_card.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../portability/application/portability_controller.dart';
@@ -19,12 +21,14 @@ class SettingsPage extends StatelessWidget {
     required this.controller,
     required this.orders,
     this.networking,
+    this.delivery,
     this.printer,
     this.portability,
   });
   final SettingsController controller;
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
+  final ClientDeliveryController? delivery;
   final PrinterController? printer;
   final PortabilityController? portability;
 
@@ -238,6 +242,13 @@ class SettingsPage extends StatelessWidget {
         if (networking != null) ...[
           const SizedBox(height: 20),
           ModeSettingsCard(controller: networking!),
+        ],
+        if (delivery != null && networking?.configuration != null) ...[
+          const SizedBox(height: 20),
+          ClientServerSettingsCard(
+            controller: delivery!,
+            configuration: networking!.configuration!,
+          ),
         ],
         const SizedBox(height: 20),
         _SettingsSection(

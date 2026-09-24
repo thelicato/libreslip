@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import 'app/libreslip_app.dart';
+import 'features/networking/application/client_delivery_controller.dart';
 import 'features/networking/application/network_mode_controller.dart';
 import 'features/networking/application/server_inbox_controller.dart';
 import 'features/networking/data/local_https_server.dart';
+import 'features/networking/data/pinned_https_client.dart';
+import 'features/networking/data/secure_client_secret_store.dart';
 import 'features/networking/data/secure_server_secret_store.dart';
 import 'features/orders/application/order_workspace_controller.dart';
 import 'features/orders/data/item_image_store.dart';
@@ -41,6 +44,11 @@ void main() {
     serverSecrets,
     LocalHttpsServer(repository, serverSecrets),
   );
+  final clientDelivery = ClientDeliveryController(
+    repository,
+    SecureClientSecretStore(),
+    const PinnedHttpsClient(),
+  );
   final printer = PrinterController(AndroidBluetoothPrinterTransport());
   final ticketOutput = TicketOutputController(
     store: repository,
@@ -57,6 +65,7 @@ void main() {
       orders: orders,
       networking: networking,
       serverInbox: serverInbox,
+      clientDelivery: clientDelivery,
       printer: printer,
       ticketOutput: ticketOutput,
       portability: portability,
@@ -68,6 +77,7 @@ void main() {
     await settings.load();
     await orders.load();
     await networking.load();
+    await clientDelivery.load();
     await ticketOutput.load();
   }());
 }

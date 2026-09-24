@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/domain/ticket_document.dart';
 import '../../settings/domain/app_settings.dart';
@@ -13,11 +16,13 @@ class ComposePage extends StatefulWidget {
     required this.controller,
     required this.settings,
     this.output,
+    this.delivery,
   });
 
   final OrderWorkspaceController controller;
   final AppSettings settings;
   final TicketOutputController? output;
+  final ClientDeliveryController? delivery;
 
   @override
   State<ComposePage> createState() => _ComposePageState();
@@ -34,6 +39,7 @@ class _ComposePageState extends State<ComposePage> {
       widget.controller,
       if (widget.output != null) widget.output!,
       if (widget.output != null) widget.output!.printer,
+      if (widget.delivery != null) widget.delivery!,
     ]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
@@ -201,6 +207,9 @@ class _ComposePageState extends State<ComposePage> {
       ticket: ticket,
       document: _document(ticket),
     );
+    if (widget.delivery != null) {
+      unawaited(widget.delivery!.ticketFinalised(ticket.id));
+    }
     if (!mounted) return;
     setState(() => _printing = false);
     final message = switch (result) {

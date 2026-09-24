@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../networking/domain/client_delivery_models.dart';
 import '../../networking/domain/network_models.dart';
 import '../../networking/domain/network_protocol.dart';
 import '../../networking/domain/server_inbox_models.dart';
@@ -15,12 +16,13 @@ class SqliteOrderRepository
         OrderRepository,
         PrintJobStore,
         NetworkConfigurationStore,
+        ClientDeliveryStore,
         ServerInboxStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 6;
-  static const portableSchemaVersions = {5, databaseVersion};
+  static const databaseVersion = 7;
+  static const portableSchemaVersions = {5, 6, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -332,6 +334,19 @@ class SqliteOrderRepository
         )
       ''');
     }
+    if (oldVersion < 7 && newVersion >= 7) {
+      await database.execute(
+        'ALTER TABLE network_destinations ADD COLUMN is_active INTEGER '
+        'NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1))',
+      );
+      await database.execute(
+        'ALTER TABLE server_delivery_outbox ADD COLUMN server_order_id TEXT',
+      );
+      await database.execute('''
+        CREATE UNIQUE INDEX network_destinations_one_active
+        ON network_destinations(is_active) WHERE is_active = 1
+      ''');
+    }
   }
 
   @override
@@ -376,6 +391,200 @@ class SqliteOrderRepository
     } catch (error) {
       if (error is OrderStorageException) rethrow;
       throw OrderStorageException('Could not save the app mode.', error);
+    }
+  }
+
+  @override
+  Future<PairedServer?> loadActiveServer() async {
+    try {
+      final rows = await (await _db).query(
+        'network_destinations',
+        where: 'is_active = 1',
+        limit: 1,
+      );
+      return rows.isEmpty ? null : _pairedServerFromRow(rows.single);
+    } catch (error) {
+      throw OrderStorageException('Could not read the paired server.', error);
+    }
+  }
+
+  @override
+  Future<void> savePairedServer(PairedServer server) async {
+    try {
+      await (await _db).transaction((transaction) async {
+        await transaction.update('network_destinations', {'is_active': 0});
+        final existing = await transaction.query(
+          'network_destinations',
+          columns: ['id'],
+          where: 'id = ?',
+          whereArgs: [server.id],
+          limit: 1,
+        );
+        final values = <String, Object?>{
+          'display_name': server.displayName,
+          'base_url': server.baseUrl.toString(),
+          'certificate_fingerprint': server.certificateFingerprint,
+          'updated_at': _timestamp(server.updatedAt),
+          'is_active': 1,
+        };
+        if (existing.isEmpty) {
+          await transaction.insert('network_destinations', {
+            'id': server.id,
+            ...values,
+            'created_at': _timestamp(server.createdAt),
+          });
+        } else {
+          await transaction.update(
+            'network_destinations',
+            values,
+            where: 'id = ?',
+            whereArgs: [server.id],
+          );
+        }
+      });
+    } catch (error) {
+      throw OrderStorageException('Could not save the paired server.', error);
+    }
+  }
+
+  @override
+  Future<void> deactivateServer(String id) async {
+    try {
+      await (await _db).update(
+        'network_destinations',
+        {'is_active': 0, 'updated_at': _timestamp(DateTime.now().toUtc())},
+        where: 'id = ? AND is_active = 1',
+        whereArgs: [id],
+      );
+    } catch (error) {
+      throw OrderStorageException('Could not disconnect the server.', error);
+    }
+  }
+
+  @override
+  Future<List<ClientDelivery>> loadClientDeliveries() async {
+    try {
+      final rows = await (await _db).query(
+        'server_delivery_outbox',
+        orderBy: 'created_at DESC',
+      );
+      return rows.map(_clientDeliveryFromRow).toList(growable: false);
+    } catch (error) {
+      throw OrderStorageException('Could not read server deliveries.', error);
+    }
+  }
+
+  @override
+  Future<ClientDelivery> markClientDeliverySending(String id) async {
+    try {
+      final database = await _db;
+      final changed = await database.rawUpdate(
+        '''
+        UPDATE server_delivery_outbox
+        SET status = 'sending', attempt_count = attempt_count + 1,
+            error_code = NULL, updated_at = ?
+        WHERE id = ? AND status = 'pending'
+        ''',
+        [_timestamp(DateTime.now().toUtc()), id],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'Only a pending server delivery can be sent.',
+        );
+      }
+      return await _loadClientDelivery(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not start server delivery.', error);
+    }
+  }
+
+  @override
+  Future<ClientDelivery> markClientDeliveryDelivered(
+    String id, {
+    required String serverOrderId,
+    required DateTime deliveredAt,
+  }) async {
+    try {
+      final database = await _db;
+      final changed = await database.update(
+        'server_delivery_outbox',
+        {
+          'status': ClientDeliveryStatus.delivered.value,
+          'error_code': null,
+          'updated_at': _timestamp(deliveredAt),
+          'delivered_at': _timestamp(deliveredAt),
+          'server_order_id': serverOrderId,
+        },
+        where: 'id = ? AND status = ?',
+        whereArgs: [id, ClientDeliveryStatus.sending.value],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'Only a sending server delivery can be completed.',
+        );
+      }
+      return await _loadClientDelivery(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not complete server delivery.', error);
+    }
+  }
+
+  @override
+  Future<ClientDelivery> markClientDeliveryFailed(
+    String id, {
+    required String errorCode,
+  }) async {
+    try {
+      final database = await _db;
+      final changed = await database.rawUpdate(
+        '''
+        UPDATE server_delivery_outbox
+        SET status = 'failed', error_code = ?, updated_at = ?
+        WHERE id = ? AND status IN ('pending', 'sending')
+        ''',
+        [errorCode, _timestamp(DateTime.now().toUtc()), id],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'Only an unfinished server delivery can fail.',
+        );
+      }
+      return await _loadClientDelivery(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not record delivery failure.', error);
+    }
+  }
+
+  @override
+  Future<ClientDelivery> resetClientDeliveryForRetry(String id) async {
+    try {
+      final database = await _db;
+      final changed = await database.update(
+        'server_delivery_outbox',
+        {
+          'status': ClientDeliveryStatus.pending.value,
+          'error_code': null,
+          'updated_at': _timestamp(DateTime.now().toUtc()),
+        },
+        where: 'id = ? AND status IN (?, ?)',
+        whereArgs: [
+          id,
+          ClientDeliveryStatus.failed.value,
+          ClientDeliveryStatus.pending.value,
+        ],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'This server delivery cannot be retried.',
+        );
+      }
+      return await _loadClientDelivery(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not retry server delivery.', error);
     }
   }
 
@@ -914,6 +1123,7 @@ class SqliteOrderRepository
           whereArgs: ['order'],
         );
         final id = createLocalId();
+        final createdAt = DateTime.now().toUtc();
         await transaction.insert('tickets', {
           'id': id,
           'ticket_number': ticketNumber,
@@ -922,7 +1132,7 @@ class SqliteOrderRepository
           'heading_snapshot': heading.trim(),
           'reference_snapshot': draft.reference.trim(),
           'order_note_snapshot': draft.orderNote.trim(),
-          'created_at': _timestamp(DateTime.now()),
+          'created_at': _timestamp(createdAt),
           'source_ticket_id': null,
         });
         for (var index = 0; index < draft.lines.length; index++) {
@@ -935,6 +1145,59 @@ class SqliteOrderRepository
             'quantity': line.quantity,
             'preparation_note': line.preparationNote.trim(),
             'position': index,
+          });
+        }
+        final destinations = await transaction.query(
+          'network_destinations',
+          columns: ['id'],
+          where: 'is_active = 1',
+          limit: 1,
+        );
+        if (destinations.isNotEmpty) {
+          final settings = await transaction.query(
+            'network_settings',
+            columns: ['installation_id'],
+            where: 'id = 1',
+            limit: 1,
+          );
+          if (settings.length != 1) {
+            throw const OrderStorageException(
+              'The client installation identity could not be found.',
+            );
+          }
+          final deliveryId = createLocalId();
+          final clientInstallationId =
+              settings.single['installation_id']! as String;
+          final envelope = OrderDeliveryEnvelope.create(
+            clientInstallationId: clientInstallationId,
+            deliveryId: deliveryId,
+            ticketId: id,
+            ticketNumber: orderNumber,
+            createdAt: createdAt,
+            heading: heading.trim(),
+            reference: draft.reference.trim(),
+            orderNote: draft.orderNote.trim(),
+            lines: [
+              for (final line in draft.lines)
+                DeliveryLine(
+                  name: line.name,
+                  quantity: line.quantity,
+                  preparationNote: line.preparationNote.trim(),
+                ),
+            ],
+          );
+          final now = _timestamp(createdAt);
+          await transaction.insert('server_delivery_outbox', {
+            'id': deliveryId,
+            'destination_id': destinations.single['id']! as String,
+            'client_installation_id': clientInstallationId,
+            'ticket_id': id,
+            'payload_json': envelope.toJsonString(),
+            'payload_checksum': envelope.payloadChecksum,
+            'status': ClientDeliveryStatus.pending.value,
+            'attempt_count': 0,
+            'created_at': now,
+            'updated_at': now,
           });
         }
         await transaction.delete(
@@ -1240,6 +1503,57 @@ class SqliteOrderRepository
       if (error is OrderStorageException) rethrow;
       throw OrderStorageException('Could not finish the print job.', error);
     }
+  }
+
+  static PairedServer _pairedServerFromRow(Map<String, Object?> row) =>
+      PairedServer(
+        id: row['id']! as String,
+        displayName: row['display_name']! as String,
+        baseUrl: Uri.parse(row['base_url']! as String),
+        certificateFingerprint: row['certificate_fingerprint']! as String,
+        createdAt: DateTime.parse(row['created_at']! as String),
+        updatedAt: DateTime.parse(row['updated_at']! as String),
+      );
+
+  static Future<ClientDelivery> _loadClientDelivery(
+    DatabaseExecutor executor,
+    String id,
+  ) async {
+    final rows = await executor.query(
+      'server_delivery_outbox',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      throw const OrderStorageException(
+        'The server delivery could not be found.',
+      );
+    }
+    return _clientDeliveryFromRow(rows.single);
+  }
+
+  static ClientDelivery _clientDeliveryFromRow(Map<String, Object?> row) {
+    final envelope = OrderDeliveryEnvelope.fromJsonString(
+      row['payload_json']! as String,
+    );
+    return ClientDelivery(
+      id: row['id']! as String,
+      destinationId: row['destination_id']! as String,
+      clientInstallationId: row['client_installation_id']! as String,
+      ticketId: row['ticket_id']! as String,
+      ticketNumber: envelope.ticketNumber,
+      envelope: envelope,
+      status: ClientDeliveryStatusValue.parse(row['status']! as String),
+      attemptCount: row['attempt_count']! as int,
+      errorCode: row['error_code'] as String?,
+      createdAt: DateTime.parse(row['created_at']! as String),
+      updatedAt: DateTime.parse(row['updated_at']! as String),
+      deliveredAt: row['delivered_at'] == null
+          ? null
+          : DateTime.parse(row['delivered_at']! as String),
+      serverOrderId: row['server_order_id'] as String?,
+    );
   }
 
   static Future<PrintJob> _loadPrintJob(

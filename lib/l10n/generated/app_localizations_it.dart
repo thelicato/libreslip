@@ -950,7 +950,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get clientModeBody =>
-      'Crea, stampa e conserva le comande in locale. La connessione a un server sarà sempre facoltativa.';
+      'Crea, stampa e conserva le comande in locale. L’associazione a un Server locale è sempre facoltativa.';
 
   @override
   String get serverMode => 'Server';
@@ -1072,6 +1072,139 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get markDoneFailed =>
       'Impossibile segnare l’ordine come completato. Resta tra i ricevuti.';
+
+  @override
+  String get clientServerTitle => 'Server ordini facoltativo';
+
+  @override
+  String get clientServerBody =>
+      'Associa un Server LibreSlip su questa rete locale. La stampa locale e lo storico continuano a funzionare anche quando il Server non è disponibile.';
+
+  @override
+  String get noPairedServer => 'Nessun Server associato';
+
+  @override
+  String get pairServer => 'Associa Server';
+
+  @override
+  String get pairedServer => 'Server associato';
+
+  @override
+  String get serverAddressInput => 'Indirizzo Server';
+
+  @override
+  String get serverAddressHint => '192.168.1.25:42837';
+
+  @override
+  String get serverFingerprintInput => 'Impronta del certificato';
+
+  @override
+  String get serverFingerprintHint =>
+      'Copia l’impronta mostrata sul dispositivo Server';
+
+  @override
+  String get clientDeviceName => 'Nome di questo dispositivo';
+
+  @override
+  String get clientDeviceNameHint => 'Cassa principale';
+
+  @override
+  String get pairServerTitle => 'Associa al Server';
+
+  @override
+  String get pairServerBody =>
+      'Sul dispositivo Server, apri Associazione Client. Inserisci indirizzo, impronta e codice monouso esattamente come mostrati.';
+
+  @override
+  String get pair => 'Associa';
+
+  @override
+  String get pairingServer => 'Associazione…';
+
+  @override
+  String get serverPaired => 'Server associato';
+
+  @override
+  String get unpairServer => 'Disassocia Server';
+
+  @override
+  String get unpairServerTitle => 'Disassociare questo Server?';
+
+  @override
+  String get unpairServerBody =>
+      'Le nuove comande non creeranno più consegne. Le comande locali e lo storico delle consegne restano su questo telefono.';
+
+  @override
+  String get serverUnpaired => 'Server disassociato';
+
+  @override
+  String get pairingInvalid =>
+      'Controlla indirizzo locale, codice a sei cifre, nome dispositivo e impronta del certificato.';
+
+  @override
+  String get pairingCertificateError =>
+      'Il certificato del Server non corrisponde a questa impronta. Non è stato associato nulla.';
+
+  @override
+  String get pairingDenied =>
+      'Il codice monouso è stato rifiutato o è scaduto. Apri una nuova finestra di associazione sul Server.';
+
+  @override
+  String get pairingUnreachable =>
+      'Impossibile raggiungere il Server. Mantieni entrambi i dispositivi sulla stessa rete locale e lascia aperta la modalità Server.';
+
+  @override
+  String get pairingFailed =>
+      'La risposta del Server non è valida per questa versione di LibreSlip.';
+
+  @override
+  String get pairingStorageFailed =>
+      'L’associazione remota è riuscita, ma non è stato possibile salvarla in sicurezza sul telefono. Associa di nuovo con un nuovo codice.';
+
+  @override
+  String get pendingDeliveries => 'In attesa';
+
+  @override
+  String get failedDeliveries => 'Da controllare';
+
+  @override
+  String get serverDelivery => 'Consegna al Server';
+
+  @override
+  String get deliveryPending => 'In attesa';
+
+  @override
+  String get deliverySending => 'Invio';
+
+  @override
+  String get deliveryDelivered => 'Consegnato';
+
+  @override
+  String get deliveryFailed => 'Da controllare';
+
+  @override
+  String get deliveryPendingBody =>
+      'Questa comanda è salvata in locale e verrà inviata mentre LibreSlip è aperto e il Server associato è raggiungibile.';
+
+  @override
+  String get deliveryDeliveredBody =>
+      'Il Server associato ha confermato questo ordine non modificabile.';
+
+  @override
+  String get deliveryFailedBody =>
+      'La stampa locale e lo storico non sono interessati. Controlla il Server e riprova la stessa consegna in sicurezza.';
+
+  @override
+  String get retryDelivery => 'Riprova consegna';
+
+  @override
+  String get retryingDelivery => 'Nuovo tentativo…';
+
+  @override
+  String get fieldRequired => 'Campo obbligatorio';
+
+  @override
+  String get defaultClientName => 'Client LibreSlip';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

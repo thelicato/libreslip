@@ -153,7 +153,7 @@ void main() {
   );
 
   test(
-    'schema 5 backups restore without replacing the local app mode',
+    'schema 5 and 6 backups restore without replacing the local app mode',
     () async {
       final source = SqliteOrderRepository(
         factory: databaseFactoryFfiNoIsolate,
@@ -162,23 +162,26 @@ void main() {
       await source.open();
       await source.saveItem(name: 'Tea');
       final snapshot = await source.createPortableSnapshot();
-      snapshot['schemaVersion'] = 5;
       await source.close();
 
-      final destination = SqliteOrderRepository(
-        factory: databaseFactoryFfiNoIsolate,
-        databasePath: '${temporaryDirectory.path}/destination.sqlite3',
-      );
-      addTearDown(destination.close);
-      await destination.open();
-      await destination.saveLibreSlipMode(LibreSlipMode.server);
-      await destination.replaceWithPortableSnapshot(snapshot);
+      for (final version in [5, 6]) {
+        snapshot['schemaVersion'] = version;
+        final destination = SqliteOrderRepository(
+          factory: databaseFactoryFfiNoIsolate,
+          databasePath:
+              '${temporaryDirectory.path}/destination-$version.sqlite3',
+        );
+        await destination.open();
+        await destination.saveLibreSlipMode(LibreSlipMode.server);
+        await destination.replaceWithPortableSnapshot(snapshot);
 
-      expect(await destination.loadItems(), hasLength(1));
-      expect(
-        (await destination.loadNetworkConfiguration()).mode,
-        LibreSlipMode.server,
-      );
+        expect(await destination.loadItems(), hasLength(1));
+        expect(
+          (await destination.loadNetworkConfiguration()).mode,
+          LibreSlipMode.server,
+        );
+        await destination.close();
+      }
     },
   );
 }

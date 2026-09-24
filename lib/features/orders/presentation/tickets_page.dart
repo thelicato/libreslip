@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/domain/client_delivery_models.dart';
+import '../../networking/presentation/client_delivery_status.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/presentation/ticket_detail_dialog.dart';
 import '../../settings/domain/app_settings.dart';
@@ -14,12 +17,14 @@ class TicketsPage extends StatefulWidget {
     required this.settings,
     required this.onOpenCompose,
     this.output,
+    this.delivery,
   });
 
   final OrderWorkspaceController controller;
   final AppSettings settings;
   final VoidCallback onOpenCompose;
   final TicketOutputController? output;
+  final ClientDeliveryController? delivery;
 
   @override
   State<TicketsPage> createState() => _TicketsPageState();
@@ -30,7 +35,10 @@ class _TicketsPageState extends State<TicketsPage> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.controller,
+    listenable: Listenable.merge([
+      widget.controller,
+      if (widget.delivery != null) widget.delivery!,
+    ]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       final query = _query.trim().toLowerCase();
@@ -87,6 +95,7 @@ class _TicketsPageState extends State<TicketsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TicketCard(
                   ticket: ticket,
+                  delivery: widget.delivery?.deliveryForTicket(ticket.id),
                   enabled: !widget.controller.saving,
                   onView: () => _showTicket(ticket),
                   onDelete: () => _deleteTicket(ticket),
@@ -175,6 +184,7 @@ class _TicketsPageState extends State<TicketsPage> {
       ticket: ticket,
       settings: widget.settings,
       output: widget.output,
+      delivery: widget.delivery,
     ),
   );
 }
@@ -182,12 +192,14 @@ class _TicketsPageState extends State<TicketsPage> {
 class _TicketCard extends StatelessWidget {
   const _TicketCard({
     required this.ticket,
+    required this.delivery,
     required this.enabled,
     required this.onView,
     required this.onDelete,
   });
 
   final SavedTicket ticket;
+  final ClientDelivery? delivery;
   final bool enabled;
   final VoidCallback onView;
   final VoidCallback onDelete;
@@ -236,7 +248,10 @@ class _TicketCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Chip(label: Text(l.saved)),
+                      if (delivery == null)
+                        Chip(label: Text(l.saved))
+                      else
+                        ClientDeliveryStatusChip(delivery: delivery!),
                     ],
                   ),
                   if (ticket.reference.isNotEmpty) ...[

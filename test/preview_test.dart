@@ -7,8 +7,12 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/networking/application/client_delivery_controller.dart';
 import 'package:libreslip/features/networking/application/network_mode_controller.dart';
 import 'package:libreslip/features/networking/application/server_inbox_controller.dart';
+import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
+import 'package:libreslip/features/networking/domain/client_security.dart';
+import 'package:libreslip/features/networking/domain/client_transport.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
@@ -91,6 +95,13 @@ void main() {
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
       ('portability-phone-en', const Size(520, 1100), 'en', ThemeMode.light, 4),
       (
+        'client-server-settings-phone-en',
+        const Size(520, 1100),
+        'en',
+        ThemeMode.light,
+        4,
+      ),
+      (
         'server-inbox-phone-it',
         const Size(520, 1100),
         'it',
@@ -120,6 +131,21 @@ void main() {
       final networking = NetworkModeController(environment.repository);
       ServerInboxController? inbox;
       await networking.load();
+      final clientDelivery = ClientDeliveryController(
+        environment.repository,
+        _MemoryClientSecrets(),
+        _FakeClientTransport(),
+      );
+      await clientDelivery.load();
+      if (name == 'client-server-settings-phone-en') {
+        await clientDelivery.pair(
+          configuration: networking.configuration!,
+          address: '192.168.1.42:42837',
+          fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          code: '123456',
+          clientName: 'Front counter',
+        );
+      }
       if (page == 5) {
         await networking.setMode(LibreSlipMode.server);
         await environment.repository.pairClient(
@@ -196,6 +222,7 @@ void main() {
             orders: orders,
             networking: networking,
             serverInbox: inbox,
+            clientDelivery: clientDelivery,
             printer: printer,
             portability: portability,
           ),
@@ -220,7 +247,15 @@ void main() {
       if (name == 'portability-phone-en') {
         await tester.drag(
           find.byKey(const ValueKey('page-4')),
-          const Offset(0, -2600),
+          const Offset(0, -3000),
+        );
+        await tester.pumpAndSettle();
+      }
+      if (name == 'client-server-settings-phone-en') {
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('client-server-settings')),
+          500,
+          scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
       }
@@ -239,6 +274,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       portability.dispose();
       printer.dispose();
+      clientDelivery.dispose();
       networking.dispose();
       inbox?.dispose();
       controller.dispose();
@@ -271,6 +307,53 @@ class _PreviewPrinterTransport implements PrinterTransport {
   @override
   Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
       bytes.length;
+}
+
+class _MemoryClientSecrets implements ClientSecretStore {
+  final tokens = <String, String>{};
+
+  @override
+  Future<void> deleteServerAccessToken(String serverId) async {
+    tokens.remove(serverId);
+  }
+
+  @override
+  Future<String?> readServerAccessToken(String serverId) async =>
+      tokens[serverId];
+
+  @override
+  Future<void> writeServerAccessToken(String serverId, String token) async {
+    tokens[serverId] = token;
+  }
+}
+
+class _FakeClientTransport implements ClientServerTransport {
+  @override
+  Future<PairServerResult> pair(PairServerRequest request) async {
+    final now = DateTime.utc(2026, 9, 25, 8);
+    return PairServerResult(
+      server: PairedServer(
+        id: 'preview-server',
+        displayName: 'Kitchen tablet',
+        baseUrl: request.baseUrl,
+        certificateFingerprint: request.certificateFingerprint,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      accessToken: 'preview-token',
+    );
+  }
+
+  @override
+  Future<DeliveryAcknowledgement> deliver({
+    required PairedServer server,
+    required String accessToken,
+    required ClientDelivery delivery,
+  }) async => DeliveryAcknowledgement(
+    deliveryId: delivery.id,
+    serverOrderId: 'preview-order',
+    duplicate: false,
+  );
 }
 
 class _MemoryServerSecrets implements ServerSecretStore {

@@ -5,10 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/networking/application/client_delivery_controller.dart';
 import 'package:libreslip/features/networking/application/network_mode_controller.dart';
 import 'package:libreslip/features/networking/application/server_inbox_controller.dart';
 import 'package:libreslip/features/networking/data/local_https_server.dart';
+import 'package:libreslip/features/networking/data/pinned_https_client.dart';
+import 'package:libreslip/features/networking/data/secure_client_secret_store.dart';
 import 'package:libreslip/features/networking/data/secure_server_secret_store.dart';
+import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/orders/application/order_workspace_controller.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
@@ -61,8 +65,15 @@ void main() {
       serverSecrets,
       LocalHttpsServer(orderRepository, serverSecrets),
     );
+    final clientSecrets = SecureClientSecretStore();
+    final clientDelivery = ClientDeliveryController(
+      orderRepository,
+      clientSecrets,
+      const PinnedHttpsClient(),
+    );
     await orders.load();
     await networking.load();
+    await clientDelivery.load();
     addTearDown(() async {
       await orderRepository.close();
       await deleteDatabase(databasePath);
@@ -74,6 +85,7 @@ void main() {
         orders: orders,
         networking: networking,
         serverInbox: serverInbox,
+        clientDelivery: clientDelivery,
       ),
     );
     await tester.pumpAndSettle();
@@ -145,6 +157,41 @@ void main() {
       reason: serverInbox.lastError?.toString(),
     );
     expect(serverInbox.identity!.certificateFingerprint, hasLength(64));
+    serverInbox.openPairingWindow();
+    final pairingCode = serverInbox.pairingWindow!.code;
+    expect(
+      await clientDelivery.pair(
+        configuration: networking.configuration!,
+        address: '127.0.0.1:42837',
+        fingerprint: serverInbox.identity!.certificateFingerprint,
+        code: pairingCode,
+        clientName: 'Android integration client',
+      ),
+      isTrue,
+      reason: clientDelivery.lastPairingError,
+    );
+    final deliveryDraft = await orderRepository.createDraft();
+    final deliveryTicket = await orderRepository.convertDraftToTicket(
+      deliveryDraft.copyWith(
+        updatedAt: DateTime.now().toUtc(),
+        lines: [
+          TicketLine(
+            id: createLocalId(),
+            name: 'Ordine di rete',
+            quantity: 3,
+            preparationNote: 'Ben cotto',
+          ),
+        ],
+      ),
+      heading: 'Bottega Libertà',
+    );
+    await clientDelivery.ticketFinalised(deliveryTicket.id);
+    expect(
+      clientDelivery.deliveryForTicket(deliveryTicket.id)!.status,
+      ClientDeliveryStatus.delivered,
+    );
+    await serverInbox.refresh();
+    expect(serverInbox.receivedOrders, hasLength(1));
     final restored = await LocalSettingsRepository().load();
     expect(restored!.heading, 'Bottega Libertà');
     expect(restored.language, 'it');
@@ -179,8 +226,25 @@ void main() {
     );
     expect(recoveredJobs.single.status, PrintJobStatus.uncertain);
     expect(recoveredJobs.single.errorCode, 'interrupted');
-    expect(await reopenedRepository.loadTickets(), hasLength(2));
-    expect(await reopenedRepository.loadNextOrderNumber(), 2);
+    expect(await reopenedRepository.loadTickets(), hasLength(3));
+    expect(await reopenedRepository.loadNextOrderNumber(), 3);
+    final reopenedDelivery = ClientDeliveryController(
+      reopenedRepository,
+      clientSecrets,
+      const PinnedHttpsClient(),
+    );
+    await reopenedDelivery.load();
+    expect(reopenedDelivery.activeServer, isNotNull);
+    expect(
+      reopenedDelivery.deliveries.single.status,
+      ClientDeliveryStatus.delivered,
+    );
+    expect(
+      await clientSecrets.readServerAccessToken(
+        reopenedDelivery.activeServer!.id,
+      ),
+      isNotEmpty,
+    );
 
     final temporaryRoot = Directory(
       p.join(
@@ -212,7 +276,7 @@ void main() {
     expect(preview.appVersion, (await rootBundle.loadString('VERSION')).trim());
     expect(preview.itemCount, 1);
     expect(preview.draftCount, 1);
-    expect(preview.ticketCount, 2);
+    expect(preview.ticketCount, 3);
     expect(preview.printJobCount, 1);
 
     final freshPath = p.join(temporaryRoot.path, 'fresh.sqlite3');
@@ -236,17 +300,24 @@ void main() {
     expect(freshSettings.stored!.typography.heading, 20);
     expect(await freshRepository.loadItems(), hasLength(1));
     expect(await freshRepository.loadDrafts(), hasLength(1));
-    expect(await freshRepository.loadTickets(), hasLength(2));
+    expect(await freshRepository.loadTickets(), hasLength(3));
     expect(await freshRepository.loadPrintJobs(), hasLength(1));
-    expect(await freshRepository.loadNextOrderNumber(), 2);
+    expect(await freshRepository.loadNextOrderNumber(), 3);
     expect(
       (await freshRepository.loadNetworkConfiguration()).mode,
       LibreSlipMode.client,
     );
+    expect(await freshRepository.loadActiveServer(), isNull);
+    expect(await freshRepository.loadClientDeliveries(), isEmpty);
     expect(
       (await freshRepository.loadFeatureSettings()).preparationNotesEnabled,
       isFalse,
     );
+    final pairedServerId = reopenedDelivery.activeServer!.id;
+    await reopenedDelivery.unpair();
+    expect(await clientSecrets.readServerAccessToken(pairedServerId), isNull);
+    reopenedDelivery.dispose();
+    clientDelivery.dispose();
     await reopenedRepository.close();
     reopenedNetworking.dispose();
     networking.dispose();

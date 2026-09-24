@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/presentation/client_delivery_status.dart';
 import '../../orders/domain/order_models.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/ticket_output_controller.dart';
@@ -14,11 +16,13 @@ class TicketDetailDialog extends StatelessWidget {
     required this.ticket,
     required this.settings,
     this.output,
+    this.delivery,
   });
 
   final SavedTicket ticket;
   final AppSettings settings;
   final TicketOutputController? output;
+  final ClientDeliveryController? delivery;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +56,11 @@ class TicketDetailDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(child: TicketPreview(document: document)),
+              if (delivery != null)
+                ClientDeliveryStatusPanel(
+                  controller: delivery!,
+                  ticketId: ticket.id,
+                ),
               if (controller != null) ...[
                 const SizedBox(height: 22),
                 Text(
