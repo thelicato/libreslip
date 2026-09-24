@@ -943,7 +943,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get appModeBody =>
-      'Scegli se questo dispositivo crea gli ordini o si prepara a riceverli.';
+      'Scegli se questo dispositivo crea o riceve gli ordini.';
 
   @override
   String get clientMode => 'Client';
@@ -957,21 +957,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get serverModeBody =>
-      'Prepara il dispositivo per il flusso essenziale di ricezione e completamento. La ricezione non è ancora disponibile.';
+      'Ricevi ordini su questo dispositivo e segnali come completati. La ricezione funziona solo mentre LibreSlip è aperto.';
 
   @override
   String get switchToServerTitle => 'Passare alla modalità Server?';
 
   @override
   String get switchToServerBody =>
-      'Articoli, bozze e storico del Client restano su questo telefono. Questa versione di base non riceve ordini e non avvia connessioni di rete.';
+      'Articoli, bozze e storico del Client restano su questo telefono. La modalità Server riceve ordini non modificabili sulla rete locale mentre LibreSlip è aperto.';
 
   @override
   String get switchToClientTitle => 'Passare alla modalità Client?';
 
   @override
   String get switchToClientBody =>
-      'I dati di base del Server restano su questo telefono. La modalità Client ripristina catalogo, composizione, stampa e storico attuali.';
+      'Gli ordini ricevuti restano su questo telefono. La modalità Client ripristina catalogo, composizione, stampa locale e storico.';
 
   @override
   String get switchMode => 'Cambia modalità';
@@ -981,18 +981,97 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare la modalità dell’app. Non è stato modificato nulla.';
 
   @override
-  String get serverFoundationTitle => 'Modalità Server';
+  String get serverInboxTitle => 'Ordini del Server';
 
   @override
-  String get serverFoundationSubtitle =>
-      'La base locale è pronta, ma la ricezione degli ordini non è ancora operativa.';
+  String get serverInboxSubtitle =>
+      'Ricevi ordini non modificabili dai Client LibreSlip associati e segnali come completati.';
 
   @override
-  String get serverFoundationReady => 'Base pronta';
+  String get serverStarting => 'Avvio ricezione locale…';
 
   @override
-  String get serverFoundationBody =>
-      'LibreSlip ha salvato questa modalità e predisposto in sicurezza la casella locale. In questa fase non è attiva alcuna connessione di rete, nessun dispositivo può associarsi e non è possibile ricevere ordini.';
+  String get serverListening => 'Pronto a ricevere';
+
+  @override
+  String get serverNotListening => 'Ricezione non disponibile';
+
+  @override
+  String get serverForegroundOnly =>
+      'Solo HTTPS locale. La ricezione si interrompe quando LibreSlip non è aperto in modalità Server.';
+
+  @override
+  String get serverAddresses => 'Indirizzi di connessione';
+
+  @override
+  String get noLocalAddress =>
+      'Nessun indirizzo di rete locale disponibile. Collega questo dispositivo alla stessa rete Wi-Fi del Client.';
+
+  @override
+  String get serverFingerprint => 'Impronta del certificato Server';
+
+  @override
+  String get serverRefresh => 'Aggiorna ordini del Server';
+
+  @override
+  String get clientPairing => 'Associazione Client';
+
+  @override
+  String get clientPairingBody =>
+      'Apri la finestra di associazione di cinque minuti solo quando vuoi aggiungere un Client. Confronta l’impronta del Server su entrambi i dispositivi.';
+
+  @override
+  String get allowPairing => 'Consenti associazione Client';
+
+  @override
+  String get pairingCode => 'Codice di associazione monouso';
+
+  @override
+  String pairingExpires(String time) {
+    return 'Valido fino alle $time';
+  }
+
+  @override
+  String get stopPairing => 'Interrompi associazione';
+
+  @override
+  String get receivedOrders => 'Ricevuti';
+
+  @override
+  String get completedOrders => 'Completati';
+
+  @override
+  String get noReceivedOrders => 'Nessun ordine ricevuto';
+
+  @override
+  String get noReceivedOrdersBody =>
+      'I Client associati possono inviare ordini quando questa schermata indica Pronto a ricevere.';
+
+  @override
+  String get noCompletedOrders => 'Nessun ordine completato';
+
+  @override
+  String get noCompletedOrdersBody =>
+      'Gli ordini che segnali come completati resteranno qui.';
+
+  @override
+  String get sourceDevice => 'Dispositivo di origine';
+
+  @override
+  String get receivedAt => 'Ricevuto';
+
+  @override
+  String get createdAt => 'Creato';
+
+  @override
+  String get markDone => 'Segna completato';
+
+  @override
+  String get markingDone => 'Completamento…';
+
+  @override
+  String get markDoneFailed =>
+      'Impossibile segnare l’ordine come completato. Resta tra i ricevuti.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

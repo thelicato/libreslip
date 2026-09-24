@@ -1753,7 +1753,7 @@ abstract class AppLocalizations {
   /// No description provided for @appModeBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose whether this device creates orders or prepares to receive them.'**
+  /// **'Choose whether this device creates or receives orders.'**
   String get appModeBody;
 
   /// No description provided for @clientMode.
@@ -1777,7 +1777,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverModeBody.
   ///
   /// In en, this message translates to:
-  /// **'Prepare this device for the focused receive-and-Done workflow. Receiving is not available yet.'**
+  /// **'Receive orders on this device and mark them Done. The listener runs only while LibreSlip is open.'**
   String get serverModeBody;
 
   /// No description provided for @switchToServerTitle.
@@ -1789,7 +1789,7 @@ abstract class AppLocalizations {
   /// No description provided for @switchToServerBody.
   ///
   /// In en, this message translates to:
-  /// **'Your client items, drafts and ticket history stay on this phone. This foundation release does not receive orders or start a network listener.'**
+  /// **'Your client items, drafts and ticket history stay on this phone. Server mode receives immutable orders on your local network while LibreSlip is open.'**
   String get switchToServerBody;
 
   /// No description provided for @switchToClientTitle.
@@ -1801,7 +1801,7 @@ abstract class AppLocalizations {
   /// No description provided for @switchToClientBody.
   ///
   /// In en, this message translates to:
-  /// **'Server foundation data stays on this phone. Client mode restores the current catalogue, composition, printing and history workspace.'**
+  /// **'Received orders stay on this phone. Client mode restores the catalogue, composition, local printing and history workspace.'**
   String get switchToClientBody;
 
   /// No description provided for @switchMode.
@@ -1816,29 +1816,173 @@ abstract class AppLocalizations {
   /// **'The app mode could not be saved. Nothing was switched.'**
   String get modeSaveError;
 
-  /// No description provided for @serverFoundationTitle.
+  /// No description provided for @serverInboxTitle.
   ///
   /// In en, this message translates to:
-  /// **'Server mode'**
-  String get serverFoundationTitle;
+  /// **'Server orders'**
+  String get serverInboxTitle;
 
-  /// No description provided for @serverFoundationSubtitle.
+  /// No description provided for @serverInboxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'The local foundation is ready, but order receiving is not operational yet.'**
-  String get serverFoundationSubtitle;
+  /// **'Receive immutable orders from paired LibreSlip clients and mark them Done.'**
+  String get serverInboxSubtitle;
 
-  /// No description provided for @serverFoundationReady.
+  /// No description provided for @serverStarting.
   ///
   /// In en, this message translates to:
-  /// **'Foundation ready'**
-  String get serverFoundationReady;
+  /// **'Starting local receiver…'**
+  String get serverStarting;
 
-  /// No description provided for @serverFoundationBody.
+  /// No description provided for @serverListening.
   ///
   /// In en, this message translates to:
-  /// **'LibreSlip has stored this mode and prepared its local inbox safely. No network listener is running, no device can pair and no orders can be received in this milestone.'**
-  String get serverFoundationBody;
+  /// **'Ready to receive'**
+  String get serverListening;
+
+  /// No description provided for @serverNotListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiver unavailable'**
+  String get serverNotListening;
+
+  /// No description provided for @serverForegroundOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Local HTTPS only. Receiving stops whenever LibreSlip is not open in Server mode.'**
+  String get serverForegroundOnly;
+
+  /// No description provided for @serverAddresses.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection addresses'**
+  String get serverAddresses;
+
+  /// No description provided for @noLocalAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'No local network address is available. Connect this device to the same Wi-Fi network as the client.'**
+  String get noLocalAddress;
+
+  /// No description provided for @serverFingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Server certificate fingerprint'**
+  String get serverFingerprint;
+
+  /// No description provided for @serverRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh server orders'**
+  String get serverRefresh;
+
+  /// No description provided for @clientPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Client pairing'**
+  String get clientPairing;
+
+  /// No description provided for @clientPairingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a five-minute pairing window only when you are ready to add a client. Compare this server’s fingerprint on both devices.'**
+  String get clientPairingBody;
+
+  /// No description provided for @allowPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow client pairing'**
+  String get allowPairing;
+
+  /// No description provided for @pairingCode.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time pairing code'**
+  String get pairingCode;
+
+  /// No description provided for @pairingExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until {time}'**
+  String pairingExpires(String time);
+
+  /// No description provided for @stopPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop pairing'**
+  String get stopPairing;
+
+  /// No description provided for @receivedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get receivedOrders;
+
+  /// No description provided for @completedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedOrders;
+
+  /// No description provided for @noReceivedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No received orders yet'**
+  String get noReceivedOrders;
+
+  /// No description provided for @noReceivedOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired clients can send orders while this screen says Ready to receive.'**
+  String get noReceivedOrdersBody;
+
+  /// No description provided for @noCompletedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed orders yet'**
+  String get noCompletedOrders;
+
+  /// No description provided for @noCompletedOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders you mark Done will stay here.'**
+  String get noCompletedOrdersBody;
+
+  /// No description provided for @sourceDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Source device'**
+  String get sourceDevice;
+
+  /// No description provided for @receivedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get receivedAt;
+
+  /// No description provided for @createdAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get createdAt;
+
+  /// No description provided for @markDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Done'**
+  String get markDone;
+
+  /// No description provided for @markingDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Marking Done…'**
+  String get markingDone;
+
+  /// No description provided for @markDoneFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The order could not be marked Done. It remains in Received.'**
+  String get markDoneFailed;
 }
 
 class _AppLocalizationsDelegate

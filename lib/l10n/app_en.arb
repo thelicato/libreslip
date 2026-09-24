@@ -28,10 +28,22 @@
   "printerBluetoothOffStatus": "Bluetooth is off",
   "printerUnavailableStatus": "Unavailable",
   "printerConnectedDevice": "Connected to {name}",
-  "@printerConnectedDevice": {"placeholders": {"name": {"type": "String"}}},
+  "@printerConnectedDevice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "printerBattery": "Printer battery",
   "printerBatteryPercentage": "{percentage}%",
-  "@printerBatteryPercentage": {"placeholders": {"percentage": {"type": "int"}}},
+  "@printerBatteryPercentage": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "printerBatteryUnavailable": "Not reported by this printer. Check its battery indicator.",
   "managePrinter": "Manage printer",
   "refreshPrinterStatus": "Refresh status",
@@ -118,7 +130,13 @@
   "edit": "Edit",
   "removeItem": "Remove item",
   "removeItemQuestion": "Remove {name}?",
-  "@removeItemQuestion": {"placeholders": {"name": {"type": "String"}}},
+  "@removeItemQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "removeItemBody": "Saved tickets keep their original snapshot. This item will disappear from new searches.",
   "addToDraft": "Add to draft",
   "adHocItem": "One-off item",
@@ -152,11 +170,29 @@
   "orderNumberReset": "Order numbering restarted at 1.",
   "orderNumberResetFailed": "The order number could not be reset. Try again.",
   "orderNumber": "Order {number}",
-  "@orderNumber": {"placeholders": {"number": {"type": "int"}}},
+  "@orderNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "ticketNumber": "Ticket {number}",
-  "@ticketNumber": {"placeholders": {"number": {"type": "int"}}},
+  "@ticketNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "itemCount": "{count, plural, =0{No items} =1{1 item} other{{count} items}}",
-  "@itemCount": {"placeholders": {"count": {"type": "int"}}},
+  "@itemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewTicket": "View ticket",
   "duplicateTicket": "Duplicate as draft",
   "duplicatedTicket": "A new editable draft was created from this snapshot.",
@@ -187,7 +223,13 @@
   "connectPrinter": "Connect",
   "connectingPrinter": "Connecting…",
   "connectedPrinter": "Connected to {name}",
-  "@connectedPrinter": {"placeholders": {"name": {"type": "String"}}},
+  "@connectedPrinter": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "disconnectPrinter": "Disconnect",
   "testTicket": "Print connection test",
   "sendingTestTicket": "Sending test ticket…",
@@ -242,12 +284,24 @@
   "printStatusUncertain": "Uncertain, check paper",
   "pdfShareFailed": "The PDF could not be opened in the system share sheet.",
   "ticketPdfSubject": "LibreSlip ticket {number}",
-  "@ticketPdfSubject": {"placeholders": {"number": {"type": "int"}}},
+  "@ticketPdfSubject": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "hardwareTested": "NETUM NT-1809DD connection test printed successfully on the user’s physical printer.",
   "printStorageError": "The print attempt could not be saved safely, so LibreSlip did not continue automatically.",
   "deleteTicket": "Delete ticket",
   "deleteTicketQuestion": "Delete ticket {number}?",
-  "@deleteTicketQuestion": {"placeholders": {"number": {"type": "int"}}},
+  "@deleteTicketQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "deleteTicketBody": "This saved ticket and its print-attempt history will be removed. The current order number will not change.",
   "deleteAllTickets": "Delete all previous tickets",
   "deleteAllTicketsQuestion": "Delete all previous tickets?",
@@ -269,9 +323,30 @@
   "configurationArchive": "Configuration",
   "fullBackupArchive": "Full backup",
   "archiveCreated": "Created {date}",
-  "@archiveCreated": {"placeholders": {"date": {"type": "String"}}},
+  "@archiveCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "archiveContents": "{items} items, {drafts} drafts, {tickets} tickets and {attempts} print attempts",
-  "@archiveContents": {"placeholders": {"items": {"type": "int"}, "drafts": {"type": "int"}, "tickets": {"type": "int"}, "attempts": {"type": "int"}}},
+  "@archiveContents": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "drafts": {
+        "type": "int"
+      },
+      "tickets": {
+        "type": "int"
+      },
+      "attempts": {
+        "type": "int"
+      }
+    }
+  },
   "configurationReplaceWarning": "This replaces the current settings and order-field options. Items and ticket history stay unchanged.",
   "backupReplaceWarning": "This replaces all settings, reusable items, drafts, ticket history and print attempts with the archive contents.",
   "restoreArchive": "Replace and restore",
@@ -283,25 +358,70 @@
   "itemBreakdownBody": "Quantities from saved ticket snapshots.",
   "noItemsInPeriod": "No items were added to saved tickets in this period.",
   "itemQuantitySummary": "{name}: {quantity}",
-  "@itemQuantitySummary": {"placeholders": {"name": {"type": "String"}, "quantity": {"type": "int"}}},
+  "@itemQuantitySummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "showAllItemStatistics": "Show full list ({count})",
-  "@showAllItemStatistics": {"placeholders": {"count": {"type": "int"}}},
+  "@showAllItemStatistics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "showFewerItemStatistics": "Show fewer",
   "appMode": "App mode",
-  "appModeBody": "Choose whether this device creates orders or prepares to receive them.",
+  "appModeBody": "Choose whether this device creates or receives orders.",
   "clientMode": "Client",
   "clientModeBody": "Create, print and keep tickets locally. A server connection will always be optional.",
   "serverMode": "Server",
-  "serverModeBody": "Prepare this device for the focused receive-and-Done workflow. Receiving is not available yet.",
+  "serverModeBody": "Receive orders on this device and mark them Done. The listener runs only while LibreSlip is open.",
   "switchToServerTitle": "Switch to Server mode?",
-  "switchToServerBody": "Your client items, drafts and ticket history stay on this phone. This foundation release does not receive orders or start a network listener.",
+  "switchToServerBody": "Your client items, drafts and ticket history stay on this phone. Server mode receives immutable orders on your local network while LibreSlip is open.",
   "switchToClientTitle": "Switch to Client mode?",
-  "switchToClientBody": "Server foundation data stays on this phone. Client mode restores the current catalogue, composition, printing and history workspace.",
+  "switchToClientBody": "Received orders stay on this phone. Client mode restores the catalogue, composition, local printing and history workspace.",
   "switchMode": "Switch mode",
   "modeSaveError": "The app mode could not be saved. Nothing was switched.",
-  "serverFoundationTitle": "Server mode",
-  "serverFoundationSubtitle": "The local foundation is ready, but order receiving is not operational yet.",
-  "serverFoundationReady": "Foundation ready",
-  "serverFoundationBody": "LibreSlip has stored this mode and prepared its local inbox safely. No network listener is running, no device can pair and no orders can be received in this milestone."
-
+  "serverInboxTitle": "Server orders",
+  "serverInboxSubtitle": "Receive immutable orders from paired LibreSlip clients and mark them Done.",
+  "serverStarting": "Starting local receiver…",
+  "serverListening": "Ready to receive",
+  "serverNotListening": "Receiver unavailable",
+  "serverForegroundOnly": "Local HTTPS only. Receiving stops whenever LibreSlip is not open in Server mode.",
+  "serverAddresses": "Connection addresses",
+  "noLocalAddress": "No local network address is available. Connect this device to the same Wi-Fi network as the client.",
+  "serverFingerprint": "Server certificate fingerprint",
+  "serverRefresh": "Refresh server orders",
+  "clientPairing": "Client pairing",
+  "clientPairingBody": "Open a five-minute pairing window only when you are ready to add a client. Compare this server’s fingerprint on both devices.",
+  "allowPairing": "Allow client pairing",
+  "pairingCode": "One-time pairing code",
+  "pairingExpires": "Valid until {time}",
+  "@pairingExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "stopPairing": "Stop pairing",
+  "receivedOrders": "Received",
+  "completedOrders": "Completed",
+  "noReceivedOrders": "No received orders yet",
+  "noReceivedOrdersBody": "Paired clients can send orders while this screen says Ready to receive.",
+  "noCompletedOrders": "No completed orders yet",
+  "noCompletedOrdersBody": "Orders you mark Done will stay here.",
+  "sourceDevice": "Source device",
+  "receivedAt": "Received",
+  "createdAt": "Created",
+  "markDone": "Mark Done",
+  "markingDone": "Marking Done…",
+  "markDoneFailed": "The order could not be marked Done. It remains in Received."
 }

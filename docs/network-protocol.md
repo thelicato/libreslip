@@ -1,6 +1,6 @@
 # Local order protocol
 
-LibreSlip protocol version 1 defines the immutable order envelope used by the planned local client/server transport. Version 0.10.0 validates and persists the protocol foundations only. It does not open a network listener, pair devices or transmit orders.
+LibreSlip protocol version 1 defines the immutable order envelope used by the local client/server transport. Version 0.11.0 implements the foreground Server receiver and pairing side. Client delivery is not implemented until Task 12.
 
 ## Encoding and limits
 
@@ -28,4 +28,12 @@ The checksum is lowercase SHA-256 over the canonical JSON object without the che
 
 Schema 6 adds a singleton mode and installation identity row, non-secret destination metadata, the client delivery outbox, paired-client metadata, immutable server orders and server order lines. Outbox states are `pending`, `sending`, `delivered` and `failed`; an interrupted `sending` row returns to `pending` on restart because server idempotency makes the retry safe. Server order states are only `received` and `done`.
 
-The tables are empty in version 0.10.0 and no transport writes them. Pairing secrets and private keys are deliberately absent. Networking data is not yet included in configuration archives or full backups; that extension and its validation belong to Task 13. Existing schema 5 full-backup snapshots remain restorable because the portable order-table inventory is unchanged.
+Version 0.11.0 writes paired-client metadata and immutable received orders to these tables. The Server private key and access-token hashes are stored separately through Android keystore-backed encrypted storage. Pairing codes exist only in memory for five minutes. Private keys, tokens, paired-client metadata and Server orders are not included in configuration archives or full backups; that extension and its validation belong to Task 13. Existing schema 5 full-backup snapshots remain restorable because the portable order-table inventory is unchanged.
+
+## HTTPS endpoints and authentication
+
+The Server listens on IPv4 TCP port 42837 only while LibreSlip is visible in Server mode. It displays each current local-network address and the uppercase SHA-256 fingerprint of its self-signed certificate. It stops on backgrounding, leaving Server mode or process termination. Version 0.11.0 provides no background service, discovery or remote-network relay.
+
+`GET /v1/status` returns the protocol version, Server installation identifier, display name and certificate fingerprint. `POST /v1/pair` accepts a one-time code, client installation identifier, display name and 64-character client identity fingerprint. A successful request consumes the five-minute code and returns a random 256-bit access token. Only the token hash is retained. `POST /v1/orders` requires that token as a Bearer credential plus the matching client installation identifier in `X-LibreSlip-Client-Id`.
+
+Requests must use JSON. Pairing bodies are limited to 4,096 bytes and order bodies to 65,536 bytes. Unsupported paths, invalid content, unauthorised credentials, mismatched identities, oversized bodies and conflicting idempotency keys are rejected without storing an order. Successful first receipt returns HTTP 201; an identical repeat returns HTTP 200 with the original Server order identifier and `duplicate: true`.

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/brand_mark.dart';
 import '../features/networking/application/network_mode_controller.dart';
+import '../features/networking/application/server_inbox_controller.dart';
 import '../features/networking/domain/network_models.dart';
 import '../features/networking/presentation/server_mode_shell.dart';
 import '../features/orders/application/order_workspace_controller.dart';
@@ -19,6 +20,7 @@ class LibreSlipApp extends StatelessWidget {
     required this.settings,
     required this.orders,
     this.networking,
+    this.serverInbox,
     this.printer,
     this.ticketOutput,
     this.portability,
@@ -27,6 +29,7 @@ class LibreSlipApp extends StatelessWidget {
   final SettingsController settings;
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
+  final ServerInboxController? serverInbox;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
@@ -56,7 +59,10 @@ class LibreSlipApp extends StatelessWidget {
               orders.loaded &&
               (networking == null || networking!.loaded)
           ? networking?.mode == LibreSlipMode.server
-                ? ServerModeShell(controller: networking!)
+                ? ServerModeShell(
+                    modeController: networking!,
+                    inboxController: serverInbox!,
+                  )
                 : WorkspaceShell(
                     settings: settings,
                     orders: orders,

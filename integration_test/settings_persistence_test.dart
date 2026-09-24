@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/networking/application/network_mode_controller.dart';
+import 'package:libreslip/features/networking/application/server_inbox_controller.dart';
+import 'package:libreslip/features/networking/data/local_https_server.dart';
+import 'package:libreslip/features/networking/data/secure_server_secret_store.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/orders/application/order_workspace_controller.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
@@ -52,6 +55,12 @@ void main() {
     final orderRepository = SqliteOrderRepository(databasePath: databasePath);
     final orders = OrderWorkspaceController(orderRepository);
     final networking = NetworkModeController(orderRepository);
+    final serverSecrets = SecureServerSecretStore();
+    final serverInbox = ServerInboxController(
+      orderRepository,
+      serverSecrets,
+      LocalHttpsServer(orderRepository, serverSecrets),
+    );
     await orders.load();
     await networking.load();
     addTearDown(() async {
@@ -64,6 +73,7 @@ void main() {
         settings: controller,
         orders: orders,
         networking: networking,
+        serverInbox: serverInbox,
       ),
     );
     await tester.pumpAndSettle();
@@ -127,6 +137,14 @@ void main() {
       printerName: 'NT-1809DD',
     );
     expect(await networking.setMode(LibreSlipMode.server), isTrue);
+    await serverInbox.start(networking.configuration!);
+    await tester.pumpAndSettle();
+    expect(
+      serverInbox.listening,
+      isTrue,
+      reason: serverInbox.lastError?.toString(),
+    );
+    expect(serverInbox.identity!.certificateFingerprint, hasLength(64));
     final restored = await LocalSettingsRepository().load();
     expect(restored!.heading, 'Bottega Libertà');
     expect(restored.language, 'it');
@@ -137,6 +155,8 @@ void main() {
     expect(restored.typography.notes, 9);
     expect(restored.typography.footer, 11);
     await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    expect(serverInbox.listening, isFalse);
     await orderRepository.close();
     final reopenedRepository = SqliteOrderRepository(
       databasePath: databasePath,
@@ -230,6 +250,7 @@ void main() {
     await reopenedRepository.close();
     reopenedNetworking.dispose();
     networking.dispose();
+    serverInbox.dispose();
     controller.dispose();
     orders.dispose();
   });

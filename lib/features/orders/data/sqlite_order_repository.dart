@@ -5,11 +5,17 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../networking/domain/network_models.dart';
+import '../../networking/domain/network_protocol.dart';
+import '../../networking/domain/server_inbox_models.dart';
 import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
 
 class SqliteOrderRepository
-    implements OrderRepository, PrintJobStore, NetworkConfigurationStore {
+    implements
+        OrderRepository,
+        PrintJobStore,
+        NetworkConfigurationStore,
+        ServerInboxStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
@@ -370,6 +376,202 @@ class SqliteOrderRepository
     } catch (error) {
       if (error is OrderStorageException) rethrow;
       throw OrderStorageException('Could not save the app mode.', error);
+    }
+  }
+
+  @override
+  Future<void> pairClient(PairedClient client) async {
+    try {
+      await (await _db).transaction((transaction) async {
+        final existing = await transaction.query(
+          'server_clients',
+          columns: ['installation_id'],
+          where: 'installation_id = ?',
+          whereArgs: [client.installationId],
+          limit: 1,
+        );
+        final values = <String, Object?>{
+          'display_name': client.displayName,
+          'certificate_fingerprint': client.identityFingerprint,
+          'paired_at': _timestamp(client.pairedAt),
+          'last_seen_at': client.lastSeenAt == null
+              ? null
+              : _timestamp(client.lastSeenAt!),
+        };
+        if (existing.isEmpty) {
+          await transaction.insert('server_clients', {
+            'installation_id': client.installationId,
+            ...values,
+          });
+        } else {
+          await transaction.update(
+            'server_clients',
+            values,
+            where: 'installation_id = ?',
+            whereArgs: [client.installationId],
+          );
+        }
+      });
+    } catch (error) {
+      throw OrderStorageException('Could not pair the client.', error);
+    }
+  }
+
+  @override
+  Future<PairedClient?> findPairedClient(String installationId) async {
+    try {
+      final rows = await (await _db).query(
+        'server_clients',
+        where: 'installation_id = ?',
+        whereArgs: [installationId],
+        limit: 1,
+      );
+      return rows.isEmpty ? null : _pairedClientFromRow(rows.single);
+    } catch (error) {
+      throw OrderStorageException('Could not read the paired client.', error);
+    }
+  }
+
+  @override
+  Future<List<ServerOrder>> loadServerOrders() async {
+    try {
+      final database = await _db;
+      final rows = await database.rawQuery('''
+        SELECT o.*, c.display_name AS client_display_name
+        FROM server_orders o
+        JOIN server_clients c
+          ON c.installation_id = o.client_installation_id
+        ORDER BY o.received_at DESC
+      ''');
+      final orders = <ServerOrder>[];
+      for (final row in rows) {
+        orders.add(await _serverOrderFromRow(database, row));
+      }
+      return orders;
+    } catch (error) {
+      throw OrderStorageException('Could not read received orders.', error);
+    }
+  }
+
+  @override
+  Future<ServerOrderReceipt> receiveServerOrder(
+    OrderDeliveryEnvelope envelope, {
+    required DateTime receivedAt,
+  }) async {
+    try {
+      final database = await _db;
+      final result = await database.transaction<({String id, bool duplicate})>((
+        transaction,
+      ) async {
+        final existing = await transaction.query(
+          'server_orders',
+          columns: ['id', 'payload_checksum'],
+          where: 'client_installation_id = ? AND delivery_id = ?',
+          whereArgs: [envelope.clientInstallationId, envelope.deliveryId],
+          limit: 1,
+        );
+        if (existing.isNotEmpty) {
+          if (existing.single['payload_checksum'] != envelope.payloadChecksum) {
+            throw const ServerOrderConflictException();
+          }
+          await transaction.update(
+            'server_clients',
+            {'last_seen_at': _timestamp(receivedAt)},
+            where: 'installation_id = ?',
+            whereArgs: [envelope.clientInstallationId],
+          );
+          return (id: existing.single['id']! as String, duplicate: true);
+        }
+        final client = await transaction.query(
+          'server_clients',
+          columns: ['installation_id'],
+          where: 'installation_id = ?',
+          whereArgs: [envelope.clientInstallationId],
+          limit: 1,
+        );
+        if (client.isEmpty) {
+          throw const OrderStorageException('The client is not paired.');
+        }
+        final id = createLocalId();
+        await transaction.insert('server_orders', {
+          'id': id,
+          'client_installation_id': envelope.clientInstallationId,
+          'delivery_id': envelope.deliveryId,
+          'client_ticket_id': envelope.ticketId,
+          'display_number': envelope.ticketNumber,
+          'source_created_at': _timestamp(envelope.createdAt),
+          'received_at': _timestamp(receivedAt),
+          'heading_snapshot': envelope.heading,
+          'reference_snapshot': envelope.reference,
+          'order_note_snapshot': envelope.orderNote,
+          'payload_checksum': envelope.payloadChecksum,
+          'status': ServerOrderStatus.received.value,
+        });
+        for (var index = 0; index < envelope.lines.length; index++) {
+          final line = envelope.lines[index];
+          await transaction.insert('server_order_lines', {
+            'id': createLocalId(),
+            'order_id': id,
+            'name_snapshot': line.name,
+            'quantity': line.quantity,
+            'preparation_note': line.preparationNote,
+            'position': index,
+          });
+        }
+        await transaction.update(
+          'server_clients',
+          {'last_seen_at': _timestamp(receivedAt)},
+          where: 'installation_id = ?',
+          whereArgs: [envelope.clientInstallationId],
+        );
+        return (id: id, duplicate: false);
+      });
+      final order = await _loadServerOrder(database, result.id);
+      return ServerOrderReceipt(order: order, wasDuplicate: result.duplicate);
+    } on ServerOrderConflictException {
+      rethrow;
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not store the received order.', error);
+    }
+  }
+
+  @override
+  Future<ServerOrder> markServerOrderDone(
+    String id, {
+    required DateTime completedAt,
+  }) async {
+    try {
+      final database = await _db;
+      await database.transaction((transaction) async {
+        final rows = await transaction.query(
+          'server_orders',
+          columns: ['status'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (rows.isEmpty) {
+          throw const OrderStorageException(
+            'The received order was not found.',
+          );
+        }
+        if (rows.single['status'] == ServerOrderStatus.received.value) {
+          await transaction.update(
+            'server_orders',
+            {
+              'status': ServerOrderStatus.done.value,
+              'completed_at': _timestamp(completedAt),
+            },
+            where: 'id = ? AND status = ?',
+            whereArgs: [id, ServerOrderStatus.received.value],
+          );
+        }
+      });
+      return await _loadServerOrder(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not mark the order done.', error);
     }
   }
 
@@ -1072,6 +1274,75 @@ class SqliteOrderRepository
     printerName: row['printer_name'] as String?,
     errorCode: row['error_code'] as String?,
   );
+
+  static PairedClient _pairedClientFromRow(Map<String, Object?> row) =>
+      PairedClient(
+        installationId: row['installation_id']! as String,
+        displayName: row['display_name']! as String,
+        identityFingerprint: row['certificate_fingerprint']! as String,
+        pairedAt: DateTime.parse(row['paired_at']! as String),
+        lastSeenAt: row['last_seen_at'] == null
+            ? null
+            : DateTime.parse(row['last_seen_at']! as String),
+      );
+
+  static Future<ServerOrder> _loadServerOrder(
+    DatabaseExecutor executor,
+    String id,
+  ) async {
+    final rows = await executor.rawQuery(
+      '''
+      SELECT o.*, c.display_name AS client_display_name
+      FROM server_orders o
+      JOIN server_clients c
+        ON c.installation_id = o.client_installation_id
+      WHERE o.id = ?
+      ''',
+      [id],
+    );
+    if (rows.isEmpty) {
+      throw const OrderStorageException('The received order was not found.');
+    }
+    return _serverOrderFromRow(executor, rows.single);
+  }
+
+  static Future<ServerOrder> _serverOrderFromRow(
+    DatabaseExecutor executor,
+    Map<String, Object?> row,
+  ) async {
+    final lineRows = await executor.query(
+      'server_order_lines',
+      where: 'order_id = ?',
+      whereArgs: [row['id']],
+      orderBy: 'position',
+    );
+    return ServerOrder(
+      id: row['id']! as String,
+      clientInstallationId: row['client_installation_id']! as String,
+      clientDisplayName: row['client_display_name']! as String,
+      deliveryId: row['delivery_id']! as String,
+      clientTicketId: row['client_ticket_id']! as String,
+      displayNumber: row['display_number']! as int,
+      sourceCreatedAt: DateTime.parse(row['source_created_at']! as String),
+      receivedAt: DateTime.parse(row['received_at']! as String),
+      heading: row['heading_snapshot']! as String,
+      reference: row['reference_snapshot']! as String,
+      orderNote: row['order_note_snapshot']! as String,
+      payloadChecksum: row['payload_checksum']! as String,
+      status: ServerOrderStatusValue.parse(row['status']! as String),
+      completedAt: row['completed_at'] == null
+          ? null
+          : DateTime.parse(row['completed_at']! as String),
+      lines: [
+        for (final line in lineRows)
+          ServerOrderLine(
+            name: line['name_snapshot']! as String,
+            quantity: line['quantity']! as int,
+            preparationNote: line['preparation_note']! as String,
+          ),
+      ],
+    );
+  }
 
   static Future<SavedTicket> _loadTicket(
     DatabaseExecutor executor,

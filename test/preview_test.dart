@@ -8,7 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/networking/application/network_mode_controller.dart';
+import 'package:libreslip/features/networking/application/server_inbox_controller.dart';
+import 'package:libreslip/features/networking/domain/server_security.dart';
+import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
+import 'package:libreslip/features/networking/domain/network_protocol.dart';
+import 'package:libreslip/features/networking/domain/server_inbox_models.dart';
 import 'package:libreslip/features/portability/application/portability_controller.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
 import 'package:libreslip/features/printing/application/printer_controller.dart';
@@ -86,7 +91,7 @@ void main() {
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
       ('portability-phone-en', const Size(520, 1100), 'en', ThemeMode.light, 4),
       (
-        'server-foundation-phone-it',
+        'server-inbox-phone-it',
         const Size(520, 1100),
         'it',
         ThemeMode.light,
@@ -113,9 +118,44 @@ void main() {
       final environment = await createMemoryOrderEnvironment();
       final orders = environment.controller;
       final networking = NetworkModeController(environment.repository);
+      ServerInboxController? inbox;
       await networking.load();
       if (page == 5) {
         await networking.setMode(LibreSlipMode.server);
+        await environment.repository.pairClient(
+          PairedClient(
+            installationId: 'preview-client',
+            displayName: 'Banco principale',
+            identityFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            pairedAt: DateTime.utc(2026, 9, 24, 18),
+          ),
+        );
+        await environment.repository.receiveServerOrder(
+          OrderDeliveryEnvelope.create(
+            clientInstallationId: 'preview-client',
+            deliveryId: 'preview-delivery',
+            ticketId: 'preview-ticket',
+            ticketNumber: 12,
+            createdAt: DateTime.utc(2026, 9, 24, 18, 30),
+            heading: 'Cucina',
+            reference: 'Tavolo 4',
+            orderNote: 'Portare insieme',
+            lines: const [
+              DeliveryLine(
+                name: 'Toast ai funghi',
+                quantity: 2,
+                preparationNote: 'Senza cipolla',
+              ),
+            ],
+          ),
+          receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
+        );
+        final secrets = _MemoryServerSecrets();
+        inbox = ServerInboxController(
+          environment.repository,
+          secrets,
+          _FakeServerHost(),
+        );
       }
       final portability = PortabilityController(
         PortabilityService(environment.repository, settingsStore),
@@ -155,6 +195,7 @@ void main() {
             settings: controller,
             orders: orders,
             networking: networking,
+            serverInbox: inbox,
             printer: printer,
             portability: portability,
           ),
@@ -199,6 +240,7 @@ void main() {
       portability.dispose();
       printer.dispose();
       networking.dispose();
+      inbox?.dispose();
       controller.dispose();
       orders.dispose();
     }
@@ -229,4 +271,53 @@ class _PreviewPrinterTransport implements PrinterTransport {
   @override
   Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
       bytes.length;
+}
+
+class _MemoryServerSecrets implements ServerSecretStore {
+  String? certificate;
+  String? privateKey;
+  final tokens = <String, String>{};
+
+  @override
+  Future<String?> readClientTokenHash(String clientInstallationId) async =>
+      tokens[clientInstallationId];
+
+  @override
+  Future<String?> readServerCertificate() async => certificate;
+
+  @override
+  Future<String?> readServerPrivateKey() async => privateKey;
+
+  @override
+  Future<void> writeClientTokenHash(
+    String clientInstallationId,
+    String tokenHash,
+  ) async {
+    tokens[clientInstallationId] = tokenHash;
+  }
+
+  @override
+  Future<void> writeServerIdentity({
+    required String certificatePem,
+    required String privateKeyPem,
+  }) async {
+    certificate = certificatePem;
+    privateKey = privateKeyPem;
+  }
+}
+
+class _FakeServerHost implements ServerHost {
+  @override
+  Future<RunningServer> start({
+    required ServerIdentity identity,
+    required NetworkConfiguration configuration,
+    required bool Function(String code) claimPairingCode,
+    required void Function() onOrderReceived,
+  }) async => const RunningServer(
+    port: 42837,
+    addresses: ['https://192.168.1.42:42837'],
+  );
+
+  @override
+  Future<void> stop() async {}
 }

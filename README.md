@@ -1,14 +1,14 @@
 # LibreSlip
 
-A private, local order-ticket app for Android 14 and later, built with Flutter. No login, cloud service or runtime internet requirement. Application identifier: `io.thelicato.libreslip`.
+A private, local order-ticket app for Android 14 and later, built with Flutter. No login or cloud service. Client operation has no server or runtime internet requirement. Application identifier: `io.thelicato.libreslip`.
 
 ![LibreSlip Italian ticket preview on a phone](docs/previews/ticket-preview-phone-it.png)
 
 ## Current milestone
 
-LibreSlip 0.10.0 adds a confirmed, persistent Client or Server mode choice. Client remains the complete offline catalogue, composition, printing, history and portability workspace. Server mode currently shows an honest foundation screen only: no listener is running, no device can pair and no orders can be received yet.
+LibreSlip 0.11.0 makes Server mode operational while the app is open. It presents local HTTPS addresses and a pinned certificate fingerprint, opens an explicit five-minute one-time pairing window, accepts authenticated version 1 order envelopes, stores them transactionally and idempotently, and provides focused Received and Completed boards with immutable detail and Mark Done. Leaving the foreground or switching to Client mode stops the listener.
 
-The version 1 local-order protocol now has a strict canonical JSON codec, SHA-256 integrity check, UTC timestamps and bounded identifiers, text, quantities, line counts and payload size. SQLite schema 6 prepares a stable installation identity, non-secret destination metadata, delivery outbox, paired clients and immutable server inbox tables. Networking remains disabled and the Android release manifest still requests no internet permission.
+The Server private key and per-client access-token hashes use Android keystore-backed encrypted storage and are excluded from LibreSlip archives. The Android internet permission is now present because Android uses it for local-network sockets, but Client mode still requires no server or runtime internet connection and retains the complete offline catalogue, composition, local printing, history and portability workflow. Client delivery is not implemented until Task 12.
 
 The Overview retains inclusive date filters, ticket totals and per-item snapshot quantities. The user reported successful physical printing with the NETUM NT-1809DD during task 4. Successful byte transmission still cannot prove that paper was produced, so the interface asks the operator to check it. LibreSlip records no sale or financial transaction.
 
@@ -16,9 +16,9 @@ The Overview retains inclusive date filters, ticket totals and per-item snapshot
 
 The latest review artefacts are generated in `dist/`:
 
-- `LibreSlip-task-10-mode-protocol.zip`: complete mode, protocol and schema-foundation source.
-- `LibreSlip-task-10-mode-protocol-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
-- `LibreSlip-task-10-mode-protocol-SHA256SUMS.txt`: integrity checksums for both files.
+- `LibreSlip-task-11-server-inbox.zip`: complete Server receiver and board source.
+- `LibreSlip-task-11-server-inbox-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
+- `LibreSlip-task-11-server-inbox-SHA256SUMS.txt`: integrity checksums for both files.
 
 The source-delivery ZIP is separate from ZIP files exported inside LibreSlip. The preview supports local item, ticket, PDF, Bluetooth Classic printing and validated portability workflows. Its temporary validation certificate is not the future production certificate, so it must not be used as an upgrade baseline for public releases.
 
@@ -76,8 +76,8 @@ Update `VERSION`, commit it, then push the matching numeric `vX.Y.Z` tag. `.gith
 
 ```sh
 # After updating and committing VERSION.
-git tag v0.10.0
-git push origin v0.10.0
+git tag v0.11.0
+git push origin v0.11.0
 ```
 
 Release notes are generated from Conventional Commits since the previous tag. The workflow stops before building or publishing if a signing secret is missing or invalid.
@@ -97,4 +97,4 @@ Release notes are generated from Conventional Commits since the previous tag. Th
 - [Italian item shelf](docs/previews/items-tablet-it.png)
 - [Ticket history preview](docs/previews/tickets-tablet-en.png)
 
-Task 10 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.
+Task 11 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.

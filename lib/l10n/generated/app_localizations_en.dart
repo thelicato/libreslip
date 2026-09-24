@@ -932,7 +932,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appModeBody =>
-      'Choose whether this device creates orders or prepares to receive them.';
+      'Choose whether this device creates or receives orders.';
 
   @override
   String get clientMode => 'Client';
@@ -946,21 +946,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverModeBody =>
-      'Prepare this device for the focused receive-and-Done workflow. Receiving is not available yet.';
+      'Receive orders on this device and mark them Done. The listener runs only while LibreSlip is open.';
 
   @override
   String get switchToServerTitle => 'Switch to Server mode?';
 
   @override
   String get switchToServerBody =>
-      'Your client items, drafts and ticket history stay on this phone. This foundation release does not receive orders or start a network listener.';
+      'Your client items, drafts and ticket history stay on this phone. Server mode receives immutable orders on your local network while LibreSlip is open.';
 
   @override
   String get switchToClientTitle => 'Switch to Client mode?';
 
   @override
   String get switchToClientBody =>
-      'Server foundation data stays on this phone. Client mode restores the current catalogue, composition, printing and history workspace.';
+      'Received orders stay on this phone. Client mode restores the catalogue, composition, local printing and history workspace.';
 
   @override
   String get switchMode => 'Switch mode';
@@ -970,18 +970,96 @@ class AppLocalizationsEn extends AppLocalizations {
       'The app mode could not be saved. Nothing was switched.';
 
   @override
-  String get serverFoundationTitle => 'Server mode';
+  String get serverInboxTitle => 'Server orders';
 
   @override
-  String get serverFoundationSubtitle =>
-      'The local foundation is ready, but order receiving is not operational yet.';
+  String get serverInboxSubtitle =>
+      'Receive immutable orders from paired LibreSlip clients and mark them Done.';
 
   @override
-  String get serverFoundationReady => 'Foundation ready';
+  String get serverStarting => 'Starting local receiver…';
 
   @override
-  String get serverFoundationBody =>
-      'LibreSlip has stored this mode and prepared its local inbox safely. No network listener is running, no device can pair and no orders can be received in this milestone.';
+  String get serverListening => 'Ready to receive';
+
+  @override
+  String get serverNotListening => 'Receiver unavailable';
+
+  @override
+  String get serverForegroundOnly =>
+      'Local HTTPS only. Receiving stops whenever LibreSlip is not open in Server mode.';
+
+  @override
+  String get serverAddresses => 'Connection addresses';
+
+  @override
+  String get noLocalAddress =>
+      'No local network address is available. Connect this device to the same Wi-Fi network as the client.';
+
+  @override
+  String get serverFingerprint => 'Server certificate fingerprint';
+
+  @override
+  String get serverRefresh => 'Refresh server orders';
+
+  @override
+  String get clientPairing => 'Client pairing';
+
+  @override
+  String get clientPairingBody =>
+      'Open a five-minute pairing window only when you are ready to add a client. Compare this server’s fingerprint on both devices.';
+
+  @override
+  String get allowPairing => 'Allow client pairing';
+
+  @override
+  String get pairingCode => 'One-time pairing code';
+
+  @override
+  String pairingExpires(String time) {
+    return 'Valid until $time';
+  }
+
+  @override
+  String get stopPairing => 'Stop pairing';
+
+  @override
+  String get receivedOrders => 'Received';
+
+  @override
+  String get completedOrders => 'Completed';
+
+  @override
+  String get noReceivedOrders => 'No received orders yet';
+
+  @override
+  String get noReceivedOrdersBody =>
+      'Paired clients can send orders while this screen says Ready to receive.';
+
+  @override
+  String get noCompletedOrders => 'No completed orders yet';
+
+  @override
+  String get noCompletedOrdersBody => 'Orders you mark Done will stay here.';
+
+  @override
+  String get sourceDevice => 'Source device';
+
+  @override
+  String get receivedAt => 'Received';
+
+  @override
+  String get createdAt => 'Created';
+
+  @override
+  String get markDone => 'Mark Done';
+
+  @override
+  String get markingDone => 'Marking Done…';
+
+  @override
+  String get markDoneFailed =>
+      'The order could not be marked Done. It remains in Received.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

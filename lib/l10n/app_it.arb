@@ -28,10 +28,22 @@
   "printerBluetoothOffStatus": "Bluetooth disattivato",
   "printerUnavailableStatus": "Non disponibile",
   "printerConnectedDevice": "Connessa a {name}",
-  "@printerConnectedDevice": {"placeholders": {"name": {"type": "String"}}},
+  "@printerConnectedDevice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "printerBattery": "Batteria stampante",
   "printerBatteryPercentage": "{percentage}%",
-  "@printerBatteryPercentage": {"placeholders": {"percentage": {"type": "int"}}},
+  "@printerBatteryPercentage": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
   "printerBatteryUnavailable": "Non comunicata dalla stampante. Controlla l’indicatore della batteria.",
   "managePrinter": "Gestisci stampante",
   "refreshPrinterStatus": "Aggiorna stato",
@@ -118,7 +130,13 @@
   "edit": "Modifica",
   "removeItem": "Rimuovi articolo",
   "removeItemQuestion": "Rimuovere {name}?",
-  "@removeItemQuestion": {"placeholders": {"name": {"type": "String"}}},
+  "@removeItemQuestion": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "removeItemBody": "Le comande salvate conservano l’istantanea originale. L’articolo non comparirà più nelle nuove ricerche.",
   "addToDraft": "Aggiungi alla bozza",
   "adHocItem": "Articolo occasionale",
@@ -152,11 +170,29 @@
   "orderNumberReset": "La numerazione degli ordini riparte da 1.",
   "orderNumberResetFailed": "Impossibile reimpostare il numero dell’ordine. Riprova.",
   "orderNumber": "Ordine {number}",
-  "@orderNumber": {"placeholders": {"number": {"type": "int"}}},
+  "@orderNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "ticketNumber": "Comanda {number}",
-  "@ticketNumber": {"placeholders": {"number": {"type": "int"}}},
+  "@ticketNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "itemCount": "{count, plural, =0{Nessun articolo} =1{1 articolo} other{{count} articoli}}",
-  "@itemCount": {"placeholders": {"count": {"type": "int"}}},
+  "@itemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewTicket": "Vedi comanda",
   "duplicateTicket": "Duplica come bozza",
   "duplicatedTicket": "È stata creata una nuova bozza modificabile da questa istantanea.",
@@ -187,7 +223,13 @@
   "connectPrinter": "Connetti",
   "connectingPrinter": "Connessione…",
   "connectedPrinter": "Connessa a {name}",
-  "@connectedPrinter": {"placeholders": {"name": {"type": "String"}}},
+  "@connectedPrinter": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "disconnectPrinter": "Disconnetti",
   "testTicket": "Stampa test di connessione",
   "sendingTestTicket": "Invio comanda di prova…",
@@ -242,12 +284,24 @@
   "printStatusUncertain": "Incerta, controlla la carta",
   "pdfShareFailed": "Impossibile aprire il PDF nel pannello di condivisione del sistema.",
   "ticketPdfSubject": "Comanda LibreSlip {number}",
-  "@ticketPdfSubject": {"placeholders": {"number": {"type": "int"}}},
+  "@ticketPdfSubject": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "hardwareTested": "Il test di connessione con la NETUM NT-1809DD è stato stampato correttamente sulla stampante fisica dell’utente.",
   "printStorageError": "Impossibile salvare il tentativo di stampa in modo sicuro, quindi LibreSlip non ha continuato automaticamente.",
   "deleteTicket": "Elimina comanda",
   "deleteTicketQuestion": "Eliminare la comanda {number}?",
-  "@deleteTicketQuestion": {"placeholders": {"number": {"type": "int"}}},
+  "@deleteTicketQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
   "deleteTicketBody": "La comanda salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà.",
   "deleteAllTickets": "Elimina tutte le comande precedenti",
   "deleteAllTicketsQuestion": "Eliminare tutte le comande precedenti?",
@@ -269,9 +323,30 @@
   "configurationArchive": "Configurazione",
   "fullBackupArchive": "Backup completo",
   "archiveCreated": "Creato il {date}",
-  "@archiveCreated": {"placeholders": {"date": {"type": "String"}}},
+  "@archiveCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "archiveContents": "{items} articoli, {drafts} bozze, {tickets} comande e {attempts} tentativi di stampa",
-  "@archiveContents": {"placeholders": {"items": {"type": "int"}, "drafts": {"type": "int"}, "tickets": {"type": "int"}, "attempts": {"type": "int"}}},
+  "@archiveContents": {
+    "placeholders": {
+      "items": {
+        "type": "int"
+      },
+      "drafts": {
+        "type": "int"
+      },
+      "tickets": {
+        "type": "int"
+      },
+      "attempts": {
+        "type": "int"
+      }
+    }
+  },
   "configurationReplaceWarning": "Sostituisce le impostazioni correnti e le opzioni dei campi dell’ordine. Articoli e cronologia restano invariati.",
   "backupReplaceWarning": "Sostituisce tutte le impostazioni, gli articoli riutilizzabili, le bozze, la cronologia e i tentativi di stampa con il contenuto dell’archivio.",
   "restoreArchive": "Sostituisci e ripristina",
@@ -283,25 +358,70 @@
   "itemBreakdownBody": "Quantità ricavate dalle comande salvate.",
   "noItemsInPeriod": "Nessun articolo è stato aggiunto alle comande salvate in questo periodo.",
   "itemQuantitySummary": "{name}: {quantity}",
-  "@itemQuantitySummary": {"placeholders": {"name": {"type": "String"}, "quantity": {"type": "int"}}},
+  "@itemQuantitySummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "int"
+      }
+    }
+  },
   "showAllItemStatistics": "Mostra elenco completo ({count})",
-  "@showAllItemStatistics": {"placeholders": {"count": {"type": "int"}}},
+  "@showAllItemStatistics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "showFewerItemStatistics": "Mostra meno",
   "appMode": "Modalità app",
-  "appModeBody": "Scegli se questo dispositivo crea gli ordini o si prepara a riceverli.",
+  "appModeBody": "Scegli se questo dispositivo crea o riceve gli ordini.",
   "clientMode": "Client",
   "clientModeBody": "Crea, stampa e conserva le comande in locale. La connessione a un server sarà sempre facoltativa.",
   "serverMode": "Server",
-  "serverModeBody": "Prepara il dispositivo per il flusso essenziale di ricezione e completamento. La ricezione non è ancora disponibile.",
+  "serverModeBody": "Ricevi ordini su questo dispositivo e segnali come completati. La ricezione funziona solo mentre LibreSlip è aperto.",
   "switchToServerTitle": "Passare alla modalità Server?",
-  "switchToServerBody": "Articoli, bozze e storico del Client restano su questo telefono. Questa versione di base non riceve ordini e non avvia connessioni di rete.",
+  "switchToServerBody": "Articoli, bozze e storico del Client restano su questo telefono. La modalità Server riceve ordini non modificabili sulla rete locale mentre LibreSlip è aperto.",
   "switchToClientTitle": "Passare alla modalità Client?",
-  "switchToClientBody": "I dati di base del Server restano su questo telefono. La modalità Client ripristina catalogo, composizione, stampa e storico attuali.",
+  "switchToClientBody": "Gli ordini ricevuti restano su questo telefono. La modalità Client ripristina catalogo, composizione, stampa locale e storico.",
   "switchMode": "Cambia modalità",
   "modeSaveError": "Impossibile salvare la modalità dell’app. Non è stato modificato nulla.",
-  "serverFoundationTitle": "Modalità Server",
-  "serverFoundationSubtitle": "La base locale è pronta, ma la ricezione degli ordini non è ancora operativa.",
-  "serverFoundationReady": "Base pronta",
-  "serverFoundationBody": "LibreSlip ha salvato questa modalità e predisposto in sicurezza la casella locale. In questa fase non è attiva alcuna connessione di rete, nessun dispositivo può associarsi e non è possibile ricevere ordini."
-
+  "serverInboxTitle": "Ordini del Server",
+  "serverInboxSubtitle": "Ricevi ordini non modificabili dai Client LibreSlip associati e segnali come completati.",
+  "serverStarting": "Avvio ricezione locale…",
+  "serverListening": "Pronto a ricevere",
+  "serverNotListening": "Ricezione non disponibile",
+  "serverForegroundOnly": "Solo HTTPS locale. La ricezione si interrompe quando LibreSlip non è aperto in modalità Server.",
+  "serverAddresses": "Indirizzi di connessione",
+  "noLocalAddress": "Nessun indirizzo di rete locale disponibile. Collega questo dispositivo alla stessa rete Wi-Fi del Client.",
+  "serverFingerprint": "Impronta del certificato Server",
+  "serverRefresh": "Aggiorna ordini del Server",
+  "clientPairing": "Associazione Client",
+  "clientPairingBody": "Apri la finestra di associazione di cinque minuti solo quando vuoi aggiungere un Client. Confronta l’impronta del Server su entrambi i dispositivi.",
+  "allowPairing": "Consenti associazione Client",
+  "pairingCode": "Codice di associazione monouso",
+  "pairingExpires": "Valido fino alle {time}",
+  "@pairingExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "stopPairing": "Interrompi associazione",
+  "receivedOrders": "Ricevuti",
+  "completedOrders": "Completati",
+  "noReceivedOrders": "Nessun ordine ricevuto",
+  "noReceivedOrdersBody": "I Client associati possono inviare ordini quando questa schermata indica Pronto a ricevere.",
+  "noCompletedOrders": "Nessun ordine completato",
+  "noCompletedOrdersBody": "Gli ordini che segnali come completati resteranno qui.",
+  "sourceDevice": "Dispositivo di origine",
+  "receivedAt": "Ricevuto",
+  "createdAt": "Creato",
+  "markDone": "Segna completato",
+  "markingDone": "Completamento…",
+  "markDoneFailed": "Impossibile segnare l’ordine come completato. Resta tra i ricevuti."
 }

@@ -4,6 +4,9 @@ import 'package:flutter/widgets.dart';
 
 import 'app/libreslip_app.dart';
 import 'features/networking/application/network_mode_controller.dart';
+import 'features/networking/application/server_inbox_controller.dart';
+import 'features/networking/data/local_https_server.dart';
+import 'features/networking/data/secure_server_secret_store.dart';
 import 'features/orders/application/order_workspace_controller.dart';
 import 'features/orders/data/item_image_store.dart';
 import 'features/orders/data/sqlite_order_repository.dart';
@@ -32,6 +35,12 @@ void main() {
     imageStore: LocalItemImageStore(),
   );
   final networking = NetworkModeController(repository);
+  final serverSecrets = SecureServerSecretStore();
+  final serverInbox = ServerInboxController(
+    repository,
+    serverSecrets,
+    LocalHttpsServer(repository, serverSecrets),
+  );
   final printer = PrinterController(AndroidBluetoothPrinterTransport());
   final ticketOutput = TicketOutputController(
     store: repository,
@@ -47,6 +56,7 @@ void main() {
       settings: settings,
       orders: orders,
       networking: networking,
+      serverInbox: serverInbox,
       printer: printer,
       ticketOutput: ticketOutput,
       portability: portability,

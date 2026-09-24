@@ -53,7 +53,7 @@ The server should enforce a unique constraint on the client installation and del
 
 Pairing should be explicit. The server creates an app-private identity and displays its address, certificate fingerprint and a short one-time pairing code. The client pins that identity after the operator confirms the code. Pairing secrets, private keys and trust tokens must use Android-backed secure storage and must never enter logs, configuration ZIPs or full backups. Restored devices pair again.
 
-Manual address entry is the required fallback. Local discovery can be added after the protocol works reliably; mDNS would add multicast permission and lifecycle complexity. Local networking will require Android's internet permission even though traffic remains on the LAN, so the interface and privacy documentation must explain that clearly before implementation.
+Manual address entry is the required fallback. Local discovery can be added after the protocol works reliably; mDNS would add multicast permission and lifecycle complexity. Local networking uses Android's internet permission even though traffic remains on the LAN, and the interface and privacy documentation explain that distinction.
 
 ## Client workflow
 
@@ -107,6 +107,8 @@ Implemented in LibreSlip 0.10.0 without enabling networking.
 - Keep networking disabled and request no new permission until the transport milestone.
 
 ### Task 11: server inbox
+
+Implemented in LibreSlip 0.11.0.
 
 - Implement the foreground-only authenticated local HTTPS listener.
 - Add explicit manual pairing and pinned server identity.
