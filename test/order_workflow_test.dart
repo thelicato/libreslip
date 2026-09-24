@@ -23,7 +23,7 @@ void main() {
       final settings = SettingsController(MemorySettingsRepository());
       final environment = await createMemoryOrderEnvironment();
       final orders = environment.controller;
-      final printer = PrinterController(_DisconnectedTransport());
+      final printer = PrinterController(_ConnectedTransport());
       final output = TicketOutputController(
         store: environment.repository,
         printer: printer,
@@ -33,6 +33,7 @@ void main() {
       addTearDown(printer.dispose);
       addTearDown(output.dispose);
       await settings.load();
+      await printer.refresh();
       await output.load();
       await tester.pumpWidget(
         LibreSlipApp(
@@ -86,7 +87,7 @@ void main() {
       expect(orders.tickets, hasLength(1));
       expect(output.jobs, hasLength(1));
       expect(output.jobs.single.ticketId, orders.tickets.single.id);
-      expect(output.jobs.single.status, PrintJobStatus.queued);
+      expect(output.jobs.single.status, PrintJobStatus.transmitted);
       expect(orders.tickets.single.reference, 'Table 4');
       expect(orders.tickets.single.lines.single.name, 'Mushroom toastie');
       expect(find.text('Order 2'), findsOneWidget);
@@ -117,6 +118,54 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('Compose blocks printing and saving while disconnected', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(520, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final settings = SettingsController(MemorySettingsRepository());
+    final environment = await createMemoryOrderEnvironment();
+    final orders = environment.controller;
+    final printer = PrinterController(_NotConnectedTransport());
+    final output = TicketOutputController(
+      store: environment.repository,
+      printer: printer,
+    );
+    addTearDown(settings.dispose);
+    addTearDown(orders.dispose);
+    addTearDown(printer.dispose);
+    addTearDown(output.dispose);
+    await settings.load();
+    await output.load();
+    await orders.saveItem(name: 'Tea');
+    orders.addCatalogueItem(orders.items.single);
+
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: settings,
+        orders: orders,
+        printer: printer,
+        ticketOutput: output,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nav-2')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Connect a printer in Settings before printing.'),
+      findsOneWidget,
+    );
+    final printButton = find.byKey(const ValueKey('print-ticket'));
+    expect(tester.widget<FilledButton>(printButton).onPressed, isNull);
+    expect(orders.tickets, isEmpty);
+    expect(output.jobs, isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'ticket deletion confirmations preserve the current order number',
     (tester) async {
@@ -173,7 +222,7 @@ void main() {
   );
 }
 
-class _DisconnectedTransport implements PrinterTransport {
+class _NotConnectedTransport implements PrinterTransport {
   @override
   Future<void> connect(String address) async {}
 
@@ -182,7 +231,32 @@ class _DisconnectedTransport implements PrinterTransport {
 
   @override
   Future<BluetoothHostState> getState() async =>
-      const BluetoothHostState(status: BluetoothHostStatus.ready, devices: []);
+      const BluetoothHostState(status: BluetoothHostStatus.ready);
+
+  @override
+  Future<void> openBluetoothSettings() async {}
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
+      bytes.length;
+}
+
+class _ConnectedTransport implements PrinterTransport {
+  @override
+  Future<void> connect(String address) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<BluetoothHostState> getState() async => const BluetoothHostState(
+    status: BluetoothHostStatus.ready,
+    devices: [PairedPrinter(name: "NT-1809DD", address: "00:11:22:33:44:55")],
+    connectedAddress: "00:11:22:33:44:55",
+  );
 
   @override
   Future<void> openBluetoothSettings() async {}

@@ -1405,7 +1405,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectBeforePrinting.
   ///
   /// In en, this message translates to:
-  /// **'Connect a printer in Settings. This ticket can be queued now and sent explicitly after connecting.'**
+  /// **'Connect a printer in Settings before printing.'**
   String get connectBeforePrinting;
 
   /// No description provided for @printQueued.

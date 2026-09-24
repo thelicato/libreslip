@@ -733,7 +733,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get connectBeforePrinting =>
-      'Connetti una stampante nelle Impostazioni. Puoi mettere ora la comanda in coda e inviarla esplicitamente dopo la connessione.';
+      'Connetti una stampante nelle Impostazioni prima di stampare.';
 
   @override
   String get printQueued => 'Comanda in coda';

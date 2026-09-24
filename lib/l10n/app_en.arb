@@ -224,7 +224,7 @@
   "sendQueuedTicket": "Send queued ticket",
   "shareTicketPdf": "Share PDF",
   "preparingTicket": "Preparing ticket…",
-  "connectBeforePrinting": "Connect a printer in Settings. This ticket can be queued now and sent explicitly after connecting.",
+  "connectBeforePrinting": "Connect a printer in Settings before printing.",
   "printQueued": "Ticket queued",
   "printQueuedBody": "Nothing has been sent. Connect the printer, then use Send queued ticket.",
   "printTransmitted": "Ticket bytes sent",

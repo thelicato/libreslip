@@ -224,7 +224,7 @@
   "sendQueuedTicket": "Invia comanda in coda",
   "shareTicketPdf": "Condividi PDF",
   "preparingTicket": "Preparazione comanda…",
-  "connectBeforePrinting": "Connetti una stampante nelle Impostazioni. Puoi mettere ora la comanda in coda e inviarla esplicitamente dopo la connessione.",
+  "connectBeforePrinting": "Connetti una stampante nelle Impostazioni prima di stampare.",
   "printQueued": "Comanda in coda",
   "printQueuedBody": "Nessun dato è stato inviato. Connetti la stampante, poi usa Invia comanda in coda.",
   "printTransmitted": "Byte della comanda inviati",

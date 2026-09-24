@@ -724,7 +724,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectBeforePrinting =>
-      'Connect a printer in Settings. This ticket can be queued now and sent explicitly after connecting.';
+      'Connect a printer in Settings before printing.';
 
   @override
   String get printQueued => 'Ticket queued';

@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/printing/application/printer_controller.dart';
+import 'package:libreslip/features/printing/application/ticket_output_controller.dart';
+import 'package:libreslip/features/printing/domain/printer_transport.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 
@@ -92,17 +96,34 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final settings = SettingsController(MemorySettingsRepository());
-    final orders = await createMemoryOrders();
+    final environment = await createMemoryOrderEnvironment();
+    final orders = environment.controller;
+    final printer = PrinterController(_ConnectedWorkspaceTransport());
+    final output = TicketOutputController(
+      store: environment.repository,
+      printer: printer,
+    );
     addTearDown(settings.dispose);
     addTearDown(orders.dispose);
+    addTearDown(printer.dispose);
+    addTearDown(output.dispose);
     await settings.load();
+    await printer.refresh();
+    await output.load();
     await orders.saveItem(name: 'Toastie');
     orders.addCatalogueItem(orders.items.single);
     orders.setReference('Table 9');
     orders.setOrderNote('Together');
     orders.setPreparationNote(orders.activeDraft!.lines.single.id, 'No onion');
     await orders.flushWrites();
-    await tester.pumpWidget(LibreSlipApp(settings: settings, orders: orders));
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: settings,
+        orders: orders,
+        printer: printer,
+        ticketOutput: output,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('On this phone'), findsNothing);
@@ -283,4 +304,29 @@ void main() {
       });
     }
   }
+}
+
+class _ConnectedWorkspaceTransport implements PrinterTransport {
+  @override
+  Future<void> connect(String address) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<BluetoothHostState> getState() async => const BluetoothHostState(
+    status: BluetoothHostStatus.ready,
+    devices: [PairedPrinter(name: 'NT-1809DD', address: '00:11:22:33:44:55')],
+    connectedAddress: '00:11:22:33:44:55',
+  );
+
+  @override
+  Future<void> openBluetoothSettings() async {}
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
+      bytes.length;
 }

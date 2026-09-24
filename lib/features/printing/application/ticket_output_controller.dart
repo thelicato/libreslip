@@ -7,7 +7,7 @@ import 'esc_pos_ticket_encoder.dart';
 import 'printer_controller.dart';
 import 'ticket_pdf_sharer.dart';
 
-enum TicketPrintResult { queued, transmitted, failed, uncertain }
+enum TicketPrintResult { notConnected, transmitted, failed, uncertain }
 
 class TicketOutputController extends ChangeNotifier {
   TicketOutputController({
@@ -59,6 +59,7 @@ class TicketOutputController extends ChangeNotifier {
     required TicketDocument document,
   }) async {
     if (busy) return TicketPrintResult.failed;
+    if (!_printer.connected) return TicketPrintResult.notConnected;
     busy = true;
     activeTicketId = ticket.id;
     lastErrorCode = null;
@@ -71,7 +72,6 @@ class TicketOutputController extends ChangeNotifier {
         payload: payload,
       );
       await _refresh();
-      if (!_printer.connected) return TicketPrintResult.queued;
       return await _send(job);
     } catch (_) {
       lastErrorCode = 'storage';
@@ -87,12 +87,12 @@ class TicketOutputController extends ChangeNotifier {
     if (busy || job.status != PrintJobStatus.queued) {
       return TicketPrintResult.failed;
     }
+    if (!_printer.connected) return TicketPrintResult.notConnected;
     busy = true;
     activeTicketId = job.ticketId;
     lastErrorCode = null;
     notifyListeners();
     try {
-      if (!_printer.connected) return TicketPrintResult.queued;
       return await _send(job);
     } catch (_) {
       lastErrorCode = 'storage';
@@ -106,7 +106,7 @@ class TicketOutputController extends ChangeNotifier {
 
   Future<TicketPrintResult> _send(PrintJob job) async {
     final device = _printer.connectedPrinter;
-    if (device == null) return TicketPrintResult.queued;
+    if (device == null) return TicketPrintResult.notConnected;
     await _store.markPrintJobSending(
       job.id,
       printerAddress: device.address,

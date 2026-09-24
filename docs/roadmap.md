@@ -12,6 +12,11 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | 6. Release verification and packaging | Accessibility, both languages, offline operation, process recovery, hardware evidence, build instructions, installable APK, source ZIP and checksums. | Complete |
 | 7. Overview dashboard | Current LibreSlip printer connection, honest battery availability, and inclusive start/end date filters for non-financial ticket and item counts. | Complete |
 | 8. Per-item activity | Item names and summed quantities from immutable saved-ticket snapshots within the Overview date range, with responsive empty and long-list states. | Complete |
+| 9. Connected printing gate and network plan | Disable new print, reprint and queued-send actions without a connected printer; reject disconnected output calls before saving attempts; retain legacy queue recovery; define the optional client/server programme. | Complete |
+| 10. Mode and protocol foundation | Persist Client or Server mode, specify the versioned protocol and limits, and add transactional outbox/inbox migrations without enabling networking yet. | Planned |
+| 11. Server inbox | Authenticated foreground-only local HTTPS receiver, explicit pairing, idempotent storage, received/completed board and Mark Done. | Planned |
+| 12. Client delivery | Transactional optional delivery outbox, independent local printing, delivery status and interruption-safe retry. | Planned |
+| 13. Discovery, portability and hardening | Evaluate mDNS, extend full backups, and validate multi-client, security, recovery and physical two-device operation. | Planned |
 
 ## Scope boundaries
 
@@ -19,6 +24,6 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-LibreSlip 0.8.0 extends the responsive Overview dashboard with a per-item quantity breakdown for the same inclusive local start and end dates used by the summary metrics. Rows are ordered by descending quantity and then name, with the first eight visible until the operator expands a longer list. The empty range has an explicit state.
+LibreSlip 0.9.0 requires a connected printer before Compose can finalise through Print ticket, before ticket history can reprint, and before a legacy queued job can be sent. The presentation reacts to printer connection changes, and the application controller rejects a disconnected request before encoding or creating a print attempt. Compose therefore cannot implicitly save a ticket through a blocked print action. Existing queued jobs remain stored and explicitly recoverable after reconnection.
 
-Aggregation reads immutable saved-ticket lines, not the mutable catalogue. Catalogue identity and the saved line name form the grouping key, so repeated snapshots are summed while a renamed item keeps separate historically accurate labels. The dashboard still reports saved-ticket count, total item quantity and average items per ticket and never derives revenue, sales, prices or other financial measures. Printer connection and honest battery availability from task 7 remain unchanged. See [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).
+The next programme adds optional Client and Server modes to the same app. Client retains the complete current offline workflow and may additionally deliver immutable ticket snapshots through a durable idempotent outbox. Server is limited to receiving orders, displaying received/completed queues and marking an order Done. Tasks 10 to 13 are planned only; version 0.9.0 adds no networking permission, listener or server interface. See the [client and server plan](client-server-plan.md), [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).

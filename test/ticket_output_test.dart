@@ -114,13 +114,15 @@ void main() {
   });
 
   testWidgets(
-    'saved ticket preview queues once and remains usable on a phone',
+    'saved ticket preview prints once and remains usable on a phone',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final printer = PrinterController(OutputTransport());
+      await printer.refresh();
+      await printer.connect(printer.devices.single);
       final output = TicketOutputController(
         store: MemoryPrintJobStore(),
         printer: printer,
@@ -166,41 +168,91 @@ void main() {
       await tester.tap(printButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('Ticket queued'), findsOneWidget);
-      expect(find.text('Send queued ticket'), findsOneWidget);
+      expect(find.text('Ticket bytes sent'), findsOneWidget);
+      expect(find.text('Print again'), findsOneWidget);
       expect(output.jobs, hasLength(1));
+      expect(output.jobs.single.status, PrintJobStatus.transmitted);
       expect(tester.takeException(), isNull);
     },
   );
 
-  test('a disconnected print is durable and requires an explicit send after connection', () async {
-    final store = MemoryPrintJobStore();
-    final transport = OutputTransport();
-    final printer = PrinterController(transport);
+  testWidgets('saved ticket print is disabled while disconnected', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final printer = PrinterController(OutputTransport());
     final output = TicketOutputController(
-      store: store,
+      store: MemoryPrintJobStore(),
       printer: printer,
       pdfSharer: CapturingPdfSharer(),
     );
     addTearDown(printer.dispose);
     addTearDown(output.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en', 'GB'),
+        supportedLocales: const [Locale('en', 'GB'), Locale('it', 'IT')],
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(
+          body: TicketDetailDialog(
+            ticket: _ticket,
+            settings: const AppSettings(),
+            output: output,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(
-      await output.printTicket(ticket: _ticket, document: _document()),
-      TicketPrintResult.queued,
+      find.text('Connect a printer in Settings before printing.'),
+      findsOneWidget,
     );
-    expect(store.jobs.single.status, PrintJobStatus.queued);
-    expect(transport.sendCalls, 0);
-
-    await printer.refresh();
-    await printer.connect(printer.devices.single);
-    expect(
-      await output.sendQueued(store.jobs.single),
-      TicketPrintResult.transmitted,
-    );
-    expect(store.jobs.single.status, PrintJobStatus.transmitted);
-    expect(transport.sendCalls, 1);
+    final printButton = find.byKey(const ValueKey('print-ticket-ticket-7'));
+    expect(tester.widget<FilledButton>(printButton).onPressed, isNull);
+    expect(output.jobs, isEmpty);
+    expect(tester.takeException(), isNull);
   });
+
+  test(
+    'disconnected output creates no attempt and retains legacy queues',
+    () async {
+      final store = MemoryPrintJobStore();
+      final transport = OutputTransport();
+      final printer = PrinterController(transport);
+      final output = TicketOutputController(
+        store: store,
+        printer: printer,
+        pdfSharer: CapturingPdfSharer(),
+      );
+      addTearDown(printer.dispose);
+      addTearDown(output.dispose);
+
+      expect(
+        await output.printTicket(ticket: _ticket, document: _document()),
+        TicketPrintResult.notConnected,
+      );
+      expect(store.jobs, isEmpty);
+      expect(transport.sendCalls, 0);
+
+      final legacy = await store.createPrintJob(
+        requestId: 'legacy-queue',
+        ticketId: _ticket.id,
+        payload: Uint8List.fromList([1, 2, 3]),
+      );
+      expect(await output.sendQueued(legacy), TicketPrintResult.notConnected);
+      expect(store.jobs.single.status, PrintJobStatus.queued);
+
+      await printer.refresh();
+      await printer.connect(printer.devices.single);
+      expect(await output.sendQueued(legacy), TicketPrintResult.transmitted);
+      expect(store.jobs.single.status, PrintJobStatus.transmitted);
+      expect(transport.sendCalls, 1);
+    },
+  );
 
   test(
     'an uncertain transmission is never retried without a new explicit attempt',

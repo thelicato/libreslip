@@ -30,7 +30,11 @@ class _ComposePageState extends State<ComposePage> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.controller,
+    listenable: Listenable.merge([
+      widget.controller,
+      if (widget.output != null) widget.output!,
+      if (widget.output != null) widget.output!.printer,
+    ]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       final draft = widget.controller.activeDraft;
@@ -73,6 +77,7 @@ class _ComposePageState extends State<ComposePage> {
                 orderNumber: widget.controller.nextOrderNumber,
                 features: widget.controller.featureSettings,
                 busy: widget.controller.saving || _printing,
+                printerConnected: widget.output?.printer.connected ?? false,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
@@ -172,6 +177,12 @@ class _ComposePageState extends State<ComposePage> {
   Future<void> _printTicket() async {
     final l = AppLocalizations.of(context);
     if (_printing || widget.controller.saving) return;
+    final output = widget.output;
+    if (output == null || !output.printer.connected) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.connectBeforePrinting)));
+      return;
+    }
     if (widget.controller.activeDraft?.lines.isEmpty ?? true) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.ticketNeedsItem)));
@@ -186,13 +197,6 @@ class _ComposePageState extends State<ComposePage> {
       setState(() => _printing = false);
       return;
     }
-    final output = widget.output;
-    if (output == null) {
-      setState(() => _printing = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l.ticketSaved)));
-      return;
-    }
     final result = await output.printTicket(
       ticket: ticket,
       document: _document(ticket),
@@ -200,7 +204,7 @@ class _ComposePageState extends State<ComposePage> {
     if (!mounted) return;
     setState(() => _printing = false);
     final message = switch (result) {
-      TicketPrintResult.queued => l.printQueued,
+      TicketPrintResult.notConnected => l.connectBeforePrinting,
       TicketPrintResult.transmitted => l.printTransmitted,
       TicketPrintResult.failed => l.printFailed,
       TicketPrintResult.uncertain => l.printUncertain,
@@ -358,6 +362,7 @@ class _OrderPanel extends StatelessWidget {
     required this.orderNumber,
     required this.features,
     required this.busy,
+    required this.printerConnected,
     required this.standalone,
     required this.onReferenceChanged,
     required this.onOrderNoteChanged,
@@ -372,6 +377,7 @@ class _OrderPanel extends StatelessWidget {
   final int orderNumber;
   final OrderFeatureSettings features;
   final bool busy;
+  final bool printerConnected;
   final bool standalone;
   final ValueChanged<String> onReferenceChanged;
   final ValueChanged<String> onOrderNoteChanged;
@@ -472,9 +478,21 @@ class _OrderPanel extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
+          if (!printerConnected) ...[
+            Text(
+              l.connectBeforePrinting,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+          ],
           FilledButton.icon(
             key: const ValueKey('print-ticket'),
-            onPressed: draft.lines.isEmpty || busy ? null : onPrint,
+            onPressed: draft.lines.isEmpty || busy || !printerConnected
+                ? null
+                : onPrint,
             icon: const Icon(Icons.print_rounded),
             label: Text(l.printTicket),
           ),

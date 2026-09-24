@@ -5,7 +5,7 @@
 - Build LibreSlip in Flutter and Dart for Android 14 and later. Use `libreslip` as the Dart project name and `io.thelicato.libreslip` as the Android application identifier. Use original branding and a modern, polished interface. The repository location does not dictate the app name.
 - LibreSlip creates and prints order tickets. The user's 20 September 2026 instruction replaces the earlier point-of-sale scope. Loyverse and Kyte feature parity is no longer a requirement.
 - Never add payment processing or payment recording, checkout, tenders, change, refunds, taxes, discounts, cash drawers, shifts, sales reporting, loyalty, debt, purchasing or stock valuation. Ticket printing must not create a sale or financial transaction. Tickets contain items, quantities and notes, without prices or monetary totals.
-- Require no registration, login, subscription, server or internet connection for core operation, including first launch.
+- Require no registration, login, subscription, server or internet connection for core client operation, including first launch. A future optional peer server connection must never be required for composing, local printing, history, export or backup.
 - Store settings, reusable items, ticket drafts, history and assets on the phone. Use transactional local SQLite storage with versioned migrations for items and tickets; simple preferences may use a local preferences backend.
 - Do not introduce cloud databases, analytics, remote fonts or background uploads. Configure Android backup exclusions to prevent automatic cloud backup and device transfer of app data.
 - Support British English (`en_GB`) and Italian (`it_IT`) throughout the interface, validation, tickets and exports. Allow immediate language changes and persist the choice. Language changes must not modify item or ticket content.
@@ -22,15 +22,16 @@
 | Ticket history | Stable ticket identifiers, creation times, saved snapshots, viewing, explicit reprint and a clear distinction between editable work and print attempts. Do not duplicate saved tickets into drafts. |
 | Printing | Custom heading/logo/footer, readable 58 mm layout, bilingual labels, printer setup, test ticket, durable print jobs, reconnect and recoverable failures. |
 | Portability | Versioned configuration ZIPs and full backups, import preview, validated restore, rollback, and optional ticket PDF sharing through the system share sheet. |
+| Planned client/server | The same app may run in Client or Server mode. Client keeps every current offline capability and may additionally deliver immutable tickets. Server only receives orders, displays received/completed queues and marks orders Done. |
 
-Do not silently expand this into a business management suite. Prioritise composing a ticket and getting it reliably onto paper. Printed content is an order/preparation ticket, not a payment or fiscal receipt.
+Do not silently expand this into a business management suite. Prioritise composing a ticket and getting it reliably onto paper. Printed content is an order/preparation ticket, not a payment or fiscal receipt. Planned Server mode is a receive-and-Done board only and must not gain catalogue editing, printing, payment or reporting features.
 
 ## Architecture and data correctness
 
 - Organise code by feature with presentation, application/domain and persistence boundaries. Keep storage, ticket rendering, ESC/POS encoding, transport, archives and platform permissions behind interfaces.
 - Preserve the item names, quantities, notes and header used for a saved ticket as a snapshot. Catalogue edits must not rewrite previously printed tickets.
 - Use stable identifiers and database transactions. Persist drafts and ticket/print-job changes reliably, and recover after process interruption without creating duplicate tickets.
-- Keep printing separate from ticket creation. A failed print must not erase a ticket. A reprint must not create another order.
+- Keep printing separate from ticket creation. A failed print must not erase a ticket. A reprint must not create another order. Do not allow a new Print ticket or reprint action without a connected printer; existing queued jobs may remain available for explicit recovery after reconnection.
 - Distinguish queued, sending, failed and uncertain print attempts. Do not automatically resend when the printer may already have printed the job. Successful byte transmission alone does not prove paper output.
 - Store timestamps consistently and format them for the selected locale and device/business timezone. Use validated quantities appropriate to the item type.
 - Keep ticket contents, personal notes and device secrets out of logs. Use app-private storage and minimal permissions. Import, export and rendering must not block the interface.

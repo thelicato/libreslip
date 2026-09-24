@@ -25,7 +25,7 @@ class TicketDetailDialog extends StatelessWidget {
     final controller = output;
     if (controller == null) return _buildDialog(context, null);
     return ListenableBuilder(
-      listenable: controller,
+      listenable: Listenable.merge([controller, controller.printer]),
       builder: (context, _) => _buildDialog(context, controller),
     );
   }
@@ -122,7 +122,7 @@ class TicketDetailDialog extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  onPressed: working
+                  onPressed: working || !controller.printer.connected
                       ? null
                       : () {
                           if (queued != null) {
