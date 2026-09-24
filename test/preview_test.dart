@@ -108,6 +108,13 @@ void main() {
         ThemeMode.light,
         5,
       ),
+      (
+        'server-settings-phone-en',
+        const Size(520, 1100),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
     ]) {
       tester.view.physicalSize = size;
       final settingsStore = MemorySettingsRepository()
@@ -193,6 +200,7 @@ void main() {
         await orders.saveItem(
           name: 'Mushroom toastie',
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
+          sendToServer: name != 'items-tablet-it',
         );
       }
       if (name == 'overview-dashboard-phone-it') {
@@ -231,6 +239,10 @@ void main() {
       await tester.pumpAndSettle();
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'server-settings-phone-en') {
+        await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
         await tester.pumpAndSettle();
       }
       if (name == 'ticket-preview-phone-it') {

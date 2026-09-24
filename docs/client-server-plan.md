@@ -19,6 +19,7 @@ The first implementation target is communication between Android devices on the 
 - An unavailable server leaves the delivery pending. The client may retry the same delivery identifier safely while the app is active or after an explicit Retry action.
 - The server stores each delivery once, even if the acknowledgement is lost and the client sends it again.
 - Server orders contain the saved heading, reference, notes, item names, quantities and creation time. They never contain prices, taxes, payments or financial totals.
+- Each reusable item can be excluded from optional Server orders. The complete local ticket remains unchanged, a mixed ticket sends only included items, and an all-excluded ticket creates no delivery.
 - Marking an order Done changes only the server copy. It does not edit or delete the client ticket.
 - Deleting a client ticket after confirmed delivery does not remotely delete the server order.
 - Switching modes does not silently delete either client data or the server inbox.
@@ -62,8 +63,8 @@ The current client interface remains the default. When no server is paired, it b
 When a server is paired:
 
 1. Print ticket validates the connected printer and finalises the immutable local ticket.
-2. The same database transaction creates an outbox delivery for that ticket.
-3. Local printing proceeds through the existing durable print-attempt path.
+2. The same database transaction creates an outbox delivery containing only catalogue items enabled for Server orders. If no lines remain, it creates no delivery.
+3. Local printing proceeds through the existing durable print-attempt path with every local ticket line intact.
 4. Server delivery proceeds independently with the same stable delivery identifier.
 5. The ticket history shows delivery as Pending, Delivered or Needs attention, without mixing it with printer outcome.
 6. Pending delivery can be retried explicitly. A bounded retry while the app is active may be added only after idempotency and interruption tests pass.
@@ -72,13 +73,10 @@ A server outage must not block catalogue editing, composition, local printing, h
 
 ## Server workflow
 
-Entering server mode replaces the client workspace navigation with a deliberately small interface:
+Entering server mode replaces the client workspace navigation with two deliberately small tabs:
 
-- Received orders, newest first.
-- Completed orders.
-- Order detail showing source device label, ticket number, received time, original creation time, reference, items, quantities and notes.
-- One primary Mark Done action.
-- Settings for server name, pairing, connection address and mode switching.
+- Orders: Received orders, Completed orders, immutable order detail, one Mark Done action and item quantities still outstanding across Received orders.
+- Settings: listener state, connection addresses, certificate fingerprint, Client pairing and mode switching.
 
 The initial server should listen only while LibreSlip is open in server mode. Reliable background serving on Android requires a foreground service and persistent notification, so that should be a separate, explicit milestone rather than an implicit promise.
 
@@ -127,10 +125,21 @@ Implemented in LibreSlip 0.12.0.
 - Show Pending, Sending, Delivered and Needs attention independently from print status.
 - Retry explicitly with the same delivery identifier and recover interrupted sending as pending after restart.
 
-### Task 13: discovery, portability and hardening
+### Task 13: selective delivery and Server workflow
+
+Implemented in LibreSlip 0.13.0.
+
+- Add an enabled-by-default per-item switch for participation in optional Server orders.
+- Preserve every line locally while filtering new immutable outbox envelopes transactionally.
+- Skip delivery entirely when every ticket line is local-only.
+- Split Server mode into Orders and Settings tabs.
+- Show item quantities still outstanding across Received orders and remove them when their orders are Done.
+- Make the Client/Server selector a full-width horizontal control.
+
+### Task 14: discovery, portability and hardening
 
 - Evaluate mDNS discovery with manual address fallback.
-- Extend full backups and validation for the new non-secret data.
+- Extend full backups and validation for the non-secret networking data.
 - Test mode switching, multiple clients, duplicate delivery, malformed input, unauthorised devices, network changes, large queues, Italian text and Android process death.
 - Decide separately whether foreground-service background hosting or remote-network support is justified.
 

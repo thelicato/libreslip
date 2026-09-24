@@ -21,8 +21,8 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 7;
-  static const portableSchemaVersions = {5, 6, databaseVersion};
+  static const databaseVersion = 8;
+  static const portableSchemaVersions = {5, 6, 7, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -346,6 +346,12 @@ class SqliteOrderRepository
         CREATE UNIQUE INDEX network_destinations_one_active
         ON network_destinations(is_active) WHERE is_active = 1
       ''');
+    }
+    if (oldVersion < 8 && newVersion >= 8) {
+      await database.execute(
+        'ALTER TABLE items ADD COLUMN send_to_server INTEGER NOT NULL '
+        'DEFAULT 1 CHECK (send_to_server IN (0, 1))',
+      );
     }
   }
 
@@ -913,6 +919,7 @@ class SqliteOrderRepository
     required String name,
     String? categoryName,
     String? imagePath,
+    bool sendToServer = true,
   }) async {
     final cleanName = name.trim();
     final cleanCategory = categoryName?.trim();
@@ -954,6 +961,7 @@ class SqliteOrderRepository
           'archived': 0,
           'is_favourite': 0,
           'image_path': imagePath,
+          'send_to_server': sendToServer ? 1 : 0,
           'updated_at': now,
         };
         if (id == null) {
@@ -1154,51 +1162,74 @@ class SqliteOrderRepository
           limit: 1,
         );
         if (destinations.isNotEmpty) {
-          final settings = await transaction.query(
-            'network_settings',
-            columns: ['installation_id'],
-            where: 'id = 1',
-            limit: 1,
-          );
-          if (settings.length != 1) {
-            throw const OrderStorageException(
-              'The client installation identity could not be found.',
+          final catalogueIds = draft.lines
+              .map((line) => line.catalogueItemId)
+              .whereType<String>()
+              .toSet();
+          final excludedIds = <String>{};
+          if (catalogueIds.isNotEmpty) {
+            final placeholders = List.filled(
+              catalogueIds.length,
+              '?',
+            ).join(',');
+            final excluded = await transaction.query(
+              'items',
+              columns: ['id'],
+              where: 'send_to_server = 0 AND id IN ($placeholders)',
+              whereArgs: catalogueIds.toList(growable: false),
             );
+            excludedIds.addAll(excluded.map((row) => row['id']! as String));
           }
-          final deliveryId = createLocalId();
-          final clientInstallationId =
-              settings.single['installation_id']! as String;
-          final envelope = OrderDeliveryEnvelope.create(
-            clientInstallationId: clientInstallationId,
-            deliveryId: deliveryId,
-            ticketId: id,
-            ticketNumber: orderNumber,
-            createdAt: createdAt,
-            heading: heading.trim(),
-            reference: draft.reference.trim(),
-            orderNote: draft.orderNote.trim(),
-            lines: [
-              for (final line in draft.lines)
+          final deliveryLines = [
+            for (final line in draft.lines)
+              if (line.catalogueItemId == null ||
+                  !excludedIds.contains(line.catalogueItemId))
                 DeliveryLine(
                   name: line.name,
                   quantity: line.quantity,
                   preparationNote: line.preparationNote.trim(),
                 ),
-            ],
-          );
-          final now = _timestamp(createdAt);
-          await transaction.insert('server_delivery_outbox', {
-            'id': deliveryId,
-            'destination_id': destinations.single['id']! as String,
-            'client_installation_id': clientInstallationId,
-            'ticket_id': id,
-            'payload_json': envelope.toJsonString(),
-            'payload_checksum': envelope.payloadChecksum,
-            'status': ClientDeliveryStatus.pending.value,
-            'attempt_count': 0,
-            'created_at': now,
-            'updated_at': now,
-          });
+          ];
+          if (deliveryLines.isNotEmpty) {
+            final settings = await transaction.query(
+              'network_settings',
+              columns: ['installation_id'],
+              where: 'id = 1',
+              limit: 1,
+            );
+            if (settings.length != 1) {
+              throw const OrderStorageException(
+                'The client installation identity could not be found.',
+              );
+            }
+            final deliveryId = createLocalId();
+            final clientInstallationId =
+                settings.single['installation_id']! as String;
+            final envelope = OrderDeliveryEnvelope.create(
+              clientInstallationId: clientInstallationId,
+              deliveryId: deliveryId,
+              ticketId: id,
+              ticketNumber: orderNumber,
+              createdAt: createdAt,
+              heading: heading.trim(),
+              reference: draft.reference.trim(),
+              orderNote: draft.orderNote.trim(),
+              lines: deliveryLines,
+            );
+            final now = _timestamp(createdAt);
+            await transaction.insert('server_delivery_outbox', {
+              'id': deliveryId,
+              'destination_id': destinations.single['id']! as String,
+              'client_installation_id': clientInstallationId,
+              'ticket_id': id,
+              'payload_json': envelope.toJsonString(),
+              'payload_checksum': envelope.payloadChecksum,
+              'status': ClientDeliveryStatus.pending.value,
+              'attempt_count': 0,
+              'created_at': now,
+              'updated_at': now,
+            });
+          }
         }
         await transaction.delete(
           'drafts',
@@ -1745,6 +1776,7 @@ class SqliteOrderRepository
             name: row['category_name']! as String,
           ),
     imagePath: row['image_path'] as String?,
+    sendToServer: row['send_to_server']! as int == 1,
   );
 
   static void _validateDraft(OrderDraft draft, {bool requireLines = false}) {

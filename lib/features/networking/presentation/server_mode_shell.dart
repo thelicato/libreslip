@@ -27,6 +27,9 @@ class ServerModeShell extends StatefulWidget {
 class _ServerModeShellState extends State<ServerModeShell>
     with WidgetsBindingObserver {
   var _showCompleted = false;
+  var _selectedTab = 0;
+  final _ordersScrollController = ScrollController();
+  final _settingsScrollController = ScrollController();
 
   @override
   void initState() {
@@ -58,150 +61,188 @@ class _ServerModeShellState extends State<ServerModeShell>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(widget.inboxController.stop());
+    _ordersScrollController.dispose();
+    _settingsScrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     return Scaffold(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedTab,
+        onDestinationSelected: (value) => setState(() => _selectedTab = value),
+        destinations: [
+          NavigationDestination(
+            key: const ValueKey('server-tab-orders'),
+            icon: const Icon(Icons.receipt_long_outlined),
+            label: l.serverOrdersTab,
+          ),
+          NavigationDestination(
+            key: const ValueKey('server-tab-settings'),
+            icon: const Icon(Icons.tune_rounded),
+            label: l.serverSettingsTab,
+          ),
+        ],
+      ),
       body: SafeArea(
+        bottom: false,
         child: ListenableBuilder(
           listenable: widget.inboxController,
-          builder: (context, _) {
-            final controller = widget.inboxController;
-            final orders = _showCompleted
-                ? controller.completedOrders
-                : controller.receivedOrders;
-            return RefreshIndicator(
-              onRefresh: controller.refresh,
-              child: CustomScrollView(
-                key: const ValueKey('server-inbox-page'),
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1000),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  const BrandMark(size: 40),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      l.serverInboxTitle,
-                                      style: theme.textTheme.headlineSmall,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: l.serverRefresh,
-                                    onPressed: controller.loading
-                                        ? null
-                                        : controller.refresh,
-                                    icon: const Icon(Icons.refresh_rounded),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                l.serverInboxSubtitle,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              _ListenerCard(
-                                controller: controller,
-                                onRetry: _start,
-                              ),
-                              const SizedBox(height: 16),
-                              _PairingCard(controller: controller),
-                              const SizedBox(height: 24),
-                              SegmentedButton<bool>(
-                                key: const ValueKey('server-order-filter'),
-                                segments: [
-                                  ButtonSegment(
-                                    value: false,
-                                    icon: const Icon(Icons.inbox_outlined),
-                                    label: Text(
-                                      '${l.receivedOrders} (${controller.receivedOrders.length})',
-                                    ),
-                                  ),
-                                  ButtonSegment(
-                                    value: true,
-                                    icon: const Icon(Icons.task_alt_rounded),
-                                    label: Text(
-                                      '${l.completedOrders} (${controller.completedOrders.length})',
-                                    ),
-                                  ),
-                                ],
-                                selected: {_showCompleted},
-                                onSelectionChanged: (selection) => setState(
-                                  () => _showCompleted = selection.single,
-                                ),
-                                showSelectedIcon: false,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (orders.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptyOrders(completed: _showCompleted),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                      sliver: SliverLayoutBuilder(
-                        builder: (context, constraints) {
-                          final columns = constraints.crossAxisExtent >= 760
-                              ? 2
-                              : 1;
-                          return SliverGrid.builder(
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  mainAxisExtent: 190,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                            itemCount: orders.length,
-                            itemBuilder: (context, index) => _OrderCard(
-                              order: orders[index],
-                              onTap: () => _showOrder(orders[index]),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                    sliver: SliverToBoxAdapter(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1000),
-                          child: ModeSettingsCard(
-                            controller: widget.modeController,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+          builder: (context, _) => _selectedTab == 0
+              ? _buildOrders(context)
+              : _buildSettings(context),
         ),
       ),
+    );
+  }
+
+  Widget _buildOrders(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final controller = widget.inboxController;
+    final orders = _showCompleted
+        ? controller.completedOrders
+        : controller.receivedOrders;
+    return RefreshIndicator(
+      onRefresh: controller.refresh,
+      child: CustomScrollView(
+        key: const ValueKey('server-inbox-page'),
+        controller: _ordersScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _PageHeader(
+                        title: l.serverInboxTitle,
+                        subtitle: l.serverInboxSubtitle,
+                        trailing: IconButton(
+                          tooltip: l.serverRefresh,
+                          onPressed: controller.loading
+                              ? null
+                              : controller.refresh,
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SegmentedButton<bool>(
+                        key: const ValueKey('server-order-filter'),
+                        segments: [
+                          ButtonSegment(
+                            value: false,
+                            icon: const Icon(Icons.inbox_outlined),
+                            label: Text(
+                              '${l.receivedOrders} '
+                              '(${controller.receivedOrders.length})',
+                            ),
+                          ),
+                          ButtonSegment(
+                            value: true,
+                            icon: const Icon(Icons.task_alt_rounded),
+                            label: Text(
+                              '${l.completedOrders} '
+                              '(${controller.completedOrders.length})',
+                            ),
+                          ),
+                        ],
+                        selected: {_showCompleted},
+                        onSelectionChanged: (selection) =>
+                            setState(() => _showCompleted = selection.single),
+                        showSelectedIcon: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (orders.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              sliver: SliverToBoxAdapter(
+                child: _EmptyOrders(completed: _showCompleted),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.crossAxisExtent >= 760 ? 2 : 1;
+                  return SliverGrid.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisExtent: 190,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) => _OrderCard(
+                      order: orders[index],
+                      onTap: () => _showOrder(orders[index]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: _OutstandingItemsCard(
+                    totals: summariseOutstandingItems(controller.orders),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettings(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final controller = widget.inboxController;
+    return CustomScrollView(
+      key: const ValueKey('server-settings-page'),
+      controller: _settingsScrollController,
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          sliver: SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _PageHeader(
+                      title: l.serverSettingsTitle,
+                      subtitle: l.serverSettingsSubtitle,
+                    ),
+                    const SizedBox(height: 20),
+                    _ListenerCard(controller: controller, onRetry: _start),
+                    const SizedBox(height: 16),
+                    _PairingCard(controller: controller),
+                    const SizedBox(height: 24),
+                    ModeSettingsCard(controller: widget.modeController),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -210,6 +251,103 @@ class _ServerModeShellState extends State<ServerModeShell>
       context: context,
       builder: (context) =>
           _OrderDialog(order: order, controller: widget.inboxController),
+    );
+  }
+}
+
+class _PageHeader extends StatelessWidget {
+  const _PageHeader({
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const BrandMark(size: 48),
+            const SizedBox(width: 14),
+            Expanded(child: Text(title, style: theme.textTheme.headlineMedium)),
+            ?trailing,
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          subtitle,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OutstandingItemsCard extends StatelessWidget {
+  const _OutstandingItemsCard({required this.totals});
+
+  final List<OutstandingItemTotal> totals;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final quantityFormat = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    return Card(
+      key: const ValueKey('outstanding-items-card'),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(l.outstandingItems, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 6),
+            Text(
+              l.outstandingItemsBody,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (totals.isEmpty)
+              Text(l.noOutstandingItems)
+            else
+              for (var index = 0; index < totals.length; index++) ...[
+                if (index > 0) const Divider(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        totals[index].name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      quantityFormat.format(totals[index].quantity),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+          ],
+        ),
+      ),
     );
   }
 }

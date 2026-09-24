@@ -16,7 +16,8 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | 10. Mode and protocol foundation | Persist Client or Server mode, specify the versioned protocol and limits, and add transactional outbox/inbox migrations without enabling networking yet. | Complete |
 | 11. Server inbox | Authenticated foreground-only local HTTPS receiver, explicit pairing, idempotent storage, received/completed board and Mark Done. | Complete |
 | 12. Client delivery | Transactional optional delivery outbox, independent local printing, delivery status and interruption-safe retry. | Complete |
-| 13. Discovery, portability and hardening | Evaluate mDNS, extend full backups, and validate multi-client, security, recovery and physical two-device operation. | Planned |
+| 13. Selective delivery and Server workflow | Per-item local-only delivery control, horizontal mode selection, separate Server Orders and Settings tabs, and live outstanding-item totals. | Complete |
+| 14. Discovery, portability and hardening | Evaluate mDNS, extend networking backups, and validate multi-client, security, recovery and physical two-device operation. | Planned |
 
 ## Scope boundaries
 
@@ -24,6 +25,8 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-LibreSlip 0.12.0 completes optional Client delivery to the foreground-only Server receiver. Pairing requires the Server's local IPv4 address, exact displayed SHA-256 certificate fingerprint and a five-minute one-time code. The client uses strict certificate pinning for the self-signed HTTPS identity and keeps its access token in Android keystore-backed encrypted storage.
+LibreSlip 0.13.0 separates the foreground Server into Orders and Settings tabs. The Orders tab retains Received and Completed queues and now shows item quantities outstanding across Received orders only. The Settings tab contains listener status, addresses, certificate fingerprint, Client pairing and the horizontal Client/Server mode selector.
 
-When a paired Client finalises a ticket, SQLite stores the immutable local snapshot and one stable delivery envelope atomically. Local printing runs first and independently. Pending deliveries receive one bounded foreground attempt after creation or restart; failures remain Needs attention for explicit retry. Repeating a delivery after a lost acknowledgement returns the original Server order rather than creating another. Ticket deletion never changes its delivery or the visible ticket-number counter. Networking data remains excluded from archives until Task 13. Physical two-device validation, discovery evaluation and portability hardening are the remaining Task 13 work. See the [client and server plan](client-server-plan.md), [protocol specification](network-protocol.md), [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).
+Each reusable Client item now stores whether it participates in optional Server delivery. New items default to included. Ticket finalisation always preserves the complete immutable local snapshot, but its transactional outbox envelope contains only eligible catalogue items. An all-local ticket creates no outbox row. Later catalogue edits do not rewrite saved tickets or existing delivery envelopes. Full backups preserve the item flag, while legacy schema 5 to 7 snapshots restore it as enabled. Networking data remains excluded from archives until Task 14.
+
+Physical two-device validation, discovery evaluation and networking-data portability hardening remain Task 14 work. See the [client and server plan](client-server-plan.md), [protocol specification](network-protocol.md), [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).

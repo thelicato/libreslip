@@ -138,6 +138,7 @@ class _ItemsPageState extends State<ItemsPage> {
     final name = TextEditingController(text: item?.name);
     final category = TextEditingController(text: item?.category?.name);
     var imagePath = item?.imagePath;
+    var sendToServer = item?.sendToServer ?? true;
     var chosenImage = false;
     final formKey = GlobalKey<FormState>();
     var pickerFailed = false;
@@ -256,6 +257,15 @@ class _ItemsPageState extends State<ItemsPage> {
                           ? l.categoryTooLong
                           : null,
                     ),
+                    SwitchListTile(
+                      key: const ValueKey('item-send-to-server'),
+                      contentPadding: EdgeInsets.zero,
+                      value: sendToServer,
+                      title: Text(l.includeInServerOrders),
+                      subtitle: Text(l.includeInServerOrdersBody),
+                      onChanged: (value) =>
+                          setDialogState(() => sendToServer = value),
+                    ),
                   ],
                 ),
               ),
@@ -274,6 +284,7 @@ class _ItemsPageState extends State<ItemsPage> {
                   name: name.text,
                   categoryName: category.text,
                   imagePath: imagePath,
+                  sendToServer: sendToServer,
                 );
                 if (succeeded && dialogContext.mounted) {
                   Navigator.pop(dialogContext, true);
@@ -357,6 +368,17 @@ class _ItemCard extends StatelessWidget {
                       Text(
                         item.category!.name,
                         style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (!item.sendToServer) ...[
+                      const SizedBox(height: 7),
+                      Chip(
+                        visualDensity: VisualDensity.compact,
+                        avatar: const Icon(
+                          Icons.phone_android_rounded,
+                          size: 16,
+                        ),
+                        label: Text(l.localOnlyItem),
                       ),
                     ],
                   ],

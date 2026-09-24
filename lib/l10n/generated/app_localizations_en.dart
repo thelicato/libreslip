@@ -1193,6 +1193,39 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get defaultClientName => 'LibreSlip Client';
+
+  @override
+  String get includeInServerOrders => 'Include in Server orders';
+
+  @override
+  String get includeInServerOrdersBody =>
+      'When off, this item stays on the printed local ticket but is omitted from the optional Server order.';
+
+  @override
+  String get localOnlyItem => 'Local only';
+
+  @override
+  String get serverOrdersTab => 'Orders';
+
+  @override
+  String get serverSettingsTab => 'Settings';
+
+  @override
+  String get serverSettingsTitle => 'Server settings';
+
+  @override
+  String get serverSettingsSubtitle =>
+      'Manage this local receiver, pairing and app mode.';
+
+  @override
+  String get outstandingItems => 'Still to prepare';
+
+  @override
+  String get outstandingItemsBody =>
+      'Item totals across all orders currently in Received.';
+
+  @override
+  String get noOutstandingItems => 'Nothing is waiting to be prepared.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

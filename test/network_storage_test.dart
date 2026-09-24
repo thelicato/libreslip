@@ -153,7 +153,7 @@ void main() {
   );
 
   test(
-    'schema 5 and 6 backups restore without replacing the local app mode',
+    'schema 5, 6 and 7 backups restore without replacing the local app mode',
     () async {
       final source = SqliteOrderRepository(
         factory: databaseFactoryFfiNoIsolate,
@@ -162,9 +162,13 @@ void main() {
       await source.open();
       await source.saveItem(name: 'Tea');
       final snapshot = await source.createPortableSnapshot();
+      final tables = snapshot['tables']! as Map<String, Object?>;
+      for (final row in tables['items']! as List) {
+        (row as Map<String, Object?>).remove('send_to_server');
+      }
       await source.close();
 
-      for (final version in [5, 6]) {
+      for (final version in [5, 6, 7]) {
         snapshot['schemaVersion'] = version;
         final destination = SqliteOrderRepository(
           factory: databaseFactoryFfiNoIsolate,
@@ -175,7 +179,9 @@ void main() {
         await destination.saveLibreSlipMode(LibreSlipMode.server);
         await destination.replaceWithPortableSnapshot(snapshot);
 
-        expect(await destination.loadItems(), hasLength(1));
+        final restoredItems = await destination.loadItems();
+        expect(restoredItems, hasLength(1));
+        expect(restoredItems.single.sendToServer, isTrue);
         expect(
           (await destination.loadNetworkConfiguration()).mode,
           LibreSlipMode.server,

@@ -106,8 +106,15 @@ void main() {
 
     expect(networking.mode, LibreSlipMode.server);
     expect(find.byKey(const ValueKey('server-inbox-page')), findsOneWidget);
-    expect(find.text('Ready to receive'), findsOneWidget);
+    expect(find.byKey(const ValueKey('server-tab-orders')), findsOneWidget);
+    expect(find.byKey(const ValueKey('server-tab-settings')), findsOneWidget);
+    expect(find.text('Ready to receive'), findsNothing);
     expect(find.byKey(const ValueKey('nav-0')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-settings-page')), findsOneWidget);
+    expect(find.text('Ready to receive'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Client'),
@@ -157,6 +164,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ordini del Server'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('outstanding-items-card')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Ancora da preparare'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('Impostazioni Server'), findsOneWidget);
     expect(find.text('Pronto a ricevere'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

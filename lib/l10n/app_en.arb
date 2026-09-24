@@ -463,5 +463,15 @@
   "retryDelivery": "Retry delivery",
   "retryingDelivery": "Retrying…",
   "fieldRequired": "This field is required",
-  "defaultClientName": "LibreSlip Client"
+  "defaultClientName": "LibreSlip Client",
+  "includeInServerOrders": "Include in Server orders",
+  "includeInServerOrdersBody": "When off, this item stays on the printed local ticket but is omitted from the optional Server order.",
+  "localOnlyItem": "Local only",
+  "serverOrdersTab": "Orders",
+  "serverSettingsTab": "Settings",
+  "serverSettingsTitle": "Server settings",
+  "serverSettingsSubtitle": "Manage this local receiver, pairing and app mode.",
+  "outstandingItems": "Still to prepare",
+  "outstandingItemsBody": "Item totals across all orders currently in Received.",
+  "noOutstandingItems": "Nothing is waiting to be prepared."
 }

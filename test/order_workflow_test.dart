@@ -54,10 +54,15 @@ void main() {
         find.byKey(const ValueKey('item-name')),
         'Mushroom toastie',
       );
+      final serverSwitch = find.byKey(const ValueKey('item-send-to-server'));
+      expect(tester.widget<SwitchListTile>(serverSwitch).value, isTrue);
+      await tester.tap(serverSwitch);
       await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
       expect(orders.items.single.name, 'Mushroom toastie');
+      expect(orders.items.single.sendToServer, isFalse);
+      expect(find.text('Local only'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('nav-2')));
       await tester.pumpAndSettle();
       expect(find.text('Order 1'), findsOneWidget);

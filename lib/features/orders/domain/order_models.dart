@@ -23,12 +23,14 @@ class CatalogueItem {
     required this.name,
     this.category,
     this.imagePath,
+    this.sendToServer = true,
   });
 
   final String id;
   final String name;
   final ItemCategory? category;
   final String? imagePath;
+  final bool sendToServer;
 
   CatalogueItem copyWith({
     String? name,
@@ -36,11 +38,13 @@ class CatalogueItem {
     bool clearCategory = false,
     String? imagePath,
     bool clearImage = false,
+    bool? sendToServer,
   }) => CatalogueItem(
     id: id,
     name: name ?? this.name,
     category: clearCategory ? null : category ?? this.category,
     imagePath: clearImage ? null : imagePath ?? this.imagePath,
+    sendToServer: sendToServer ?? this.sendToServer,
   );
 }
 
@@ -183,6 +187,7 @@ abstract interface class OrderRepository {
     required String name,
     String? categoryName,
     String? imagePath,
+    bool sendToServer = true,
   });
 
   Future<void> archiveItem(String id);

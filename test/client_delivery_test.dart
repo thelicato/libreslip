@@ -128,6 +128,89 @@ void main() {
     },
   );
 
+  test('local-only items are omitted without changing the local ticket', () async {
+    final now = DateTime.utc(2026, 9, 25, 12);
+    await repository.savePairedServer(
+      PairedServer(
+        id: 'server-1',
+        displayName: 'Kitchen tablet',
+        baseUrl: Uri.parse('https://192.0.2.10:42837'),
+        certificateFingerprint:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    final included = await repository.saveItem(name: 'Soup');
+    final excluded = await repository.saveItem(
+      name: 'Receipt copy',
+      sendToServer: false,
+    );
+    final draft = await repository.createDraft();
+    final ticket = await repository.convertDraftToTicket(
+      draft.copyWith(
+        lines: [
+          TicketLine(
+            id: createLocalId(),
+            catalogueItemId: included.id,
+            name: included.name,
+            quantity: 2,
+          ),
+          TicketLine(
+            id: createLocalId(),
+            catalogueItemId: excluded.id,
+            name: excluded.name,
+            quantity: 1,
+          ),
+        ],
+      ),
+      heading: 'Kitchen',
+    );
+
+    expect(ticket.lines.map((line) => line.name), ['Soup', 'Receipt copy']);
+    final firstDelivery = (await repository.loadClientDeliveries()).single;
+    expect(firstDelivery.envelope.lines, hasLength(1));
+    expect(firstDelivery.envelope.lines.single.name, 'Soup');
+
+    await repository.saveItem(
+      id: excluded.id,
+      name: excluded.name,
+      sendToServer: true,
+    );
+    expect(
+      (await repository.loadClientDeliveries())
+          .single
+          .envelope
+          .lines
+          .single
+          .name,
+      'Soup',
+    );
+
+    final localOnly = await repository.saveItem(
+      name: 'Local note',
+      sendToServer: false,
+    );
+    final secondDraft = await repository.createDraft();
+    final localTicket = await repository.convertDraftToTicket(
+      secondDraft.copyWith(
+        lines: [
+          TicketLine(
+            id: createLocalId(),
+            catalogueItemId: localOnly.id,
+            name: localOnly.name,
+            quantity: 3,
+          ),
+        ],
+      ),
+      heading: 'Kitchen',
+    );
+
+    expect(localTicket.lines.single.name, 'Local note');
+    expect(await repository.loadTickets(), hasLength(2));
+    expect(await repository.loadClientDeliveries(), hasLength(1));
+  });
+
   test(
     'an unpaired client saves the same ticket without an outbox row',
     () async {

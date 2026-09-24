@@ -83,6 +83,42 @@ class ServerOrderReceipt {
   final bool wasDuplicate;
 }
 
+class OutstandingItemTotal {
+  const OutstandingItemTotal({required this.name, required this.quantity});
+
+  final String name;
+  final int quantity;
+}
+
+List<OutstandingItemTotal> summariseOutstandingItems(
+  Iterable<ServerOrder> orders,
+) {
+  final totals = <String, ({String name, int quantity})>{};
+  for (final order in orders) {
+    if (order.status != ServerOrderStatus.received) continue;
+    for (final line in order.lines) {
+      final name = line.name.trim();
+      final key = name.toLowerCase();
+      final current = totals[key];
+      totals[key] = (
+        name: current?.name ?? name,
+        quantity: (current?.quantity ?? 0) + line.quantity,
+      );
+    }
+  }
+  final result = [
+    for (final total in totals.values)
+      OutstandingItemTotal(name: total.name, quantity: total.quantity),
+  ];
+  result.sort((left, right) {
+    final insensitive = left.name.toLowerCase().compareTo(
+      right.name.toLowerCase(),
+    );
+    return insensitive != 0 ? insensitive : left.name.compareTo(right.name);
+  });
+  return List.unmodifiable(result);
+}
+
 class ServerOrderConflictException implements Exception {
   const ServerOrderConflictException();
 }

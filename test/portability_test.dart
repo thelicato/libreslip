@@ -66,6 +66,7 @@ void main() {
         name: 'Toast',
         categoryName: 'Kitchen',
         imagePath: image.path,
+        sendToServer: false,
       );
       final blank = await orders.createDraft();
       final ticket = await orders.convertDraftToTicket(
@@ -120,6 +121,7 @@ void main() {
       expect(File(settings.stored!.logoPath!).readAsBytesSync(), _tinyPng);
       final restoredItems = await orders.loadItems();
       expect(restoredItems.single.name, 'Toast');
+      expect(restoredItems.single.sendToServer, isFalse);
       expect(restoredItems.single.imagePath, isNot(image.path));
       expect(
         File(restoredItems.single.imagePath!).readAsBytesSync(),

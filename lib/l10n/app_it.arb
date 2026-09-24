@@ -463,5 +463,15 @@
   "retryDelivery": "Riprova consegna",
   "retryingDelivery": "Nuovo tentativo…",
   "fieldRequired": "Campo obbligatorio",
-  "defaultClientName": "Client LibreSlip"
+  "defaultClientName": "Client LibreSlip",
+  "includeInServerOrders": "Includi negli ordini al Server",
+  "includeInServerOrdersBody": "Se disattivato, l’articolo resta sulla comanda locale stampata ma viene omesso dall’ordine facoltativo al Server.",
+  "localOnlyItem": "Solo locale",
+  "serverOrdersTab": "Ordini",
+  "serverSettingsTab": "Impostazioni",
+  "serverSettingsTitle": "Impostazioni Server",
+  "serverSettingsSubtitle": "Gestisci ricezione locale, associazione e modalità app.",
+  "outstandingItems": "Ancora da preparare",
+  "outstandingItemsBody": "Totali degli articoli in tutti gli ordini attualmente tra i Ricevuti.",
+  "noOutstandingItems": "Non ci sono articoli in attesa di preparazione."
 }

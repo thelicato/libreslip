@@ -67,7 +67,7 @@ class ModeSettingsCard extends StatelessWidget {
               ),
             ],
             selected: {mode},
-            direction: Axis.vertical,
+            expandedInsets: EdgeInsets.zero,
             showSelectedIcon: false,
             onSelectionChanged: controller.saving
                 ? null

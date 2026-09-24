@@ -13,6 +13,46 @@ import 'package:libreslip/features/settings/application/settings_controller.dart
 import 'test_support.dart';
 
 void main() {
+  test('outstanding totals aggregate Received orders and ignore Done', () {
+    ServerOrder order(
+      String id,
+      ServerOrderStatus status,
+      List<ServerOrderLine> lines,
+    ) => ServerOrder(
+      id: id,
+      clientInstallationId: 'client-1',
+      clientDisplayName: 'Front counter',
+      deliveryId: 'delivery-$id',
+      clientTicketId: 'ticket-$id',
+      displayNumber: 1,
+      sourceCreatedAt: DateTime.utc(2026, 9, 25),
+      receivedAt: DateTime.utc(2026, 9, 25),
+      heading: 'Kitchen',
+      reference: '',
+      orderNote: '',
+      lines: lines,
+      payloadChecksum:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      status: status,
+    );
+
+    final totals = summariseOutstandingItems([
+      order('one', ServerOrderStatus.received, const [
+        ServerOrderLine(name: 'Soup', quantity: 2),
+        ServerOrderLine(name: 'Tea', quantity: 1),
+      ]),
+      order('two', ServerOrderStatus.received, const [
+        ServerOrderLine(name: 'soup', quantity: 3),
+      ]),
+      order('done', ServerOrderStatus.done, const [
+        ServerOrderLine(name: 'Soup', quantity: 9),
+      ]),
+    ]);
+
+    expect(totals.map((total) => total.name), ['Soup', 'Tea']);
+    expect(totals.map((total) => total.quantity), [5, 1]);
+  });
+
   testWidgets('received order detail can be marked Done', (tester) async {
     tester.view.physicalSize = const Size(520, 1000);
     tester.view.devicePixelRatio = 1;
@@ -71,6 +111,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Order 17'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('outstanding-items-card')),
+      findsOneWidget,
+    );
+    expect(find.text('Still to prepare'), findsOneWidget);
+    expect(find.text('Soup'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('Ready to receive'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-settings-page')), findsOneWidget);
+    expect(find.text('Ready to receive'), findsOneWidget);
+    expect(find.text('Order 17'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('server-tab-orders')));
+    await tester.pumpAndSettle();
+
     final receivedId = inbox.receivedOrders.single.id;
     await tester.ensureVisible(find.text('Order 17'));
     await tester.pumpAndSettle();
@@ -78,7 +135,7 @@ void main() {
     await tester.tap(orderFinder);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.textContaining('Soup'), findsOneWidget);
+    expect(find.text('2×  Soup'), findsOneWidget);
     expect(find.text('No cream'), findsOneWidget);
     expect(find.text('Front counter'), findsWidgets);
 
@@ -86,6 +143,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(inbox.receivedOrders, isEmpty);
     expect(inbox.completedOrders, hasLength(1));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('outstanding-items-card')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing is waiting to be prepared.'), findsOneWidget);
 
     await tester.tap(find.text('Completed (1)'));
     await tester.pumpAndSettle();

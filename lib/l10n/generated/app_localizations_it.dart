@@ -1205,6 +1205,40 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get defaultClientName => 'Client LibreSlip';
+
+  @override
+  String get includeInServerOrders => 'Includi negli ordini al Server';
+
+  @override
+  String get includeInServerOrdersBody =>
+      'Se disattivato, l’articolo resta sulla comanda locale stampata ma viene omesso dall’ordine facoltativo al Server.';
+
+  @override
+  String get localOnlyItem => 'Solo locale';
+
+  @override
+  String get serverOrdersTab => 'Ordini';
+
+  @override
+  String get serverSettingsTab => 'Impostazioni';
+
+  @override
+  String get serverSettingsTitle => 'Impostazioni Server';
+
+  @override
+  String get serverSettingsSubtitle =>
+      'Gestisci ricezione locale, associazione e modalità app.';
+
+  @override
+  String get outstandingItems => 'Ancora da preparare';
+
+  @override
+  String get outstandingItemsBody =>
+      'Totali degli articoli in tutti gli ordini attualmente tra i Ricevuti.';
+
+  @override
+  String get noOutstandingItems =>
+      'Non ci sono articoli in attesa di preparazione.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

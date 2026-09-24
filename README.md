@@ -6,9 +6,11 @@ A private, local order-ticket app for Android 14 and later, built with Flutter. 
 
 ## Current milestone
 
-LibreSlip 0.12.0 adds optional Client-to-Server delivery on the local network. Client settings accept a Server address, the displayed SHA-256 certificate fingerprint and a one-time code. The client pins that exact self-signed certificate, stores the access token with Android keystore-backed encryption, and creates an immutable delivery record in the same SQLite transaction that saves a ticket.
+LibreSlip 0.13.0 makes Server mode a clearer two-tab workspace. Orders and receiver Settings are separate, the Client/Server selector is a full-width horizontal control, and the Orders tab summarises quantities still outstanding across every received order. Marking an order Done removes its quantities from that live preparation summary.
 
-Local printing remains first and independent. An unavailable Server cannot roll back or duplicate the local ticket or print attempt. Ticket history shows Pending, Sending, Delivered and Needs attention separately from printer state, and explicit retry reuses the same delivery identifier so a lost acknowledgement creates one Server order. Client mode remains fully usable without pairing or runtime internet access. The Android internet permission is used only for optional local-network communication.
+Reusable Client items now have an Include in Server orders switch, enabled by default. A local ticket always retains and prints every selected item. Its immutable Server delivery omits items marked local-only, and a ticket containing only local-only items creates no Server delivery. Changing the catalogue later cannot rewrite saved tickets or existing outbox envelopes.
+
+Local printing remains first and independent. An unavailable Server cannot roll back or duplicate the local ticket or print attempt. Client mode remains fully usable without pairing or runtime internet access. The Android internet permission is used only for optional local-network communication.
 
 The Overview retains inclusive date filters, ticket totals and per-item snapshot quantities. The user reported successful physical printing with the NETUM NT-1809DD during task 4. Successful byte transmission still cannot prove that paper was produced, so the interface asks the operator to check it. LibreSlip records no sale or financial transaction.
 
@@ -16,9 +18,9 @@ The Overview retains inclusive date filters, ticket totals and per-item snapshot
 
 The latest review artefacts are generated in `dist/`:
 
-- `LibreSlip-task-12-client-delivery.zip`: complete optional Client delivery and Server inbox source.
-- `LibreSlip-task-12-client-delivery-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
-- `LibreSlip-task-12-client-delivery-SHA256SUMS.txt`: integrity checksums for both files.
+- `LibreSlip-task-13-server-workflow.zip`: complete selective delivery and two-tab Server workflow source.
+- `LibreSlip-task-13-server-workflow-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
+- `LibreSlip-task-13-server-workflow-SHA256SUMS.txt`: integrity checksums for both files.
 
 The source-delivery ZIP is separate from ZIP files exported inside LibreSlip. The preview supports local item, ticket, PDF, Bluetooth Classic printing and validated portability workflows. Its temporary validation certificate is not the future production certificate, so it must not be used as an upgrade baseline for public releases.
 
@@ -76,8 +78,8 @@ Update `VERSION`, commit it, then push the matching numeric `vX.Y.Z` tag. `.gith
 
 ```sh
 # After updating and committing VERSION.
-git tag v0.12.0
-git push origin v0.12.0
+git tag v0.13.0
+git push origin v0.13.0
 ```
 
 Release notes are generated from Conventional Commits since the previous tag. The workflow stops before building or publishing if a signing secret is missing or invalid.
@@ -97,4 +99,4 @@ Release notes are generated from Conventional Commits since the previous tag. Th
 - [Italian item shelf](docs/previews/items-tablet-it.png)
 - [Ticket history preview](docs/previews/tickets-tablet-en.png)
 
-Task 12 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.
+Task 13 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.

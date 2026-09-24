@@ -2223,6 +2223,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'LibreSlip Client'**
   String get defaultClientName;
+
+  /// No description provided for @includeInServerOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Include in Server orders'**
+  String get includeInServerOrders;
+
+  /// No description provided for @includeInServerOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, this item stays on the printed local ticket but is omitted from the optional Server order.'**
+  String get includeInServerOrdersBody;
+
+  /// No description provided for @localOnlyItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Local only'**
+  String get localOnlyItem;
+
+  /// No description provided for @serverOrdersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get serverOrdersTab;
+
+  /// No description provided for @serverSettingsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get serverSettingsTab;
+
+  /// No description provided for @serverSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server settings'**
+  String get serverSettingsTitle;
+
+  /// No description provided for @serverSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage this local receiver, pairing and app mode.'**
+  String get serverSettingsSubtitle;
+
+  /// No description provided for @outstandingItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Still to prepare'**
+  String get outstandingItems;
+
+  /// No description provided for @outstandingItemsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Item totals across all orders currently in Received.'**
+  String get outstandingItemsBody;
+
+  /// No description provided for @noOutstandingItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting to be prepared.'**
+  String get noOutstandingItems;
 }
 
 class _AppLocalizationsDelegate

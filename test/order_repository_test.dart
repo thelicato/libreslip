@@ -415,6 +415,7 @@ void main() {
       expect(items.single.name, 'Still water');
       expect(items.single.category!.name, 'Counter');
       expect(items.single.imagePath, isNull);
+      expect(items.single.sendToServer, isTrue);
       final tickets = await repository.loadTickets();
       expect(tickets, hasLength(1));
       expect(tickets.single.number, 1);

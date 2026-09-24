@@ -105,6 +105,7 @@ class OrderWorkspaceController extends ChangeNotifier {
     required String name,
     String? categoryName,
     String? imagePath,
+    bool sendToServer = true,
   }) async {
     final previousImage = existing?.imagePath;
     final success = await _perform(() async {
@@ -113,6 +114,7 @@ class OrderWorkspaceController extends ChangeNotifier {
         name: name,
         categoryName: categoryName,
         imagePath: imagePath,
+        sendToServer: sendToServer,
       );
       items = await _repository.loadItems();
       categories = await _repository.loadCategories();
