@@ -157,7 +157,7 @@ void main() {
       if (name == 'overview-dashboard-phone-it') {
         await tester.drag(
           find.byKey(const ValueKey('page-0')),
-          const Offset(0, -760),
+          const Offset(0, -1250),
         );
         await tester.pumpAndSettle();
       }

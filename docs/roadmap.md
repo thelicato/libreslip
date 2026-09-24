@@ -11,6 +11,7 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | 5. ZIP portability | Configuration/full-backup export, validated staged import, preview, confirmation and rollback. Verify fresh-install restore, corruption, malicious paths, interruption and round trips. | Complete |
 | 6. Release verification and packaging | Accessibility, both languages, offline operation, process recovery, hardware evidence, build instructions, installable APK, source ZIP and checksums. | Complete |
 | 7. Overview dashboard | Current LibreSlip printer connection, honest battery availability, and inclusive start/end date filters for non-financial ticket and item counts. | Complete |
+| 8. Per-item activity | Item names and summed quantities from immutable saved-ticket snapshots within the Overview date range, with responsive empty and long-list states. | Complete |
 
 ## Scope boundaries
 
@@ -18,6 +19,6 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-LibreSlip 0.7.0 adds a responsive Overview dashboard without expanding into POS reporting. It displays the current in-app Bluetooth socket state and connected device name, refreshes explicitly and when the Overview opens, and clears state after disconnect or transmission failure. Battery percentage is an optional transport value, but the NETUM NT-1809DD documentation and Android Bluetooth Classic public API provide no reliable percentage, so this printer shows an honest unavailable message and directs the operator to its physical indicator.
+LibreSlip 0.8.0 extends the responsive Overview dashboard with a per-item quantity breakdown for the same inclusive local start and end dates used by the summary metrics. Rows are ordered by descending quantity and then name, with the first eight visible until the operator expands a longer list. The empty range has an explicit state.
 
-The same dashboard filters immutable saved-ticket snapshots by inclusive local start and end dates. It reports saved-ticket count, summed item quantities and average items per ticket only. It never derives revenue, sales, prices or other financial measures. Task 6 release verification remains valid for the underlying workflow; task 7 adds focused calculation, printer-state, localisation and responsive rendering coverage. See [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).
+Aggregation reads immutable saved-ticket lines, not the mutable catalogue. Catalogue identity and the saved line name form the grouping key, so repeated snapshots are summed while a renamed item keeps separate historically accurate labels. The dashboard still reports saved-ticket count, total item quantity and average items per ticket and never derives revenue, sales, prices or other financial measures. Printer connection and honest battery availability from task 7 remain unchanged. See [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).

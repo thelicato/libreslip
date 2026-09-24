@@ -1707,6 +1707,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.'**
   String get archiveRollbackFailed;
+
+  /// No description provided for @itemBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Items in this period'**
+  String get itemBreakdownTitle;
+
+  /// No description provided for @itemBreakdownBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantities from saved ticket snapshots.'**
+  String get itemBreakdownBody;
+
+  /// No description provided for @noItemsInPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'No items were added to saved tickets in this period.'**
+  String get noItemsInPeriod;
+
+  /// No description provided for @itemQuantitySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {quantity}'**
+  String itemQuantitySummary(String name, int quantity);
+
+  /// No description provided for @showAllItemStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full list ({count})'**
+  String showAllItemStatistics(int count);
+
+  /// No description provided for @showFewerItemStatistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Show fewer'**
+  String get showFewerItemStatistics;
 }
 
 class _AppLocalizationsDelegate

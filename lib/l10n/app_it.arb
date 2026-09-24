@@ -278,6 +278,14 @@
   "archiveRestored": "Archivio ripristinato",
   "archiveInvalid": "Questo ZIP non è valido, è pericoloso, danneggiato o proviene da una versione LibreSlip non supportata. Nessun dato è stato modificato.",
   "archiveOperationFailed": "Impossibile completare l’operazione sull’archivio. I dati esistenti restano disponibili.",
-  "archiveRollbackFailed": "Impossibile completare il ripristino in sicurezza. Riavvia LibreSlip e controlla i dati esistenti prima di riprovare."
+  "archiveRollbackFailed": "Impossibile completare il ripristino in sicurezza. Riavvia LibreSlip e controlla i dati esistenti prima di riprovare.",
+  "itemBreakdownTitle": "Articoli nel periodo",
+  "itemBreakdownBody": "Quantità ricavate dalle comande salvate.",
+  "noItemsInPeriod": "Nessun articolo è stato aggiunto alle comande salvate in questo periodo.",
+  "itemQuantitySummary": "{name}: {quantity}",
+  "@itemQuantitySummary": {"placeholders": {"name": {"type": "String"}, "quantity": {"type": "int"}}},
+  "showAllItemStatistics": "Mostra elenco completo ({count})",
+  "@showAllItemStatistics": {"placeholders": {"count": {"type": "int"}}},
+  "showFewerItemStatistics": "Mostra meno"
 
 }

@@ -903,6 +903,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get archiveRollbackFailed =>
       'Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.';
+
+  @override
+  String get itemBreakdownTitle => 'Items in this period';
+
+  @override
+  String get itemBreakdownBody => 'Quantities from saved ticket snapshots.';
+
+  @override
+  String get noItemsInPeriod =>
+      'No items were added to saved tickets in this period.';
+
+  @override
+  String itemQuantitySummary(String name, int quantity) {
+    return '$name: $quantity';
+  }
+
+  @override
+  String showAllItemStatistics(int count) {
+    return 'Show full list ($count)';
+  }
+
+  @override
+  String get showFewerItemStatistics => 'Show fewer';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

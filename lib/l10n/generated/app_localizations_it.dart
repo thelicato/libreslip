@@ -914,6 +914,29 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get archiveRollbackFailed =>
       'Impossibile completare il ripristino in sicurezza. Riavvia LibreSlip e controlla i dati esistenti prima di riprovare.';
+
+  @override
+  String get itemBreakdownTitle => 'Articoli nel periodo';
+
+  @override
+  String get itemBreakdownBody => 'Quantità ricavate dalle comande salvate.';
+
+  @override
+  String get noItemsInPeriod =>
+      'Nessun articolo è stato aggiunto alle comande salvate in questo periodo.';
+
+  @override
+  String itemQuantitySummary(String name, int quantity) {
+    return '$name: $quantity';
+  }
+
+  @override
+  String showAllItemStatistics(int count) {
+    return 'Mostra elenco completo ($count)';
+  }
+
+  @override
+  String get showFewerItemStatistics => 'Mostra meno';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

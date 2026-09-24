@@ -278,6 +278,14 @@
   "archiveRestored": "Archive restored",
   "archiveInvalid": "This ZIP is invalid, unsafe, damaged or from an unsupported LibreSlip version. Nothing was changed.",
   "archiveOperationFailed": "The archive operation could not be completed. Existing data remains available.",
-  "archiveRollbackFailed": "Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again."
+  "archiveRollbackFailed": "Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.",
+  "itemBreakdownTitle": "Items in this period",
+  "itemBreakdownBody": "Quantities from saved ticket snapshots.",
+  "noItemsInPeriod": "No items were added to saved tickets in this period.",
+  "itemQuantitySummary": "{name}: {quantity}",
+  "@itemQuantitySummary": {"placeholders": {"name": {"type": "String"}, "quantity": {"type": "int"}}},
+  "showAllItemStatistics": "Show full list ({count})",
+  "@showAllItemStatistics": {"placeholders": {"count": {"type": "int"}}},
+  "showFewerItemStatistics": "Show fewer"
 
 }

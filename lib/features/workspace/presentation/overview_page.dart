@@ -498,6 +498,8 @@ class _StatisticsCard extends StatelessWidget {
                 );
               },
             ),
+            const Divider(height: 40),
+            _ItemBreakdown(items: statistics.items, numberFormat: integers),
           ],
         ),
       ),
@@ -597,6 +599,130 @@ class _StatisticMetric extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ItemBreakdown extends StatefulWidget {
+  const _ItemBreakdown({required this.items, required this.numberFormat});
+
+  final List<TicketItemStatistic> items;
+  final NumberFormat numberFormat;
+
+  @override
+  State<_ItemBreakdown> createState() => _ItemBreakdownState();
+}
+
+class _ItemBreakdownState extends State<_ItemBreakdown> {
+  static const _collapsedCount = 8;
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final items = _expanded
+        ? widget.items
+        : widget.items.take(_collapsedCount).toList(growable: false);
+    return Column(
+      key: const ValueKey('item-statistics-breakdown'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.itemBreakdownTitle, style: theme.textTheme.titleMedium),
+        const SizedBox(height: 3),
+        Text(
+          l.itemBreakdownBody,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (items.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              l.noItemsInPeriod,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          for (final (index, item) in items.indexed) ...[
+            Semantics(
+              label: l.itemQuantitySummary(item.name, item.quantity),
+              child: ExcludeSemantics(
+                child: Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(minHeight: 64),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          widget.numberFormat.format(item.quantity),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (index != items.length - 1) const SizedBox(height: 8),
+          ],
+        if (widget.items.length > _collapsedCount) ...[
+          const SizedBox(height: 6),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: TextButton.icon(
+              key: const ValueKey('toggle-item-statistics'),
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(
+                _expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+              ),
+              label: Text(
+                _expanded
+                    ? l.showFewerItemStatistics
+                    : l.showAllItemStatistics(widget.items.length),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

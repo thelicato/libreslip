@@ -54,6 +54,48 @@ void main() {
       ),
       findsOneWidget,
     );
+    final breakdown = find.byKey(const ValueKey('item-statistics-breakdown'));
+    expect(
+      find.descendant(of: breakdown, matching: find.text('Toastie')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: breakdown, matching: find.text('3')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('overview can reveal a longer item breakdown', (tester) async {
+    tester.view.physicalSize = const Size(520, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(MemorySettingsRepository());
+    final orders = await createMemoryOrders();
+    addTearDown(settings.dispose);
+    addTearDown(orders.dispose);
+    await settings.load();
+    for (var index = 0; index < 9; index++) {
+      await orders.saveItem(name: 'Item $index');
+    }
+    for (final item in orders.items) {
+      orders.addCatalogueItem(item);
+    }
+    await orders.flushWrites();
+    await orders.saveActiveTicket(heading: 'Kitchen');
+
+    await tester.pumpWidget(LibreSlipApp(settings: settings, orders: orders));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Item 8'), findsNothing);
+    final toggle = find.byKey(const ValueKey('toggle-item-statistics'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Item 8'), findsOneWidget);
+    expect(find.text('Show fewer'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
