@@ -43,6 +43,7 @@ class TicketDetailDialog extends StatelessWidget {
         controller.activeTicketId == ticket.id &&
         (controller.busy || controller.sharing);
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       title: Text(l.ticketNumber(ticket.number)),
       content: SizedBox(
         width: 520,
@@ -92,57 +93,75 @@ class TicketDetailDialog extends StatelessWidget {
           ),
         ),
       ),
-      actionsAlignment: MainAxisAlignment.start,
-      actionsOverflowAlignment: OverflowBarAlignment.start,
-      actionsPadding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       actions: [
-        if (controller != null)
-          OutlinedButton.icon(
-            onPressed: working
-                ? null
-                : () => controller.sharePdf(
-                    document: document,
-                    subject: l.ticketPdfSubject(ticket.number),
-                    ticketId: ticket.id,
+        SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (controller != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
                   ),
-            icon: const Icon(Icons.ios_share_rounded),
-            label: Text(l.shareTicketPdf),
+                  onPressed: working
+                      ? null
+                      : () => controller.sharePdf(
+                          document: document,
+                          subject: l.ticketPdfSubject(ticket.number),
+                          ticketId: ticket.id,
+                        ),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: Text(l.shareTicketPdf),
+                ),
+              if (controller != null) ...[
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  key: ValueKey('print-ticket-${ticket.id}'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: working
+                      ? null
+                      : () {
+                          if (queued != null) {
+                            controller.sendQueued(queued);
+                          } else {
+                            controller.printTicket(
+                              ticket: ticket,
+                              document: document,
+                            );
+                          }
+                        },
+                  icon: working
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.print_rounded),
+                  label: Text(
+                    working
+                        ? l.preparingTicket
+                        : queued != null
+                        ? l.sendQueuedTicket
+                        : jobs.isEmpty
+                        ? l.printTicket
+                        : l.reprintTicket,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              TextButton(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                onPressed: working ? null : () => Navigator.pop(context),
+                child: Text(l.close),
+              ),
+            ],
           ),
-        if (controller != null)
-          FilledButton.icon(
-            key: ValueKey('print-ticket-${ticket.id}'),
-            onPressed: working
-                ? null
-                : () {
-                    if (queued != null) {
-                      controller.sendQueued(queued);
-                    } else {
-                      controller.printTicket(
-                        ticket: ticket,
-                        document: document,
-                      );
-                    }
-                  },
-            icon: working
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.print_rounded),
-            label: Text(
-              working
-                  ? l.preparingTicket
-                  : queued != null
-                  ? l.sendQueuedTicket
-                  : jobs.isEmpty
-                  ? l.printTicket
-                  : l.reprintTicket,
-            ),
-          ),
-        TextButton(
-          onPressed: working ? null : () => Navigator.pop(context),
-          child: Text(l.close),
         ),
       ],
     );

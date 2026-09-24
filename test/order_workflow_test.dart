@@ -44,7 +44,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('nav-2')));
+      await tester.tap(find.byKey(const ValueKey('nav-1')));
       await tester.pumpAndSettle();
       expect(find.text('Favourites'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('add-item')));
@@ -57,8 +57,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(orders.items.single.name, 'Mushroom toastie');
-      await tester.tap(find.byKey(const ValueKey('nav-1')));
+      await tester.tap(find.byKey(const ValueKey('nav-2')));
       await tester.pumpAndSettle();
+      expect(find.text('Order 1'), findsOneWidget);
       expect(find.text('Drafts'), findsNothing);
       expect(find.text('One-off item'), findsNothing);
       await tester.tap(
@@ -80,6 +81,21 @@ void main() {
       expect(output.jobs.single.status, PrintJobStatus.queued);
       expect(orders.tickets.single.reference, 'Table 4');
       expect(orders.tickets.single.lines.single.name, 'Mushroom toastie');
+      expect(find.text('Order 2'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('reset-order-number')));
+      await tester.pumpAndSettle();
+      expect(find.text('Reset order number?'), findsOneWidget);
+      expect(
+        find.textContaining('Saved tickets and their print attempts'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('confirm-reset-order-number')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Order 1'), findsOneWidget);
+      expect(orders.tickets, hasLength(1));
 
       await tester.tap(find.byKey(const ValueKey('nav-3')));
       await tester.pumpAndSettle();

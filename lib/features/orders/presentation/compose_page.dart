@@ -56,11 +56,13 @@ class _ComposePageState extends State<ComposePage> {
             const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
+              final split = constraints.maxWidth >= 860;
               final catalogue = _CataloguePanel(
                 items: widget.controller.items,
                 categories: widget.controller.categories,
                 query: _query,
                 categoryId: _categoryId,
+                standalone: split,
                 onQueryChanged: (value) => setState(() => _query = value),
                 onCategoryChanged: (value) =>
                     setState(() => _categoryId = value),
@@ -68,17 +70,19 @@ class _ComposePageState extends State<ComposePage> {
               );
               final order = _OrderPanel(
                 draft: draft,
-                settings: widget.settings,
+                orderNumber: widget.controller.nextOrderNumber,
                 features: widget.controller.featureSettings,
                 busy: widget.controller.saving || _printing,
+                standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
                 onQuantityChanged: widget.controller.setQuantity,
                 onEditNote: _editPreparationNote,
                 onRemoveLine: widget.controller.removeLine,
+                onResetOrderNumber: _resetOrderNumber,
                 onPrint: _printTicket,
               );
-              if (constraints.maxWidth >= 860) {
+              if (split) {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -88,8 +92,10 @@ class _ComposePageState extends State<ComposePage> {
                   ],
                 );
               }
-              return Column(
-                children: [catalogue, const SizedBox(height: 18), order],
+              return Card(
+                child: Column(
+                  children: [catalogue, const Divider(height: 1), order],
+                ),
               );
             },
           ),
@@ -131,6 +137,36 @@ class _ComposePageState extends State<ComposePage> {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     input.dispose();
     if (note != null) widget.controller.setPreparationNote(line.id, note);
+  }
+
+  Future<void> _resetOrderNumber() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.resetOrderNumberQuestion),
+        content: Text(l.resetOrderNumberBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-reset-order-number'),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.reset),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final reset = await widget.controller.resetOrderNumber();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(reset ? l.orderNumberReset : l.orderNumberResetFailed),
+      ),
+    );
   }
 
   Future<void> _printTicket() async {
@@ -199,6 +235,7 @@ class _CataloguePanel extends StatelessWidget {
     required this.categories,
     required this.query,
     required this.categoryId,
+    required this.standalone,
     required this.onQueryChanged,
     required this.onCategoryChanged,
     required this.onAdd,
@@ -208,6 +245,7 @@ class _CataloguePanel extends StatelessWidget {
   final List<ItemCategory> categories;
   final String query;
   final String? categoryId;
+  final bool standalone;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<CatalogueItem> onAdd;
@@ -226,21 +264,21 @@ class _CataloguePanel extends StatelessWidget {
               (categoryId == null || item.category?.id == categoryId),
         )
         .toList();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(l.items, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 14),
-            TextField(
-              decoration: InputDecoration(
-                labelText: l.searchItems,
-                prefixIcon: const Icon(Icons.search_rounded),
-              ),
-              onChanged: onQueryChanged,
+    final content = Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.addItems, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 14),
+          TextField(
+            decoration: InputDecoration(
+              labelText: l.searchItems,
+              prefixIcon: const Icon(Icons.search_rounded),
             ),
+            onChanged: onQueryChanged,
+          ),
+          if (categories.length > 1) ...[
             const SizedBox(height: 10),
             DropdownButtonFormField<String?>(
               isExpanded: true,
@@ -256,187 +294,193 @@ class _CataloguePanel extends StatelessWidget {
               ],
               onChanged: onCategoryChanged,
             ),
-            const SizedBox(height: 14),
-            if (filtered.isEmpty)
+          ],
+          const SizedBox(height: 14),
+          if (filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 22),
+              child: Text(
+                items.isEmpty ? l.emptyItemsBody : l.noItemsFound,
+                textAlign: TextAlign.center,
+              ),
+            )
+          else
+            for (final item in filtered)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 22),
-                child: Text(
-                  items.isEmpty ? l.emptyItemsBody : l.noItemsFound,
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              for (final item in filtered)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Material(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    key: ValueKey('compose-item-${item.id}'),
                     borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      key: ValueKey('compose-item-${item.id}'),
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => onAdd(item),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                    onTap: () => onAdd(item),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                                if (item.category != null)
                                   Text(
-                                    item.name,
+                                    item.category!.name,
                                     style: Theme.of(context)
                                         .textTheme
-                                        .titleSmall,
+                                        .bodySmall,
                                   ),
-                                  if (item.category != null)
-                                    Text(
-                                      item.category!.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                ],
-                              ),
+                              ],
                             ),
-                            const Icon(Icons.add_circle_outline_rounded),
-                          ],
-                        ),
+                          ),
+                          const Icon(Icons.add_circle_outline_rounded),
+                        ],
                       ),
                     ),
                   ),
                 ),
-          ],
-        ),
+              ),
+        ],
       ),
     );
+    return standalone ? Card(child: content) : content;
   }
 }
 
 class _OrderPanel extends StatelessWidget {
   const _OrderPanel({
     required this.draft,
-    required this.settings,
+    required this.orderNumber,
     required this.features,
     required this.busy,
+    required this.standalone,
     required this.onReferenceChanged,
     required this.onOrderNoteChanged,
     required this.onQuantityChanged,
     required this.onEditNote,
     required this.onRemoveLine,
+    required this.onResetOrderNumber,
     required this.onPrint,
   });
 
   final OrderDraft draft;
-  final AppSettings settings;
+  final int orderNumber;
   final OrderFeatureSettings features;
   final bool busy;
+  final bool standalone;
   final ValueChanged<String> onReferenceChanged;
   final ValueChanged<String> onOrderNoteChanged;
   final void Function(String, int) onQuantityChanged;
   final ValueChanged<TicketLine> onEditNote;
   final ValueChanged<String> onRemoveLine;
+  final VoidCallback onResetOrderNumber;
   final VoidCallback onPrint;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              settings.heading.trim().isEmpty
-                  ? l.defaultHeading
-                  : settings.heading,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Chip(label: Text(l.itemCount(draft.itemCount))),
-            ),
-            if (features.orderReferenceEnabled) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                key: ValueKey('reference-${draft.id}'),
-                initialValue: draft.reference,
-                maxLength: 80,
-                decoration: InputDecoration(
-                  labelText: l.orderReference,
-                  hintText: l.orderReferenceHint,
+    final content = Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l.orderNumber(orderNumber),
+                  style: theme.textTheme.titleLarge,
                 ),
-                onChanged: onReferenceChanged,
+              ),
+              TextButton.icon(
+                key: const ValueKey('reset-order-number'),
+                onPressed: busy || orderNumber == 1 ? null : onResetOrderNumber,
+                icon: const Icon(Icons.restart_alt_rounded),
+                label: Text(l.reset),
               ),
             ],
-            const SizedBox(height: 8),
-            if (draft.lines.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withValues(
-                    alpha: 0.34,
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.playlist_add_rounded,
-                      size: 40,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l.draftEmptyTitle,
-                      style: theme.textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(l.draftEmptyBody, textAlign: TextAlign.center),
-                  ],
-                ),
-              )
-            else
-              for (final line in draft.lines)
-                _OrderLineCard(
-                  line: line,
-                  preparationNotesEnabled: features.preparationNotesEnabled,
-                  onQuantityChanged: (value) =>
-                      onQuantityChanged(line.id, value),
-                  onEditNote: () => onEditNote(line),
-                  onRemove: () => onRemoveLine(line.id),
-                ),
-            if (features.orderNotesEnabled) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                key: ValueKey('order-note-${draft.id}'),
-                initialValue: draft.orderNote,
-                maxLength: 500,
-                minLines: 2,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  labelText: l.orderNotes,
-                  hintText: l.orderNotesHint,
-                ),
-                onChanged: onOrderNoteChanged,
+          ),
+          if (features.orderReferenceEnabled) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              key: ValueKey('reference-${draft.id}'),
+              initialValue: draft.reference,
+              maxLength: 80,
+              decoration: InputDecoration(
+                labelText: l.orderReference,
+                hintText: l.orderReferenceHint,
               ),
-            ],
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              key: const ValueKey('print-ticket'),
-              onPressed: draft.lines.isEmpty || busy ? null : onPrint,
-              icon: const Icon(Icons.print_rounded),
-              label: Text(l.printTicket),
+              onChanged: onReferenceChanged,
             ),
           ],
-        ),
+          const SizedBox(height: 8),
+          if (draft.lines.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.34,
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.playlist_add_rounded,
+                    size: 40,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l.draftEmptyTitle,
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(l.draftEmptyBody, textAlign: TextAlign.center),
+                ],
+              ),
+            )
+          else
+            for (final line in draft.lines)
+              _OrderLineCard(
+                line: line,
+                preparationNotesEnabled: features.preparationNotesEnabled,
+                onQuantityChanged: (value) => onQuantityChanged(line.id, value),
+                onEditNote: () => onEditNote(line),
+                onRemove: () => onRemoveLine(line.id),
+              ),
+          if (features.orderNotesEnabled) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              key: ValueKey('order-note-${draft.id}'),
+              initialValue: draft.orderNote,
+              maxLength: 500,
+              minLines: 2,
+              maxLines: 5,
+              decoration: InputDecoration(
+                labelText: l.orderNotes,
+                hintText: l.orderNotesHint,
+              ),
+              onChanged: onOrderNoteChanged,
+            ),
+          ],
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            key: const ValueKey('print-ticket'),
+            onPressed: draft.lines.isEmpty || busy ? null : onPrint,
+            icon: const Icon(Icons.print_rounded),
+            label: Text(l.printTicket),
+          ),
+        ],
       ),
     );
+    return standalone ? Card(child: content) : content;
   }
 }
 
@@ -483,31 +527,36 @@ class _OrderLineCard extends StatelessWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton.outlined(
-                onPressed: line.quantity > 1
-                    ? () => onQuantityChanged(line.quantity - 1)
-                    : null,
-                tooltip: l.quantity,
-                icon: const Icon(Icons.remove_rounded),
-              ),
-              SizedBox(
-                width: 52,
-                child: Text(
-                  '${line.quantity}',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
+          Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: line.quantity > 1
+                      ? () => onQuantityChanged(line.quantity - 1)
+                      : null,
+                  tooltip: l.decreaseQuantity,
+                  icon: const Icon(Icons.remove_rounded),
                 ),
-              ),
-              IconButton.outlined(
-                onPressed: line.quantity < 999
-                    ? () => onQuantityChanged(line.quantity + 1)
-                    : null,
-                tooltip: l.quantity,
-                icon: const Icon(Icons.add_rounded),
-              ),
-            ],
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    '${line.quantity}',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  onPressed: line.quantity < 999
+                      ? () => onQuantityChanged(line.quantity + 1)
+                      : null,
+                  tooltip: l.increaseQuantity,
+                  icon: const Icon(Icons.add_rounded),
+                ),
+              ],
+            ),
           ),
           if (preparationNotesEnabled) ...[
             const SizedBox(height: 6),

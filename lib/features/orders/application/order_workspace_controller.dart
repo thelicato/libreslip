@@ -20,6 +20,7 @@ class OrderWorkspaceController extends ChangeNotifier {
   List<OrderDraft> drafts = const [];
   List<SavedTicket> tickets = const [];
   OrderFeatureSettings featureSettings = const OrderFeatureSettings();
+  int nextOrderNumber = 1;
   String? activeDraftId;
   Future<void> _writeChain = Future<void>.value();
 
@@ -56,9 +57,15 @@ class OrderWorkspaceController extends ChangeNotifier {
     items = await _repository.loadItems();
     categories = await _repository.loadCategories();
     featureSettings = await _repository.loadFeatureSettings();
+    nextOrderNumber = await _repository.loadNextOrderNumber();
     drafts = await _repository.loadDrafts();
     tickets = await _repository.loadTickets();
   }
+
+  Future<bool> resetOrderNumber() => _perform(() async {
+    await _repository.resetOrderNumber();
+    nextOrderNumber = await _repository.loadNextOrderNumber();
+  });
 
   Future<bool> updateFeatureSettings(OrderFeatureSettings next) =>
       _perform(() async {
@@ -269,6 +276,7 @@ class OrderWorkspaceController extends ChangeNotifier {
       );
       drafts = await _repository.loadDrafts();
       tickets = await _repository.loadTickets();
+      nextOrderNumber = await _repository.loadNextOrderNumber();
       if (drafts.isEmpty) {
         final replacement = await _repository.createDraft();
         drafts = [replacement];

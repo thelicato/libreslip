@@ -19,6 +19,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compose => 'Compose';
 
   @override
+  String get addItems => 'Add items';
+
+  @override
   String get items => 'Items';
 
   @override
@@ -348,6 +351,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose a reusable item. Your work is saved on this phone as you compose the ticket.';
 
   @override
+  String get decreaseQuantity => 'Decrease quantity';
+
+  @override
+  String get increaseQuantity => 'Increase quantity';
+
+  @override
   String get quantity => 'Quantity';
 
   @override
@@ -385,6 +394,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get emptyTicketsBody =>
       'When you print a composed order, it is saved here before the print attempt begins.';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get resetOrderNumberQuestion => 'Reset order number?';
+
+  @override
+  String get resetOrderNumberBody =>
+      'The next order will use number 1. Saved tickets and their print attempts will not be changed.';
+
+  @override
+  String get orderNumberReset => 'Order numbering restarted at 1.';
+
+  @override
+  String get orderNumberResetFailed =>
+      'The order number could not be reset. Try again.';
+
+  @override
+  String orderNumber(int number) {
+    return 'Order $number';
+  }
 
   @override
   String ticketNumber(int number) {

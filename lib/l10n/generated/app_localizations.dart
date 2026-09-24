@@ -118,6 +118,12 @@ abstract class AppLocalizations {
   /// **'Compose'**
   String get compose;
 
+  /// No description provided for @addItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items'**
+  String get addItems;
+
   /// No description provided for @items.
   ///
   /// In en, this message translates to:
@@ -736,6 +742,18 @@ abstract class AppLocalizations {
   /// **'Choose a reusable item. Your work is saved on this phone as you compose the ticket.'**
   String get draftEmptyBody;
 
+  /// No description provided for @decreaseQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease quantity'**
+  String get decreaseQuantity;
+
+  /// No description provided for @increaseQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase quantity'**
+  String get increaseQuantity;
+
   /// No description provided for @quantity.
   ///
   /// In en, this message translates to:
@@ -807,6 +825,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When you print a composed order, it is saved here before the print attempt begins.'**
   String get emptyTicketsBody;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// No description provided for @resetOrderNumberQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset order number?'**
+  String get resetOrderNumberQuestion;
+
+  /// No description provided for @resetOrderNumberBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The next order will use number 1. Saved tickets and their print attempts will not be changed.'**
+  String get resetOrderNumberBody;
+
+  /// No description provided for @orderNumberReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Order numbering restarted at 1.'**
+  String get orderNumberReset;
+
+  /// No description provided for @orderNumberResetFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The order number could not be reset. Try again.'**
+  String get orderNumberResetFailed;
+
+  /// No description provided for @orderNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Order {number}'**
+  String orderNumber(int number);
 
   /// No description provided for @ticketNumber.
   ///

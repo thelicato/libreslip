@@ -80,6 +80,21 @@ void main() {
         printable,
         heading: 'Bottega Libertà',
       );
+      expect(ticket.number, 1);
+      expect(await orderRepository.loadNextOrderNumber(), 2);
+      await orderRepository.resetOrderNumber();
+      final restartedDraft = await orderRepository.createDraft();
+      final restartedTicket = await orderRepository.convertDraftToTicket(
+        restartedDraft.copyWith(
+          updatedAt: DateTime.now().toUtc(),
+          lines: [
+            TicketLine(id: createLocalId(), name: 'Tè verde', quantity: 1),
+          ],
+        ),
+        heading: 'Bottega Libertà',
+      );
+      expect(restartedTicket.number, 1);
+      expect(restartedTicket.id, isNot(ticket.id));
       final job = await orderRepository.createPrintJob(
         requestId: 'android-interrupted-print',
         ticketId: ticket.id,
@@ -110,7 +125,8 @@ void main() {
       );
       expect(recoveredJobs.single.status, PrintJobStatus.uncertain);
       expect(recoveredJobs.single.errorCode, 'interrupted');
-      expect(await reopenedRepository.loadTickets(), hasLength(1));
+      expect(await reopenedRepository.loadTickets(), hasLength(2));
+      expect(await reopenedRepository.loadNextOrderNumber(), 2);
       await reopenedRepository.close();
       controller.dispose();
       orders.dispose();

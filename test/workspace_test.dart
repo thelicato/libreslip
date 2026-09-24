@@ -56,8 +56,8 @@ void main() {
     await openApp(tester);
     expect(find.text('Your workspace'), findsOneWidget);
     for (final (index, title) in [
-      (1, 'Start with an item.'),
-      (2, 'Your item shelf is ready.'),
+      (1, 'Your item shelf is ready.'),
+      (2, 'Start with an item.'),
       (3, 'No saved tickets yet.'),
     ]) {
       await tester.tap(find.byKey(ValueKey('nav-$index')));
@@ -123,7 +123,7 @@ void main() {
     expect(orders.activeDraft!.orderNote, 'Together');
     expect(orders.activeDraft!.lines.single.preparationNote, 'No onion');
 
-    await tester.tap(find.byKey(const ValueKey('nav-1')));
+    await tester.tap(find.byKey(const ValueKey('nav-2')));
     await tester.pumpAndSettle();
     expect(find.text('Table or order reference'), findsNothing);
     expect(find.text('Preparation note'), findsNothing);

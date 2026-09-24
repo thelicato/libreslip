@@ -115,6 +115,59 @@ void main() {
     expect(restored.lines.single.preparationNote, 'One without onion');
   });
 
+  test(
+    'visible order numbers can restart without changing saved tickets',
+    () async {
+      final first = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      await first.open();
+      expect(await first.loadNextOrderNumber(), 1);
+
+      Future<SavedTicket> save(String name) async {
+        final blank = await first.createDraft();
+        final draft = blank.copyWith(
+          updatedAt: DateTime.now().toUtc(),
+          lines: [TicketLine(id: createLocalId(), name: name, quantity: 1)],
+        );
+        return first.convertDraftToTicket(draft, heading: 'Kitchen');
+      }
+
+      final original = await save('Tea');
+      final secondOrder = await save('Coffee');
+      expect(original.number, 1);
+      expect(secondOrder.number, 2);
+      expect(await first.loadNextOrderNumber(), 3);
+
+      await first.resetOrderNumber();
+      expect(await first.loadNextOrderNumber(), 1);
+      final restarted = await save('Water');
+      expect(restarted.number, 1);
+      expect(restarted.id, isNot(original.id));
+      expect(await first.loadTickets(), hasLength(3));
+      await first.close();
+
+      final reopened = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      addTearDown(reopened.close);
+      await reopened.open();
+      expect(await reopened.loadNextOrderNumber(), 2);
+      final restored = await reopened.loadTickets();
+      expect(restored, hasLength(3));
+      expect(
+        restored.singleWhere((ticket) => ticket.id == original.id).number,
+        1,
+      );
+      expect(
+        restored.singleWhere((ticket) => ticket.id == restarted.id).number,
+        1,
+      );
+    },
+  );
+
   test('repeating draft conversion returns one stable ticket', () async {
     final repository = SqliteOrderRepository(
       factory: databaseFactoryFfiNoIsolate,
@@ -280,6 +333,30 @@ void main() {
               'created_at': '2026-09-20T10:00:00.000Z',
               'updated_at': '2026-09-20T10:00:00.000Z',
             });
+            await database.insert('tickets', {
+              'id': 'ticket-1',
+              'ticket_number': 1,
+              'origin_draft_id': 'draft-1',
+              'heading_snapshot': 'Legacy kitchen',
+              'reference_snapshot': '',
+              'order_note_snapshot': '',
+              'created_at': '2026-09-20T10:05:00.000Z',
+            });
+            await database.insert('ticket_lines', {
+              'id': 'line-1',
+              'ticket_id': 'ticket-1',
+              'catalogue_item_id': 'item-1',
+              'name_snapshot': 'Still water',
+              'quantity': 1,
+              'preparation_note': '',
+              'position': 0,
+            });
+            await database.update(
+              'counters',
+              {'next_value': 2},
+              where: 'name = ?',
+              whereArgs: ['ticket'],
+            );
           },
         ),
       );
@@ -296,6 +373,11 @@ void main() {
       expect(items.single.name, 'Still water');
       expect(items.single.category!.name, 'Counter');
       expect(items.single.imagePath, isNull);
+      final tickets = await repository.loadTickets();
+      expect(tickets, hasLength(1));
+      expect(tickets.single.number, 1);
+      expect(tickets.single.lines.single.name, 'Still water');
+      expect(await repository.loadNextOrderNumber(), 2);
       final features = await repository.loadFeatureSettings();
       expect(features.orderReferenceEnabled, isTrue);
       expect(features.preparationNotesEnabled, isTrue);

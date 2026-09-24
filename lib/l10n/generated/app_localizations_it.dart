@@ -19,6 +19,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get compose => 'Componi';
 
   @override
+  String get addItems => 'Aggiungi articoli';
+
+  @override
   String get items => 'Articoli';
 
   @override
@@ -351,6 +354,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Scegli un articolo riutilizzabile. Il lavoro viene salvato sul telefono mentre componi la comanda.';
 
   @override
+  String get decreaseQuantity => 'Riduci quantità';
+
+  @override
+  String get increaseQuantity => 'Aumenta quantità';
+
+  @override
   String get quantity => 'Quantità';
 
   @override
@@ -389,6 +398,29 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get emptyTicketsBody =>
       'Quando stampi un ordine composto, la comanda viene salvata qui prima del tentativo di stampa.';
+
+  @override
+  String get reset => 'Ricomincia';
+
+  @override
+  String get resetOrderNumberQuestion =>
+      'Ricominciare la numerazione degli ordini?';
+
+  @override
+  String get resetOrderNumberBody =>
+      'Il prossimo ordine userà il numero 1. Le comande salvate e i relativi tentativi di stampa non verranno modificati.';
+
+  @override
+  String get orderNumberReset => 'La numerazione degli ordini riparte da 1.';
+
+  @override
+  String get orderNumberResetFailed =>
+      'Impossibile reimpostare il numero dell’ordine. Riprova.';
+
+  @override
+  String orderNumber(int number) {
+    return 'Ordine $number';
+  }
 
   @override
   String ticketNumber(int number) {

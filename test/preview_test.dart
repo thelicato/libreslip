@@ -59,8 +59,8 @@ void main() {
     for (final (name, size, language, mode, page) in [
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
-      ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 1),
-      ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 2),
+      ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 2),
+      ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
         'ticket-preview-phone-it',
@@ -84,7 +84,7 @@ void main() {
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
         );
       }
-      if (page == 1 || page == 3) {
+      if (page == 2 || page == 3) {
         orders.addCatalogueItem(orders.items.single);
         orders.setReference(language == 'it' ? 'Tavolo 4' : 'Table 4');
         orders.setOrderNote(

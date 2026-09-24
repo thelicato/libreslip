@@ -6,19 +6,19 @@ Validated on 24 September 2026 for LibreSlip 0.4.0+4, Android application identi
 | --- | --- |
 | Dart formatting | Passed, 42 Dart files checked. |
 | Static analysis | Passed with no issues. |
-| Unit and widget tests | All 44 active tests passed; the normal run skipped only the opt-in render capture. |
-| SQLite migrations | Version 1 data upgraded to version 4 while preserving catalogue data. The three composition-field switches defaulted on. |
+| Unit and widget tests | All 45 active tests passed; the normal run skipped only the opt-in render capture. |
+| SQLite migrations | Version 1 data upgraded to version 5 while preserving catalogue and saved-ticket snapshots. The three composition-field switches defaulted on and legacy visible numbers were retained. |
 | SQLite feature settings | Passed: reference, preparation-note and order-note switches persisted across database close and reopen. Hidden editable text remained recoverable, while disabled fields were omitted from the new saved ticket. |
 | Draft and print restart recovery | Passed in automated repository tests and through the real Android SQLite backend after close and reopen. An interrupted sending job recovered as uncertain. |
-| Ticket snapshot and duplicate protection | Passed: catalogue edits did not change saved tickets, draft-save retry returned the same ticket, and reprint created another attempt without another ticket. |
+| Ticket snapshot and duplicate protection | Passed: catalogue edits did not change saved tickets, draft-save retry returned the same ticket, and reprint created another attempt without another ticket. Resetting the visible order sequence allowed a later order to use number 1 while both stable ticket IDs and snapshots remained distinct. |
 | Implicit save before print | Passed end to end: one Compose action created one immutable ticket and one durable queued print attempt while disconnected. |
 | Durable print lifecycle | Passed for queued, sending, transmitted, failed and uncertain states, including idempotent queue requests and no automatic resend after an uncertain outcome. |
 | ESC/POS output safety | Passed for a 384-dot 58 mm layout, PC858 Italian text, raster fallback, logo rendering and bounded writes. Tests verify that no cutter or cash-drawer command is emitted. |
 | Local PDF output | Passed for offline PDF generation and the system share handoff boundary. |
-| Requested UI revision | Passed: removed phone-status, privacy, favourites, duplicate, saved-snapshot, visible draft-management and one-off controls; ticket actions use start alignment and margins; preparation notes appear below quantity controls. |
+| Requested UI revision | Passed: Compose is central and uses one simpler phone card; category filtering is conditional; quantity uses one compact stepper; preparation notes appear below it; the next order number is visible and has a confirmed reset; ticket modal actions are full-width with equal margins and 10-pixel spacing verified by widget geometry assertions. Earlier phone-status, privacy, favourites, duplicate, saved-snapshot, visible draft-management and one-off controls remain removed. |
 | Responsive localisation | Passed in British English and Italian on small phone, landscape, tablet and doubled-text layouts. The 320-pixel Italian Settings label remained on one line. |
-| Android platform integration | Passed on a read-only Android 14 API 34 emulator using real DataStore and SQLite implementations with schema version 4. |
-| Visual inspection | Fresh Overview, Compose, Italian Items, Italian ticket modal and Italian dark-theme Settings renders were reviewed without clipping or unreadable content. |
+| Android platform integration | Passed on a read-only Android 14 API 34 emulator using real DataStore and SQLite implementations with schema version 5. The test saved order 1, reset the visible counter, saved a distinct later order 1, reopened SQLite and recovered both with the next visible number set to 2. |
+| Representative renders | Fresh Overview, Compose, Italian Items, Italian ticket modal and Italian dark-theme Settings captures completed without framework layout errors. Pixel-level graphical inspection of this revision was unavailable because the local image viewer failed with a sandbox mount error. |
 | Privacy configuration | Release requests Bluetooth connection only, with no internet or location permission; automatic cloud backup and device transfer remain disabled. |
 | Physical NETUM NT-1809DD | The user reported that the implemented task 4 workflow worked on the physical printer, including the corrected per-device connection state. This result was not independently observed. |
 | Source delivery safeguards | The task 4 packager checks archive contents, versioned APK metadata, source freshness, matching Flutter and Gradle APK outputs and SHA-256 checksums. |

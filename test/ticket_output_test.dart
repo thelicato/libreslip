@@ -81,7 +81,24 @@ void main() {
 
       expect(find.text('ORDER TICKET #7'), findsOneWidget);
       expect(find.text('Print ticket'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('print-ticket-ticket-7')));
+      final shareButton = find.widgetWithText(OutlinedButton, 'Share PDF');
+      final printButton = find.byKey(const ValueKey('print-ticket-ticket-7'));
+      final closeButton = find.widgetWithText(TextButton, 'Close');
+      final shareRect = tester.getRect(shareButton);
+      final printRect = tester.getRect(printButton);
+      final closeRect = tester.getRect(closeButton);
+      expect(shareRect.left, printRect.left);
+      expect(printRect.left, closeRect.left);
+      expect(shareRect.right, printRect.right);
+      expect(printRect.right, closeRect.right);
+      expect(shareRect.height, greaterThanOrEqualTo(48));
+      expect(printRect.height, greaterThanOrEqualTo(48));
+      expect(closeRect.height, greaterThanOrEqualTo(48));
+      expect(shareRect.left, greaterThanOrEqualTo(24));
+      expect(390 - shareRect.right, greaterThanOrEqualTo(24));
+      expect(printRect.top - shareRect.bottom, 10);
+      expect(closeRect.top - printRect.bottom, 10);
+      await tester.tap(printButton);
       await tester.pumpAndSettle();
 
       expect(find.text('Ticket queued'), findsOneWidget);

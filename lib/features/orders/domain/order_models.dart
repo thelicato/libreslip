@@ -160,6 +160,10 @@ abstract interface class OrderRepository {
 
   Future<void> saveFeatureSettings(OrderFeatureSettings settings);
 
+  Future<int> loadNextOrderNumber();
+
+  Future<void> resetOrderNumber();
+
   Future<List<OrderDraft>> loadDrafts();
 
   Future<List<SavedTicket>> loadTickets();

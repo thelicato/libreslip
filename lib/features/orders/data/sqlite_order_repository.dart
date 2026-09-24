@@ -10,7 +10,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 4;
+  static const databaseVersion = 5;
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -191,6 +191,19 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         'order_notes_enabled': 1,
       });
     }
+    if (oldVersion < 5 && newVersion >= 5) {
+      await database.execute(
+        'ALTER TABLE tickets ADD COLUMN display_number INTEGER NOT NULL '
+        'DEFAULT 1 CHECK (display_number > 0)',
+      );
+      await database.execute(
+        'UPDATE tickets SET display_number = ticket_number',
+      );
+      await database.execute('''
+        INSERT INTO counters(name, next_value)
+        SELECT 'order', next_value FROM counters WHERE name = 'ticket'
+      ''');
+    }
   }
 
   @override
@@ -252,6 +265,51 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         'Could not save order feature settings.',
         error,
       );
+    }
+  }
+
+  @override
+  Future<int> loadNextOrderNumber() async {
+    try {
+      final rows = await (await _db).query(
+        'counters',
+        columns: ['next_value'],
+        where: 'name = ?',
+        whereArgs: ['order'],
+        limit: 1,
+      );
+      if (rows.isEmpty || rows.single['next_value'] is! int) {
+        throw const OrderStorageException(
+          'The next order number could not be found.',
+        );
+      }
+      return rows.single['next_value']! as int;
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not read the next order number.',
+        error,
+      );
+    }
+  }
+
+  @override
+  Future<void> resetOrderNumber() async {
+    try {
+      final changed = await (await _db).update(
+        'counters',
+        {'next_value': 1},
+        where: 'name = ?',
+        whereArgs: ['order'],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException(
+          'The order number could not be reset.',
+        );
+      }
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not reset the order number.', error);
     }
   }
 
@@ -454,24 +512,39 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
         if (existing.isNotEmpty) return existing.single['id']! as String;
 
         await _writeDraft(transaction, draft);
-        final counter = await transaction.query(
+        final ticketCounter = await transaction.query(
           'counters',
           columns: ['next_value'],
           where: 'name = ?',
           whereArgs: ['ticket'],
           limit: 1,
         );
-        final number = counter.single['next_value']! as int;
+        final ticketNumber = ticketCounter.single['next_value']! as int;
+        final orderCounter = await transaction.query(
+          'counters',
+          columns: ['next_value'],
+          where: 'name = ?',
+          whereArgs: ['order'],
+          limit: 1,
+        );
+        final orderNumber = orderCounter.single['next_value']! as int;
         await transaction.update(
           'counters',
-          {'next_value': number + 1},
+          {'next_value': ticketNumber + 1},
           where: 'name = ?',
           whereArgs: ['ticket'],
+        );
+        await transaction.update(
+          'counters',
+          {'next_value': orderNumber + 1},
+          where: 'name = ?',
+          whereArgs: ['order'],
         );
         final id = createLocalId();
         await transaction.insert('tickets', {
           'id': id,
-          'ticket_number': number,
+          'ticket_number': ticketNumber,
+          'display_number': orderNumber,
           'origin_draft_id': draft.id,
           'heading_snapshot': heading.trim(),
           'reference_snapshot': draft.reference.trim(),
@@ -525,7 +598,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
     try {
       final database = await _db;
       final rows = await database.rawQuery('''
-        SELECT p.*, t.ticket_number
+        SELECT p.*, t.display_number AS ticket_number
         FROM print_jobs p
         JOIN tickets t ON t.id = p.ticket_id
         ${ticketId == null ? '' : 'WHERE p.ticket_id = ?'}
@@ -653,7 +726,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
   ) async {
     final rows = await executor.rawQuery(
       '''
-      SELECT p.*, t.ticket_number
+      SELECT p.*, t.display_number AS ticket_number
       FROM print_jobs p
       JOIN tickets t ON t.id = p.ticket_id
       WHERE p.id = ?
@@ -708,7 +781,7 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
     );
     return SavedTicket(
       id: row['id']! as String,
-      number: row['ticket_number']! as int,
+      number: row['display_number']! as int,
       createdAt: DateTime.parse(row['created_at']! as String),
       heading: row['heading_snapshot']! as String,
       reference: row['reference_snapshot']! as String,

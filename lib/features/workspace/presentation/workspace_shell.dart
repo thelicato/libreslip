@@ -66,11 +66,11 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final labels = [l.overview, l.compose, l.items, l.tickets, l.settings];
+    final labels = [l.overview, l.items, l.compose, l.tickets, l.settings];
     const icons = [
       Icons.space_dashboard_outlined,
-      Icons.note_add_outlined,
       Icons.grid_view_rounded,
+      Icons.note_add_outlined,
       Icons.receipt_long_outlined,
       Icons.tune_rounded,
     ];
@@ -80,17 +80,17 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         : labels[_selected];
     final page = switch (_selected) {
       0 => OverviewPage(onSelect: _select),
-      1 => ComposePage(
+      1 => ItemsPage(controller: widget.orders),
+      2 => ComposePage(
         controller: widget.orders,
         settings: widget.settings.settings,
         output: widget.ticketOutput,
       ),
-      2 => ItemsPage(controller: widget.orders),
       3 => TicketsPage(
         controller: widget.orders,
         settings: widget.settings.settings,
         output: widget.ticketOutput,
-        onOpenCompose: () => _select(1),
+        onOpenCompose: () => _select(2),
       ),
       4 => SettingsPage(
         controller: widget.settings,
@@ -101,8 +101,8 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
     };
     final subtitle = switch (_selected) {
       0 => l.overviewSubtitle,
-      1 => l.composeSubtitle,
-      2 => l.itemsSubtitle,
+      1 => l.itemsSubtitle,
+      2 => l.composeSubtitle,
       3 => l.ticketsSubtitle,
       _ => l.settingsSubtitle,
     };

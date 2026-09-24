@@ -38,14 +38,14 @@ class OverviewPage extends StatelessWidget {
                   icon: Icons.note_add_outlined,
                   title: l.compose,
                   body: l.composeCardBody,
-                  onTap: () => onSelect(1),
+                  onTap: () => onSelect(2),
                 ),
                 _WorkspaceCard(
                   width: width,
                   icon: Icons.grid_view_rounded,
                   title: l.items,
                   body: l.itemsCardBody,
-                  onTap: () => onSelect(2),
+                  onTap: () => onSelect(1),
                 ),
                 _WorkspaceCard(
                   width: width,
