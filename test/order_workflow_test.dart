@@ -117,6 +117,60 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'ticket deletion confirmations preserve the current order number',
+    (tester) async {
+      tester.view.physicalSize = const Size(520, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final settings = SettingsController(MemorySettingsRepository());
+      final environment = await createMemoryOrderEnvironment();
+      final orders = environment.controller;
+      addTearDown(settings.dispose);
+      addTearDown(orders.dispose);
+      await settings.load();
+      await orders.saveItem(name: 'Tea');
+      orders.addCatalogueItem(orders.items.single);
+      await orders.saveActiveTicket(heading: 'Kitchen');
+      orders.addCatalogueItem(orders.items.single);
+      await orders.saveActiveTicket(heading: 'Kitchen');
+      expect(orders.nextOrderNumber, 3);
+
+      await tester.pumpWidget(LibreSlipApp(settings: settings, orders: orders));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('nav-3')));
+      await tester.pumpAndSettle();
+
+      final ticketId = orders.tickets.first.id;
+      await tester.tap(find.byKey(ValueKey('delete-ticket-$ticketId')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('current order number will not change'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('confirm-delete-ticket')));
+      await tester.pumpAndSettle();
+      expect(orders.tickets, hasLength(1));
+      expect(orders.nextOrderNumber, 3);
+
+      await tester.tap(find.byKey(const ValueKey('delete-all-tickets')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('order number will not change'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('confirm-delete-all-tickets')),
+      );
+      await tester.pumpAndSettle();
+      expect(orders.tickets, isEmpty);
+      expect(orders.nextOrderNumber, 3);
+      expect(find.text('No saved tickets yet.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 class _DisconnectedTransport implements PrinterTransport {

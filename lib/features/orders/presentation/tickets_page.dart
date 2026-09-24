@@ -57,6 +57,19 @@ class _TicketsPageState extends State<TicketsPage> {
               ),
               onChanged: (value) => setState(() => _query = value),
             ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                key: const ValueKey('delete-all-tickets'),
+                onPressed: widget.controller.saving ? null : _deleteAllTickets,
+                icon: const Icon(Icons.delete_sweep_outlined),
+                label: Text(l.deleteAllTickets),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
             const SizedBox(height: 18),
           ],
           if (widget.controller.tickets.isEmpty)
@@ -74,7 +87,9 @@ class _TicketsPageState extends State<TicketsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TicketCard(
                   ticket: ticket,
+                  enabled: !widget.controller.saving,
                   onView: () => _showTicket(ticket),
+                  onDelete: () => _deleteTicket(ticket),
                 ),
               ),
           if (widget.controller.saveFailed) ...[
@@ -89,6 +104,71 @@ class _TicketsPageState extends State<TicketsPage> {
     },
   );
 
+  Future<void> _deleteTicket(SavedTicket ticket) async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.deleteTicketQuestion(ticket.number)),
+        content: Text(l.deleteTicketBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-delete-ticket'),
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final deleted = await widget.controller.deleteTicket(ticket.id);
+    if (deleted && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.ticketDeleted)));
+    }
+  }
+
+  Future<void> _deleteAllTickets() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.deleteAllTicketsQuestion),
+        content: Text(l.deleteAllTicketsBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-delete-all-tickets'),
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: Text(l.deleteAllTickets),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final deleted = await widget.controller.deleteAllTickets();
+    if (deleted && mounted) {
+      setState(() => _query = '');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.allTicketsDeleted)));
+    }
+  }
+
   Future<void> _showTicket(SavedTicket ticket) => showDialog<void>(
     context: context,
     builder: (context) => TicketDetailDialog(
@@ -100,10 +180,17 @@ class _TicketsPageState extends State<TicketsPage> {
 }
 
 class _TicketCard extends StatelessWidget {
-  const _TicketCard({required this.ticket, required this.onView});
+  const _TicketCard({
+    required this.ticket,
+    required this.enabled,
+    required this.onView,
+    required this.onDelete,
+  });
 
   final SavedTicket ticket;
+  final bool enabled;
   final VoidCallback onView;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -179,9 +266,18 @@ class _TicketCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: onView,
+                    onPressed: enabled ? onView : null,
                     icon: const Icon(Icons.visibility_outlined),
                     label: Text(l.viewTicket),
+                  ),
+                  TextButton.icon(
+                    key: ValueKey('delete-ticket-${ticket.id}'),
+                    onPressed: enabled ? onDelete : null,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: Text(l.deleteTicket),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               );

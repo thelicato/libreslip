@@ -720,6 +720,117 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get printStorageError =>
       'The print attempt could not be saved safely, so LibreSlip did not continue automatically.';
+
+  @override
+  String get deleteTicket => 'Delete ticket';
+
+  @override
+  String deleteTicketQuestion(int number) {
+    return 'Delete ticket $number?';
+  }
+
+  @override
+  String get deleteTicketBody =>
+      'This saved ticket and its print-attempt history will be removed. The current order number will not change.';
+
+  @override
+  String get deleteAllTickets => 'Delete all previous tickets';
+
+  @override
+  String get deleteAllTicketsQuestion => 'Delete all previous tickets?';
+
+  @override
+  String get deleteAllTicketsBody =>
+      'All saved tickets and print-attempt history will be removed. The current draft and order number will not change.';
+
+  @override
+  String get ticketDeleted => 'Ticket deleted';
+
+  @override
+  String get allTicketsDeleted => 'Previous tickets deleted';
+
+  @override
+  String get portability => 'Import and export';
+
+  @override
+  String get portabilityBody =>
+      'Move settings or make a complete local backup without an account or cloud service.';
+
+  @override
+  String get exportConfiguration => 'Export configuration';
+
+  @override
+  String get exportConfigurationBody =>
+      'Includes language, appearance, printed ticket settings, order fields and logo.';
+
+  @override
+  String get exportFullBackup => 'Export full backup';
+
+  @override
+  String get exportFullBackupBody =>
+      'Also includes reusable items, drafts, saved tickets, print attempts and referenced images.';
+
+  @override
+  String get importArchive => 'Import ZIP';
+
+  @override
+  String get archivePrivacyWarning =>
+      'Exported ZIP files can contain private ticket notes and history. Store and share them carefully.';
+
+  @override
+  String get archivePairingWarning =>
+      'Bluetooth pairing is never included. Pair and reconnect the printer after restoring on another phone.';
+
+  @override
+  String get archivePreparing => 'Preparing archive…';
+
+  @override
+  String get archiveExportOpened => 'Archive ready in the system share sheet';
+
+  @override
+  String get archiveImportTitle => 'Review import';
+
+  @override
+  String get configurationArchive => 'Configuration';
+
+  @override
+  String get fullBackupArchive => 'Full backup';
+
+  @override
+  String archiveCreated(String date) {
+    return 'Created $date';
+  }
+
+  @override
+  String archiveContents(int items, int drafts, int tickets, int attempts) {
+    return '$items items, $drafts drafts, $tickets tickets and $attempts print attempts';
+  }
+
+  @override
+  String get configurationReplaceWarning =>
+      'This replaces the current settings and order-field options. Items and ticket history stay unchanged.';
+
+  @override
+  String get backupReplaceWarning =>
+      'This replaces all settings, reusable items, drafts, ticket history and print attempts with the archive contents.';
+
+  @override
+  String get restoreArchive => 'Replace and restore';
+
+  @override
+  String get archiveRestored => 'Archive restored';
+
+  @override
+  String get archiveInvalid =>
+      'This ZIP is invalid, unsafe, damaged or from an unsupported LibreSlip version. Nothing was changed.';
+
+  @override
+  String get archiveOperationFailed =>
+      'The archive operation could not be completed. Existing data remains available.';
+
+  @override
+  String get archiveRollbackFailed =>
+      'Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

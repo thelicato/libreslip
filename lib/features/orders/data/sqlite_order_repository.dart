@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
@@ -405,7 +406,11 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
     try {
       await (await _db).update(
         'items',
-        {'archived': 1, 'updated_at': _timestamp(DateTime.now())},
+        {
+          'archived': 1,
+          'image_path': null,
+          'updated_at': _timestamp(DateTime.now()),
+        },
         where: 'id = ?',
         whereArgs: [id],
       );
@@ -590,6 +595,155 @@ class SqliteOrderRepository implements OrderRepository, PrintJobStore {
       return tickets;
     } catch (error) {
       throw OrderStorageException('Could not read tickets.', error);
+    }
+  }
+
+  @override
+  Future<void> deleteTicket(String id) async {
+    try {
+      await (await _db).transaction((transaction) async {
+        await transaction.delete(
+          'print_jobs',
+          where: 'ticket_id = ?',
+          whereArgs: [id],
+        );
+        await transaction.delete(
+          'ticket_lines',
+          where: 'ticket_id = ?',
+          whereArgs: [id],
+        );
+        await transaction.delete('tickets', where: 'id = ?', whereArgs: [id]);
+      });
+    } catch (error) {
+      throw OrderStorageException('Could not delete the ticket.', error);
+    }
+  }
+
+  @override
+  Future<void> deleteAllTickets() async {
+    try {
+      await (await _db).transaction((transaction) async {
+        await transaction.delete('print_jobs');
+        await transaction.delete('ticket_lines');
+        await transaction.delete('tickets');
+      });
+    } catch (error) {
+      throw OrderStorageException('Could not delete ticket history.', error);
+    }
+  }
+
+  static const _portableTables = <String>[
+    'categories',
+    'items',
+    'drafts',
+    'draft_lines',
+    'tickets',
+    'ticket_lines',
+    'counters',
+    'print_jobs',
+    'order_feature_settings',
+  ];
+
+  static const _deleteOrder = <String>[
+    'print_jobs',
+    'ticket_lines',
+    'tickets',
+    'draft_lines',
+    'drafts',
+    'items',
+    'categories',
+    'counters',
+    'order_feature_settings',
+  ];
+
+  @override
+  Future<Map<String, Object?>> createPortableSnapshot() async {
+    try {
+      return await (await _db).transaction((transaction) async {
+        final tables = <String, Object?>{};
+        for (final table in _portableTables) {
+          final rows = await transaction.query(table);
+          tables[table] = [
+            for (final row in rows)
+              {
+                for (final entry in row.entries)
+                  entry.key: entry.value is Uint8List
+                      ? base64Encode(entry.value as Uint8List)
+                      : entry.value,
+              },
+          ];
+        }
+        return <String, Object?>{
+          'schemaVersion': databaseVersion,
+          'tables': tables,
+        };
+      });
+    } catch (error) {
+      throw OrderStorageException('Could not create the data snapshot.', error);
+    }
+  }
+
+  @override
+  Future<void> replaceWithPortableSnapshot(
+    Map<String, Object?> snapshot,
+  ) async {
+    try {
+      if (snapshot['schemaVersion'] != databaseVersion ||
+          snapshot['tables'] is! Map<String, dynamic>) {
+        throw const FormatException('Unsupported database snapshot');
+      }
+      final tables = snapshot['tables']! as Map<String, dynamic>;
+      if (tables.keys.toSet().difference(_portableTables.toSet()).isNotEmpty ||
+          _portableTables.any((table) => tables[table] is! List)) {
+        throw const FormatException('Invalid database table inventory');
+      }
+      final totalRows = _portableTables.fold<int>(
+        0,
+        (total, table) => total + (tables[table]! as List).length,
+      );
+      if (totalRows > 100000) {
+        throw const FormatException('Database snapshot is too large');
+      }
+      await (await _db).transaction((transaction) async {
+        await transaction.execute('PRAGMA defer_foreign_keys = ON');
+        for (final table in _deleteOrder) {
+          await transaction.delete(table);
+        }
+        for (final table in _portableTables) {
+          for (final value in tables[table]! as List) {
+            if (value is! Map<String, dynamic>) {
+              throw const FormatException('Invalid database row');
+            }
+            final row = Map<String, Object?>.from(value);
+            if (table == 'print_jobs') {
+              final payload = row['payload'];
+              if (payload is! String) {
+                throw const FormatException('Invalid print payload');
+              }
+              row['payload'] = base64Decode(payload);
+            }
+            await transaction.insert(table, row);
+          }
+        }
+        final violations = await transaction.rawQuery(
+          'PRAGMA foreign_key_check',
+        );
+        if (violations.isNotEmpty) {
+          throw const FormatException('Database relationships are invalid');
+        }
+        final counters = await transaction.query('counters');
+        if (counters.length != 2 ||
+            !counters.any((row) => row['name'] == 'ticket') ||
+            !counters.any((row) => row['name'] == 'order')) {
+          throw const FormatException('Database counters are invalid');
+        }
+      });
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not restore the data snapshot.',
+        error,
+      );
     }
   }
 

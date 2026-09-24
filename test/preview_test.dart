@@ -7,6 +7,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/portability/application/portability_controller.dart';
+import 'package:libreslip/features/portability/application/portability_service.dart';
 import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
@@ -71,26 +73,32 @@ void main() {
         3,
       ),
       ('settings-it-dark', const Size(1000, 1300), 'it', ThemeMode.dark, 4),
+      ('portability-phone-en', const Size(520, 1100), 'en', ThemeMode.light, 4),
     ]) {
       tester.view.physicalSize = size;
-      final controller = SettingsController(
-        MemorySettingsRepository()
-          ..stored = AppSettings(
-            language: language,
-            themeMode: mode,
-            typography: name == 'ticket-preview-phone-it'
-                ? const TicketTypography(
-                    heading: 20,
-                    details: 10,
-                    items: 12,
-                    notes: 9,
-                    footer: 11,
-                  )
-                : const TicketTypography(),
-          ),
-      );
+      final settingsStore = MemorySettingsRepository()
+        ..stored = AppSettings(
+          language: language,
+          themeMode: mode,
+          typography: name == 'ticket-preview-phone-it'
+              ? const TicketTypography(
+                  heading: 20,
+                  details: 10,
+                  items: 12,
+                  notes: 9,
+                  footer: 11,
+                )
+              : const TicketTypography(),
+        );
+      final controller = SettingsController(settingsStore);
       await controller.load();
-      final orders = await createMemoryOrders();
+      final environment = await createMemoryOrderEnvironment();
+      final orders = environment.controller;
+      final portability = PortabilityController(
+        PortabilityService(environment.repository, settingsStore),
+        controller,
+        orders,
+      );
       if (page >= 1 && page <= 3) {
         await orders.saveItem(
           name: 'Mushroom toastie',
@@ -112,7 +120,11 @@ void main() {
       await tester.pumpWidget(
         RepaintBoundary(
           key: boundary,
-          child: LibreSlipApp(settings: controller, orders: orders),
+          child: LibreSlipApp(
+            settings: controller,
+            orders: orders,
+            portability: portability,
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -122,6 +134,13 @@ void main() {
       }
       if (name == 'ticket-preview-phone-it') {
         await tester.tap(find.text('Comanda 1'));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'portability-phone-en') {
+        await tester.drag(
+          find.byKey(const ValueKey('page-4')),
+          const Offset(0, -2600),
+        );
         await tester.pumpAndSettle();
       }
       expect(tester.takeException(), isNull);
@@ -137,6 +156,7 @@ void main() {
         image.dispose();
       });
       await tester.pumpWidget(const SizedBox.shrink());
+      portability.dispose();
       controller.dispose();
       orders.dispose();
     }

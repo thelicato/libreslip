@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../orders/application/order_workspace_controller.dart';
+import '../../portability/application/portability_controller.dart';
+import '../../portability/presentation/portability_settings_card.dart';
 import '../../printing/application/printer_controller.dart';
 import '../../printing/domain/ticket_typography.dart';
 import '../../printing/presentation/printer_setup_card.dart';
@@ -15,10 +17,12 @@ class SettingsPage extends StatelessWidget {
     required this.controller,
     required this.orders,
     this.printer,
+    this.portability,
   });
   final SettingsController controller;
   final OrderWorkspaceController orders;
   final PrinterController? printer;
+  final PortabilityController? portability;
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +288,10 @@ class SettingsPage extends StatelessWidget {
         if (printer != null) ...[
           const SizedBox(height: 20),
           PrinterSetupCard(controller: printer!),
+        ],
+        if (portability != null) ...[
+          const SizedBox(height: 20),
+          PortabilitySettingsCard(controller: portability!),
         ],
       ],
     );

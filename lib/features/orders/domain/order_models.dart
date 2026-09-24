@@ -168,6 +168,16 @@ abstract interface class OrderRepository {
 
   Future<List<SavedTicket>> loadTickets();
 
+  Future<void> deleteTicket(String id);
+
+  Future<void> deleteAllTickets();
+
+  /// Returns a consistent, versioned snapshot of all SQLite-backed data.
+  Future<Map<String, Object?>> createPortableSnapshot();
+
+  /// Atomically replaces all SQLite-backed data with [snapshot].
+  Future<void> replaceWithPortableSnapshot(Map<String, Object?> snapshot);
+
   Future<CatalogueItem> saveItem({
     String? id,
     required String name,

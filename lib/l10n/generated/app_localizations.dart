@@ -1389,6 +1389,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The print attempt could not be saved safely, so LibreSlip did not continue automatically.'**
   String get printStorageError;
+
+  /// No description provided for @deleteTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ticket'**
+  String get deleteTicket;
+
+  /// No description provided for @deleteTicketQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ticket {number}?'**
+  String deleteTicketQuestion(int number);
+
+  /// No description provided for @deleteTicketBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This saved ticket and its print-attempt history will be removed. The current order number will not change.'**
+  String get deleteTicketBody;
+
+  /// No description provided for @deleteAllTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all previous tickets'**
+  String get deleteAllTickets;
+
+  /// No description provided for @deleteAllTicketsQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all previous tickets?'**
+  String get deleteAllTicketsQuestion;
+
+  /// No description provided for @deleteAllTicketsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All saved tickets and print-attempt history will be removed. The current draft and order number will not change.'**
+  String get deleteAllTicketsBody;
+
+  /// No description provided for @ticketDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket deleted'**
+  String get ticketDeleted;
+
+  /// No description provided for @allTicketsDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous tickets deleted'**
+  String get allTicketsDeleted;
+
+  /// No description provided for @portability.
+  ///
+  /// In en, this message translates to:
+  /// **'Import and export'**
+  String get portability;
+
+  /// No description provided for @portabilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Move settings or make a complete local backup without an account or cloud service.'**
+  String get portabilityBody;
+
+  /// No description provided for @exportConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Export configuration'**
+  String get exportConfiguration;
+
+  /// No description provided for @exportConfigurationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes language, appearance, printed ticket settings, order fields and logo.'**
+  String get exportConfigurationBody;
+
+  /// No description provided for @exportFullBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export full backup'**
+  String get exportFullBackup;
+
+  /// No description provided for @exportFullBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Also includes reusable items, drafts, saved tickets, print attempts and referenced images.'**
+  String get exportFullBackupBody;
+
+  /// No description provided for @importArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Import ZIP'**
+  String get importArchive;
+
+  /// No description provided for @archivePrivacyWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported ZIP files can contain private ticket notes and history. Store and share them carefully.'**
+  String get archivePrivacyWarning;
+
+  /// No description provided for @archivePairingWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluetooth pairing is never included. Pair and reconnect the printer after restoring on another phone.'**
+  String get archivePairingWarning;
+
+  /// No description provided for @archivePreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing archive…'**
+  String get archivePreparing;
+
+  /// No description provided for @archiveExportOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive ready in the system share sheet'**
+  String get archiveExportOpened;
+
+  /// No description provided for @archiveImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review import'**
+  String get archiveImportTitle;
+
+  /// No description provided for @configurationArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get configurationArchive;
+
+  /// No description provided for @fullBackupArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Full backup'**
+  String get fullBackupArchive;
+
+  /// No description provided for @archiveCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {date}'**
+  String archiveCreated(String date);
+
+  /// No description provided for @archiveContents.
+  ///
+  /// In en, this message translates to:
+  /// **'{items} items, {drafts} drafts, {tickets} tickets and {attempts} print attempts'**
+  String archiveContents(int items, int drafts, int tickets, int attempts);
+
+  /// No description provided for @configurationReplaceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces the current settings and order-field options. Items and ticket history stay unchanged.'**
+  String get configurationReplaceWarning;
+
+  /// No description provided for @backupReplaceWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces all settings, reusable items, drafts, ticket history and print attempts with the archive contents.'**
+  String get backupReplaceWarning;
+
+  /// No description provided for @restoreArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace and restore'**
+  String get restoreArchive;
+
+  /// No description provided for @archiveRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive restored'**
+  String get archiveRestored;
+
+  /// No description provided for @archiveInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This ZIP is invalid, unsafe, damaged or from an unsupported LibreSlip version. Nothing was changed.'**
+  String get archiveInvalid;
+
+  /// No description provided for @archiveOperationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The archive operation could not be completed. Existing data remains available.'**
+  String get archiveOperationFailed;
+
+  /// No description provided for @archiveRollbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.'**
+  String get archiveRollbackFailed;
 }
 
 class _AppLocalizationsDelegate

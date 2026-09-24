@@ -42,6 +42,25 @@ class SettingsController extends ChangeNotifier {
     }
   }
 
+  Future<bool> reloadAfterRestore() async {
+    if (saving || _disposed) return false;
+    saving = true;
+    saveFailed = false;
+    _notify();
+    try {
+      final stored = await _repository.load();
+      if (stored == null || _disposed) return false;
+      _settings = stored;
+      return true;
+    } catch (_) {
+      saveFailed = true;
+      return false;
+    } finally {
+      saving = false;
+      _notify();
+    }
+  }
+
   Future<bool> update(AppSettings next) async {
     if (!loaded || saving || _disposed) return false;
     saving = true;

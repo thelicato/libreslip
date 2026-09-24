@@ -728,6 +728,119 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get printStorageError =>
       'Impossibile salvare il tentativo di stampa in modo sicuro, quindi LibreSlip non ha continuato automaticamente.';
+
+  @override
+  String get deleteTicket => 'Elimina comanda';
+
+  @override
+  String deleteTicketQuestion(int number) {
+    return 'Eliminare la comanda $number?';
+  }
+
+  @override
+  String get deleteTicketBody =>
+      'La comanda salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà.';
+
+  @override
+  String get deleteAllTickets => 'Elimina tutte le comande precedenti';
+
+  @override
+  String get deleteAllTicketsQuestion =>
+      'Eliminare tutte le comande precedenti?';
+
+  @override
+  String get deleteAllTicketsBody =>
+      'Tutte le comande salvate e la cronologia dei tentativi di stampa verranno eliminate. La bozza e il numero d’ordine correnti non cambieranno.';
+
+  @override
+  String get ticketDeleted => 'Comanda eliminata';
+
+  @override
+  String get allTicketsDeleted => 'Comande precedenti eliminate';
+
+  @override
+  String get portability => 'Importazione ed esportazione';
+
+  @override
+  String get portabilityBody =>
+      'Trasferisci le impostazioni o crea un backup locale completo senza account o servizi cloud.';
+
+  @override
+  String get exportConfiguration => 'Esporta configurazione';
+
+  @override
+  String get exportConfigurationBody =>
+      'Include lingua, aspetto, impostazioni della comanda stampata, campi dell’ordine e logo.';
+
+  @override
+  String get exportFullBackup => 'Esporta backup completo';
+
+  @override
+  String get exportFullBackupBody =>
+      'Include anche articoli riutilizzabili, bozze, comande salvate, tentativi di stampa e immagini collegate.';
+
+  @override
+  String get importArchive => 'Importa ZIP';
+
+  @override
+  String get archivePrivacyWarning =>
+      'I file ZIP esportati possono contenere note e cronologia private. Conservali e condividili con attenzione.';
+
+  @override
+  String get archivePairingWarning =>
+      'L’associazione Bluetooth non viene mai inclusa. Associa e riconnetti la stampante dopo il ripristino su un altro telefono.';
+
+  @override
+  String get archivePreparing => 'Preparazione archivio…';
+
+  @override
+  String get archiveExportOpened =>
+      'Archivio pronto nel pannello di condivisione';
+
+  @override
+  String get archiveImportTitle => 'Controlla importazione';
+
+  @override
+  String get configurationArchive => 'Configurazione';
+
+  @override
+  String get fullBackupArchive => 'Backup completo';
+
+  @override
+  String archiveCreated(String date) {
+    return 'Creato il $date';
+  }
+
+  @override
+  String archiveContents(int items, int drafts, int tickets, int attempts) {
+    return '$items articoli, $drafts bozze, $tickets comande e $attempts tentativi di stampa';
+  }
+
+  @override
+  String get configurationReplaceWarning =>
+      'Sostituisce le impostazioni correnti e le opzioni dei campi dell’ordine. Articoli e cronologia restano invariati.';
+
+  @override
+  String get backupReplaceWarning =>
+      'Sostituisce tutte le impostazioni, gli articoli riutilizzabili, le bozze, la cronologia e i tentativi di stampa con il contenuto dell’archivio.';
+
+  @override
+  String get restoreArchive => 'Sostituisci e ripristina';
+
+  @override
+  String get archiveRestored => 'Archivio ripristinato';
+
+  @override
+  String get archiveInvalid =>
+      'Questo ZIP non è valido, è pericoloso, danneggiato o proviene da una versione LibreSlip non supportata. Nessun dato è stato modificato.';
+
+  @override
+  String get archiveOperationFailed =>
+      'Impossibile completare l’operazione sull’archivio. I dati esistenti restano disponibili.';
+
+  @override
+  String get archiveRollbackFailed =>
+      'Impossibile completare il ripristino in sicurezza. Riavvia LibreSlip e controlla i dati esistenti prima di riprovare.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

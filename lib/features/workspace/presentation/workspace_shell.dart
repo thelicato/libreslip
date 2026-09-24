@@ -7,6 +7,7 @@ import '../../orders/application/order_workspace_controller.dart';
 import '../../orders/presentation/compose_page.dart';
 import '../../orders/presentation/items_page.dart';
 import '../../orders/presentation/tickets_page.dart';
+import '../../portability/application/portability_controller.dart';
 import '../../printing/application/printer_controller.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../settings/application/settings_controller.dart';
@@ -20,11 +21,13 @@ class WorkspaceShell extends StatefulWidget {
     required this.orders,
     this.printer,
     this.ticketOutput,
+    this.portability,
   });
   final SettingsController settings;
   final OrderWorkspaceController orders;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
+  final PortabilityController? portability;
 
   @override
   State<WorkspaceShell> createState() => _WorkspaceShellState();
@@ -96,6 +99,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         controller: widget.settings,
         orders: widget.orders,
         printer: widget.printer,
+        portability: widget.portability,
       ),
       _ => OverviewPage(onSelect: _select),
     };

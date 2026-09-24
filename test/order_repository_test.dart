@@ -312,6 +312,48 @@ void main() {
   });
 
   test(
+    'deleting one or all tickets leaves the current order number unchanged',
+    () async {
+      final repository = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      addTearDown(repository.close);
+      await repository.open();
+
+      Future<SavedTicket> save(String name) async {
+        final blank = await repository.createDraft();
+        final draft = blank.copyWith(
+          updatedAt: DateTime.now().toUtc(),
+          lines: [TicketLine(id: createLocalId(), name: name, quantity: 1)],
+        );
+        return repository.convertDraftToTicket(draft, heading: 'Kitchen');
+      }
+
+      final first = await save('Tea');
+      final second = await save('Coffee');
+      await repository.createPrintJob(
+        requestId: 'delete-history-job',
+        ticketId: first.id,
+        payload: Uint8List.fromList([0x1b, 0x40]),
+      );
+      expect(await repository.loadNextOrderNumber(), 3);
+
+      await repository.deleteTicket(first.id);
+      expect((await repository.loadTickets()).single.id, second.id);
+      expect(await repository.loadPrintJobs(), isEmpty);
+      expect(await repository.loadNextOrderNumber(), 3);
+
+      await repository.deleteAllTickets();
+      expect(await repository.loadTickets(), isEmpty);
+      expect(await repository.loadNextOrderNumber(), 3);
+
+      final next = await save('Water');
+      expect(next.number, 3);
+    },
+  );
+
+  test(
     'version 1 databases migrate in place without losing catalogue data',
     () async {
       final legacy = await databaseFactoryFfiNoIsolate.openDatabase(

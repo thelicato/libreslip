@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/brand_mark.dart';
 import '../features/orders/application/order_workspace_controller.dart';
+import '../features/portability/application/portability_controller.dart';
 import '../features/printing/application/printer_controller.dart';
 import '../features/printing/application/ticket_output_controller.dart';
 import '../features/settings/application/settings_controller.dart';
@@ -16,12 +17,14 @@ class LibreSlipApp extends StatelessWidget {
     required this.orders,
     this.printer,
     this.ticketOutput,
+    this.portability,
   });
 
   final SettingsController settings;
   final OrderWorkspaceController orders;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
+  final PortabilityController? portability;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -49,6 +52,7 @@ class LibreSlipApp extends StatelessWidget {
               orders: orders,
               printer: printer,
               ticketOutput: ticketOutput,
+              portability: portability,
             )
           : _StartupScreen(settings: settings, orders: orders),
     ),

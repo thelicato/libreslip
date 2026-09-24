@@ -67,6 +67,28 @@ class OrderWorkspaceController extends ChangeNotifier {
     nextOrderNumber = await _repository.loadNextOrderNumber();
   });
 
+  Future<bool> deleteTicket(String id) => _perform(() async {
+    await _repository.deleteTicket(id);
+    tickets = await _repository.loadTickets();
+  });
+
+  Future<bool> deleteAllTickets() => _perform(() async {
+    await _repository.deleteAllTickets();
+    tickets = await _repository.loadTickets();
+  });
+
+  Future<bool> reloadAfterRestore() => _perform(() async {
+    await flushWrites();
+    await _refresh();
+    if (drafts.isEmpty) {
+      final draft = await _repository.createDraft();
+      drafts = [draft];
+    }
+    if (!drafts.any((draft) => draft.id == activeDraftId)) {
+      activeDraftId = drafts.first.id;
+    }
+  });
+
   Future<bool> updateFeatureSettings(OrderFeatureSettings next) =>
       _perform(() async {
         await flushWrites();
