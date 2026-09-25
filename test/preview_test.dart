@@ -131,6 +131,13 @@ void main() {
         5,
       ),
       (
+        'server-completed-dialog-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
         'server-settings-phone-en',
         const Size(520, 1100),
         'en',
@@ -220,6 +227,14 @@ void main() {
           ),
           receivedAt: DateTime.utc(2026, 9, 24, 18, 33),
         );
+        if (name == 'server-completed-dialog-tablet-en') {
+          final order = (await environment.repository.loadServerOrders())
+              .firstWhere((order) => order.displayNumber == 12);
+          await environment.repository.markServerOrderDone(
+            order.id,
+            completedAt: DateTime.utc(2026, 9, 24, 18, 40),
+          );
+        }
         final secrets = _MemoryServerSecrets();
         inbox = ServerInboxController(
           environment.repository,
@@ -302,6 +317,12 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (name == 'server-order-dialog-tablet-en') {
+        await tester.tap(find.text('Order 12'));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'server-completed-dialog-tablet-en') {
+        await tester.tap(find.text('Completed (1)'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Order 12'));
         await tester.pumpAndSettle();
       }

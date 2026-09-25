@@ -570,7 +570,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get printerSetupBody =>
-      'Connect a paired Bluetooth Classic printer. LibreSlip will never reconnect or resend by itself.';
+      'Connect a paired Bluetooth Classic printer. LibreSlip remembers it, checks the connection and reconnects when possible. Print data is never resent automatically.';
 
   @override
   String get bluetoothUnsupported =>
@@ -1091,6 +1091,39 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get markReceivedFailed =>
       'The order could not be moved back. It remains in Completed.';
+
+  @override
+  String get deleteCompletedOrder => 'Delete order';
+
+  @override
+  String deleteCompletedOrderQuestion(int number) {
+    return 'Delete completed order $number?';
+  }
+
+  @override
+  String get deleteCompletedOrderBody =>
+      'This completed Server order will be permanently removed. The Client copy is not affected.';
+
+  @override
+  String get deleteAllCompletedOrders => 'Delete all completed orders';
+
+  @override
+  String get deleteAllCompletedOrdersQuestion => 'Delete all completed orders?';
+
+  @override
+  String deleteAllCompletedOrdersBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count completed Server orders',
+      one: 'this completed Server order',
+    );
+    return 'Permanently remove $_temp0? Client copies are not affected.';
+  }
+
+  @override
+  String get deleteCompletedOrdersFailed =>
+      'The completed order history could not be deleted.';
 
   @override
   String get clientServerTitle => 'Optional order server';

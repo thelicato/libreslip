@@ -43,14 +43,14 @@ A paired LibreSlip Server is optional. If it becomes unavailable, local composit
 
 Server mode turns another Android device into a focused preparation board:
 
-- **Orders** shows Received and Completed orders, immutable order details and the quantities still waiting to be prepared.
+- **Orders** shows Received and Completed orders, immutable order details and compact item totals still waiting to be prepared. Completed orders can be restored to Received or deleted individually or together.
 - **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
 
-Mark Done is the only order action. Server mode does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
+Server mode only receives orders, moves them between Received and Completed, and removes Completed history when requested. It does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
 
 ## Printing
 
-Pair the NETUM NT-1809DD in Android, then open LibreSlip Settings to select and connect it. Overview shows LibreSlip's current printer connection state.
+Pair the NETUM NT-1809DD in Android, then open LibreSlip Settings to select and connect it. LibreSlip remembers the selected printer, reconnects it when possible on a later launch and checks the connection every 15 seconds while running. The current state is visible throughout Client mode. Manual Disconnect forgets the selection.
 
 A Transmitted result means Android finished writing the ticket bytes. Check the paper before continuing because the printer does not confirm physical output. LibreSlip never automatically repeats a print whose outcome might be uncertain.
 

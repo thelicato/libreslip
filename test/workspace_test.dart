@@ -95,6 +95,53 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('printer status stays visible and current across Client tabs', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(MemorySettingsRepository());
+    final environment = await createMemoryOrderEnvironment();
+    final networking = NetworkModeController(environment.repository);
+    final transport = _MutableWorkspaceTransport();
+    final printer = PrinterController(transport);
+    addTearDown(settings.dispose);
+    addTearDown(environment.controller.dispose);
+    addTearDown(networking.dispose);
+    addTearDown(printer.dispose);
+    await settings.load();
+    await networking.load();
+    await printer.refresh();
+
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: settings,
+        orders: environment.controller,
+        networking: networking,
+        printer: printer,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('printer-header-status')), findsOneWidget);
+    expect(find.text('Connected'), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('nav-1')));
+    await tester.pumpAndSettle();
+    transport.state = const BluetoothHostState(
+      status: BluetoothHostStatus.disabled,
+    );
+    await printer.checkConnection();
+    await tester.pumpAndSettle();
+    expect(find.text('Bluetooth is off'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('printer-header-status')));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('optional order fields can be hidden before saving a ticket', (
     tester,
   ) async {
@@ -325,6 +372,41 @@ void main() {
       });
     }
   }
+}
+
+class _MutableWorkspaceTransport implements PrinterTransport {
+  BluetoothHostState state = const BluetoothHostState(
+    status: BluetoothHostStatus.ready,
+    devices: [PairedPrinter(name: 'NT-1809DD', address: '00:11:22:33:44:55')],
+    connectedAddress: '00:11:22:33:44:55',
+  );
+
+  @override
+  Future<void> connect(String address) async {
+    state = BluetoothHostState(
+      status: BluetoothHostStatus.ready,
+      devices: state.devices,
+      connectedAddress: address,
+    );
+  }
+
+  @override
+  Future<void> disconnect() async {
+    state = BluetoothHostState(status: state.status, devices: state.devices);
+  }
+
+  @override
+  Future<BluetoothHostState> getState() async => state;
+
+  @override
+  Future<void> openBluetoothSettings() async {}
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<int> send(Uint8List bytes, {int chunkSize = 256}) async =>
+      bytes.length;
 }
 
 class _ConnectedWorkspaceTransport implements PrinterTransport {

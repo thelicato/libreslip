@@ -58,6 +58,7 @@ void main() {
         logoPath: logo.path,
         language: 'it',
         themeMode: ThemeMode.dark,
+        preferredPrinterAddress: '00:11:22:33:44:55',
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(orderNotesEnabled: false),
@@ -117,6 +118,7 @@ void main() {
       expect(settings.stored!.heading, 'Caffè Libertà');
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
+      expect(settings.stored!.preferredPrinterAddress, '00:11:22:33:44:55');
       expect(settings.stored!.logoPath, isNot(logo.path));
       expect(File(settings.stored!.logoPath!).readAsBytesSync(), _tinyPng);
       final restoredItems = await orders.loadItems();

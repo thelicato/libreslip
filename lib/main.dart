@@ -51,7 +51,19 @@ void main() {
     SecureClientSecretStore(),
     const PinnedHttpsClient(),
   );
-  final printer = PrinterController(AndroidBluetoothPrinterTransport());
+  final printer = PrinterController(
+    AndroidBluetoothPrinterTransport(),
+    onPreferredPrinterChanged: (address) async {
+      final current = settings.settings;
+      if (current.preferredPrinterAddress == address) return;
+      await settings.update(
+        current.copyWith(
+          preferredPrinterAddress: address,
+          clearPreferredPrinter: address == null,
+        ),
+      );
+    },
+  );
   final ticketOutput = TicketOutputController(
     store: repository,
     printer: printer,
@@ -77,6 +89,9 @@ void main() {
     await repository.open();
     await portability.recoverAtStartup();
     await settings.load();
+    await printer.start(
+      preferredPrinterAddress: settings.settings.preferredPrinterAddress,
+    );
     await orders.load();
     await networking.load();
     await clientDelivery.load();

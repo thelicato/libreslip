@@ -172,6 +172,40 @@ class ServerInboxController extends ChangeNotifier {
     }
   }
 
+  Future<bool> deleteCompleted(String id) async {
+    if (updating) return false;
+    updating = true;
+    _notify();
+    try {
+      await _store.deleteCompletedServerOrder(id);
+      orders = await _store.loadServerOrders();
+      return true;
+    } catch (_) {
+      failed = true;
+      return false;
+    } finally {
+      updating = false;
+      _notify();
+    }
+  }
+
+  Future<bool> deleteAllCompleted() async {
+    if (updating) return false;
+    updating = true;
+    _notify();
+    try {
+      await _store.deleteAllCompletedServerOrders();
+      orders = await _store.loadServerOrders();
+      return true;
+    } catch (_) {
+      failed = true;
+      return false;
+    } finally {
+      updating = false;
+      _notify();
+    }
+  }
+
   void _reloadAfterReceipt() {
     Future<void>(refresh);
   }

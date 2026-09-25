@@ -228,6 +228,25 @@ void main() {
     expect(firstRect.top, secondRect.top);
     expect(firstRect.width, closeTo(secondRect.width, 0.1));
     expect(secondRect.right - firstRect.left, closeTo(summaryRect.width, 0.1));
+    final firstOutstanding = find.byKey(const ValueKey('outstanding-item-0'));
+    final secondOutstanding = find.byKey(const ValueKey('outstanding-item-1'));
+    expect(
+      tester.getTopLeft(firstOutstanding).dy,
+      tester.getTopLeft(secondOutstanding).dy,
+    );
+    final summarySoup = find.descendant(
+      of: firstOutstanding,
+      matching: find.text('Soup'),
+    );
+    final summaryQuantity = find.descendant(
+      of: firstOutstanding,
+      matching: find.text('2'),
+    );
+    expect(
+      tester.getTopLeft(summaryQuantity).dx -
+          tester.getTopRight(summarySoup).dx,
+      lessThan(32),
+    );
     await tester.tap(orderFinder);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -265,9 +284,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(inbox.receivedOrders, hasLength(1));
     expect(inbox.completedOrders, hasLength(1));
+
+    await tester.tap(find.byKey(ValueKey('server-order-${secondOrder.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('delete-completed-order')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete completed order 18?'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-delete-completed-order')),
+    );
+    await tester.pumpAndSettle();
+    expect(inbox.completedOrders, isEmpty);
+    expect(inbox.receivedOrders, hasLength(1));
+
     await tester.tap(find.text('Received (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Order 17'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('server-order-${firstOrder.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mark-order-done')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed (1)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('delete-all-completed-orders')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('confirm-delete-all-completed-orders')),
+    );
+    await tester.pumpAndSettle();
+    expect(inbox.completedOrders, isEmpty);
+    expect(find.text('No completed orders yet'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

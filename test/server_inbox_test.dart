@@ -93,6 +93,49 @@ void main() {
     },
   );
 
+  test('only Completed Server orders can be deleted', () async {
+    final repository = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: databasePath,
+    );
+    addTearDown(repository.close);
+    await repository.open();
+    await repository.pairClient(_client);
+    final first = await repository.receiveServerOrder(
+      _envelope(),
+      receivedAt: DateTime.utc(2026, 9, 24, 19),
+    );
+    final second = await repository.receiveServerOrder(
+      _envelope(
+        deliveryId: 'delivery-2',
+        ticketId: 'ticket-2',
+        ticketNumber: 18,
+      ),
+      receivedAt: DateTime.utc(2026, 9, 24, 19, 1),
+    );
+
+    await expectLater(
+      repository.deleteCompletedServerOrder(second.order.id),
+      throwsA(isA<Exception>()),
+    );
+    await repository.markServerOrderDone(
+      first.order.id,
+      completedAt: DateTime.utc(2026, 9, 24, 19, 2),
+    );
+    await repository.deleteCompletedServerOrder(first.order.id);
+    var remaining = await repository.loadServerOrders();
+    expect(remaining.map((order) => order.id), [second.order.id]);
+    expect(remaining.single.status, ServerOrderStatus.received);
+
+    await repository.markServerOrderDone(
+      second.order.id,
+      completedAt: DateTime.utc(2026, 9, 24, 19, 3),
+    );
+    expect(await repository.deleteAllCompletedServerOrders(), 1);
+    expect(await repository.loadServerOrders(), isEmpty);
+    expect(await repository.deleteAllCompletedServerOrders(), 0);
+  });
+
   test('HTTPS pairing authorises one client and duplicate delivery once', () async {
     final repository = SqliteOrderRepository(
       factory: databaseFactoryFfiNoIsolate,
@@ -203,20 +246,24 @@ final _client = PairedClient(
 );
 final _pairedAt = DateTime.utc(2026, 9, 24, 18);
 
-OrderDeliveryEnvelope _envelope({String itemName = 'Soup'}) =>
-    OrderDeliveryEnvelope.create(
-      clientInstallationId: _client.installationId,
-      deliveryId: 'delivery-1',
-      ticketId: 'ticket-1',
-      ticketNumber: 17,
-      createdAt: DateTime.utc(2026, 9, 24, 18, 30),
-      heading: 'Kitchen',
-      reference: 'Table 4',
-      orderNote: 'Together',
-      lines: [
-        DeliveryLine(name: itemName, quantity: 2, preparationNote: 'No cream'),
-      ],
-    );
+OrderDeliveryEnvelope _envelope({
+  String itemName = 'Soup',
+  String deliveryId = 'delivery-1',
+  String ticketId = 'ticket-1',
+  int ticketNumber = 17,
+}) => OrderDeliveryEnvelope.create(
+  clientInstallationId: _client.installationId,
+  deliveryId: deliveryId,
+  ticketId: ticketId,
+  ticketNumber: ticketNumber,
+  createdAt: DateTime.utc(2026, 9, 24, 18, 30),
+  heading: 'Kitchen',
+  reference: 'Table 4',
+  orderNote: 'Together',
+  lines: [
+    DeliveryLine(name: itemName, quantity: 2, preparationNote: 'No cream'),
+  ],
+);
 
 class _JsonResponse {
   const _JsonResponse(this.statusCode, this.body);

@@ -147,6 +147,49 @@ void main() {
   );
 
   test(
+    'remembered printer reconnects and periodic checks update shared state',
+    () async {
+      final saved = <String?>[];
+      final transport = FakePrinterTransport();
+      final controller = PrinterController(
+        transport,
+        monitorInterval: const Duration(milliseconds: 15),
+        onPreferredPrinterChanged: (address) async => saved.add(address),
+      );
+      addTearDown(controller.dispose);
+
+      await controller.start(preferredPrinterAddress: '00:11:22:33:44:55');
+      expect(controller.connected, isTrue);
+      expect(controller.preferredAddress, '00:11:22:33:44:55');
+      expect(transport.connectCalls, 1);
+      expect(saved, isEmpty);
+
+      transport.state = const BluetoothHostState(
+        status: BluetoothHostStatus.disabled,
+      );
+      await _waitUntil(
+        () => controller.hostStatus == BluetoothHostStatus.disabled,
+      );
+      expect(controller.connected, isFalse);
+
+      transport.state = const BluetoothHostState(
+        status: BluetoothHostStatus.ready,
+        devices: [
+          PairedPrinter(name: 'NT-1809DD', address: '00:11:22:33:44:55'),
+        ],
+      );
+      await _waitUntil(() => transport.connectCalls == 2);
+      expect(controller.connected, isTrue);
+
+      await controller.disconnect();
+      expect(controller.preferredAddress, isNull);
+      expect(saved, [null]);
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(transport.connectCalls, 2);
+    },
+  );
+
+  test(
     'permission denial remains recoverable through an explicit refresh',
     () async {
       final transport = FakePrinterTransport()
@@ -169,6 +212,14 @@ void main() {
       expect(controller.hostStatus, BluetoothHostStatus.ready);
     },
   );
+}
+
+Future<void> _waitUntil(bool Function() condition) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    if (condition()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+  fail('Timed out waiting for printer monitor state.');
 }
 
 bool _contains(Uint8List bytes, List<int> pattern) {
@@ -210,6 +261,7 @@ class FakePrinterTransport implements PrinterTransport {
   @override
   Future<void> disconnect() async {
     connectedAddress = null;
+    state = BluetoothHostState(status: state.status, devices: state.devices);
   }
 
   @override

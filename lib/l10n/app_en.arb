@@ -213,7 +213,7 @@
   "noteTooLong": "This note is too long.",
   "searchTickets": "Search tickets",
   "printerSetup": "Printer connection",
-  "printerSetupBody": "Connect a paired Bluetooth Classic printer. LibreSlip will never reconnect or resend by itself.",
+  "printerSetupBody": "Connect a paired Bluetooth Classic printer. LibreSlip remembers it, checks the connection and reconnects when possible. Print data is never resent automatically.",
   "bluetoothUnsupported": "Bluetooth is not available on this phone.",
   "bluetoothPermissionTitle": "Allow nearby-device access",
   "bluetoothPermissionBody": "Android requires this permission to see and connect to printers you have already paired.",
@@ -436,6 +436,27 @@
   "markReceived": "Move to Received",
   "markingReceived": "Moving to Received…",
   "markReceivedFailed": "The order could not be moved back. It remains in Completed.",
+  "deleteCompletedOrder": "Delete order",
+  "deleteCompletedOrderQuestion": "Delete completed order {number}?",
+  "@deleteCompletedOrderQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteCompletedOrderBody": "This completed Server order will be permanently removed. The Client copy is not affected.",
+  "deleteAllCompletedOrders": "Delete all completed orders",
+  "deleteAllCompletedOrdersQuestion": "Delete all completed orders?",
+  "deleteAllCompletedOrdersBody": "Permanently remove {count, plural, =1{this completed Server order} other{{count} completed Server orders}}? Client copies are not affected.",
+  "@deleteAllCompletedOrdersBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteCompletedOrdersFailed": "The completed order history could not be deleted.",
   "clientServerTitle": "Optional order server",
   "clientServerBody": "Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.",
   "noPairedServer": "No server paired",

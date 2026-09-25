@@ -25,6 +25,7 @@ void main() {
       language: 'it',
       themeMode: ThemeMode.dark,
       appTextScale: 1.3,
+      preferredPrinterAddress: '00:11:22:33:44:55',
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -40,6 +41,11 @@ void main() {
     expect(decoded.typography.notes, 9);
     expect(decoded.typography.footer, 11);
     expect(decoded.appTextScale, 1.3);
+    expect(decoded.preferredPrinterAddress, '00:11:22:33:44:55');
+    expect(
+      decoded.copyWith(clearPreferredPrinter: true).preferredPrinterAddress,
+      isNull,
+    );
   });
 
   test('version 1 preferences migrate with an empty footer and no logo', () {
@@ -79,6 +85,14 @@ void main() {
     expect(legacy.appTextScale, AppSettings.defaultAppTextScale);
   });
 
+  test('version 4 preferences migrate without a preferred printer', () {
+    final legacy = AppSettings.fromJson(
+      {...const AppSettings().toJson(), 'version': 4}
+        ..remove('preferredPrinterAddress'),
+    );
+    expect(legacy.preferredPrinterAddress, isNull);
+  });
+
   test('app text scaling enforces hard minimum and maximum sizes', () {
     for (final scale in [0.99, 1.31, double.nan]) {
       expect(
@@ -110,11 +124,12 @@ void main() {
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 5},
+      {...const AppSettings().toJson(), 'version': 6},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
       {...const AppSettings().toJson(), 'heading': List.filled(61, 'x').join()},
+      {...const AppSettings().toJson(), 'preferredPrinterAddress': ''},
       <String, dynamic>{},
     ]) {
       expect(() => AppSettings.fromJson(invalid), throwsFormatException);

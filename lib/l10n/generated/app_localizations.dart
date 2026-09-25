@@ -1129,7 +1129,7 @@ abstract class AppLocalizations {
   /// No description provided for @printerSetupBody.
   ///
   /// In en, this message translates to:
-  /// **'Connect a paired Bluetooth Classic printer. LibreSlip will never reconnect or resend by itself.'**
+  /// **'Connect a paired Bluetooth Classic printer. LibreSlip remembers it, checks the connection and reconnects when possible. Print data is never resent automatically.'**
   String get printerSetupBody;
 
   /// No description provided for @bluetoothUnsupported.
@@ -2037,6 +2037,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The order could not be moved back. It remains in Completed.'**
   String get markReceivedFailed;
+
+  /// No description provided for @deleteCompletedOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete order'**
+  String get deleteCompletedOrder;
+
+  /// No description provided for @deleteCompletedOrderQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete completed order {number}?'**
+  String deleteCompletedOrderQuestion(int number);
+
+  /// No description provided for @deleteCompletedOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This completed Server order will be permanently removed. The Client copy is not affected.'**
+  String get deleteCompletedOrderBody;
+
+  /// No description provided for @deleteAllCompletedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all completed orders'**
+  String get deleteAllCompletedOrders;
+
+  /// No description provided for @deleteAllCompletedOrdersQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all completed orders?'**
+  String get deleteAllCompletedOrdersQuestion;
+
+  /// No description provided for @deleteAllCompletedOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently remove {count, plural, =1{this completed Server order} other{{count} completed Server orders}}? Client copies are not affected.'**
+  String deleteAllCompletedOrdersBody(int count);
+
+  /// No description provided for @deleteCompletedOrdersFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The completed order history could not be deleted.'**
+  String get deleteCompletedOrdersFailed;
 
   /// No description provided for @clientServerTitle.
   ///

@@ -27,7 +27,7 @@ Manual IPv4 address entry is the supported connection method. An Android foregro
 
 ## Server operation
 
-The Orders tab lists oldest orders first. Wider layouts show two order cards per row within the same content width as Still to prepare. Each card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and actions to mark an order Done or move it back to Received. Origin device names are not displayed. The summary lists quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
+The Orders tab lists oldest orders first. Wider layouts show two order cards per row within the same content width as Still to prepare. Each card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and actions to mark an order Done or move it back to Received. Completed orders can be deleted individually or together; Received orders cannot be deleted. Origin device names are not displayed. The summary uses compact quantity tiles and two columns on wider screens for quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
 
 Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
 

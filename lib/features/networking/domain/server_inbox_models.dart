@@ -141,4 +141,8 @@ abstract interface class ServerInboxStore {
   });
 
   Future<ServerOrder> markServerOrderReceived(String id);
+
+  Future<void> deleteCompletedServerOrder(String id);
+
+  Future<int> deleteAllCompletedServerOrders();
 }

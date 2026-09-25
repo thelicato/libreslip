@@ -12,6 +12,7 @@ import '../../orders/presentation/tickets_page.dart';
 import '../../portability/application/portability_controller.dart';
 import '../../printing/application/printer_controller.dart';
 import '../../printing/application/ticket_output_controller.dart';
+import '../../printing/domain/printer_transport.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/settings_page.dart';
 import 'overview_page.dart';
@@ -199,8 +200,9 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                               if (!wide) ...[
                                 const BrandMark(size: 34),
                                 const SizedBox(width: 10),
-                                Flexible(
+                                Expanded(
                                   child: FittedBox(
+                                    alignment: AlignmentDirectional.centerStart,
                                     fit: BoxFit.scaleDown,
                                     child: Text(
                                       l.appName,
@@ -211,11 +213,23 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                                   ),
                                 ),
                               ] else
-                                Text(
-                                  l.yourWorkspace,
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(letterSpacing: 1.8),
+                                Expanded(
+                                  child: Text(
+                                    l.yourWorkspace,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(letterSpacing: 1.8),
+                                  ),
                                 ),
+                              if (widget.printer != null) ...[
+                                const SizedBox(width: 12),
+                                _PrinterConnectionIndicator(
+                                  controller: widget.printer!,
+                                  showLabel: wide,
+                                  onTap: () => _select(4),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -270,6 +284,101 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
       },
     );
   }
+}
+
+class _PrinterConnectionIndicator extends StatelessWidget {
+  const _PrinterConnectionIndicator({
+    required this.controller,
+    required this.showLabel,
+    required this.onTap,
+  });
+
+  final PrinterController controller;
+  final bool showLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: controller,
+    builder: (context, _) {
+      final l = AppLocalizations.of(context);
+      final theme = Theme.of(context);
+      final (label, icon, colour) = switch (controller.hostStatus) {
+        _ when controller.operation == PrinterOperation.connecting => (
+          l.connectingPrinter,
+          Icons.bluetooth_searching_rounded,
+          theme.colorScheme.tertiary,
+        ),
+        BluetoothHostStatus.unsupported => (
+          l.printerUnavailableStatus,
+          Icons.bluetooth_disabled_rounded,
+          theme.colorScheme.error,
+        ),
+        BluetoothHostStatus.permissionRequired => (
+          l.printerPermissionStatus,
+          Icons.lock_outline_rounded,
+          theme.colorScheme.tertiary,
+        ),
+        BluetoothHostStatus.disabled => (
+          l.printerBluetoothOffStatus,
+          Icons.bluetooth_disabled_rounded,
+          theme.colorScheme.tertiary,
+        ),
+        _ when controller.connected => (
+          l.printerConnectedStatus,
+          Icons.bluetooth_connected_rounded,
+          theme.colorScheme.primary,
+        ),
+        _ => (
+          l.printerDisconnectedStatus,
+          Icons.bluetooth_rounded,
+          theme.colorScheme.onSurfaceVariant,
+        ),
+      };
+      final printerName = controller.connectedPrinter?.name;
+      final tooltip = printerName == null ? label : '$label: $printerName';
+      return Tooltip(
+        message: tooltip,
+        child: Semantics(
+          button: true,
+          label: tooltip,
+          child: Material(
+            color: colour.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              key: const ValueKey('printer-header-status'),
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(18),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: showLabel ? 14 : 12,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 22, color: colour),
+                      if (showLabel) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: colour,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _Sidebar extends StatelessWidget {

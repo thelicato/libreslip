@@ -130,11 +130,20 @@ class MainActivity : FlutterActivity() {
         val devices = adapter.bondedDevices
             .sortedWith(compareBy({ it.name ?: "" }, { it.address }))
             .map { mapOf("name" to (it.name ?: it.address), "address" to it.address) }
+        val connectedAddress = socket?.takeIf { it.isConnected }?.let { active ->
+            try {
+                active.inputStream.available()
+                active.remoteDevice.address
+            } catch (_: IOException) {
+                closeSocket()
+                null
+            }
+        }
         result.success(
             mapOf(
                 "status" to "ready",
                 "devices" to devices,
-                "connectedAddress" to socket?.takeIf { it.isConnected }?.remoteDevice?.address,
+                "connectedAddress" to connectedAddress,
             ),
         )
     }

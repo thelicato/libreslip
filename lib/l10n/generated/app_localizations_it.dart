@@ -577,7 +577,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get printerSetupBody =>
-      'Connetti una stampante Bluetooth Classic già associata. LibreSlip non si riconnette e non ripete mai l’invio da solo.';
+      'Connetti una stampante Bluetooth Classic già associata. LibreSlip la ricorda, controlla la connessione e si riconnette quando possibile. I dati di stampa non vengono mai rinviati automaticamente.';
 
   @override
   String get bluetoothUnsupported =>
@@ -1103,6 +1103,40 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get markReceivedFailed =>
       'Impossibile riportare l’ordine tra i ricevuti. Resta tra i completati.';
+
+  @override
+  String get deleteCompletedOrder => 'Elimina ordine';
+
+  @override
+  String deleteCompletedOrderQuestion(int number) {
+    return 'Eliminare l’ordine completato $number?';
+  }
+
+  @override
+  String get deleteCompletedOrderBody =>
+      'Questo ordine completato verrà eliminato definitivamente dal Server. La copia sul Client non viene modificata.';
+
+  @override
+  String get deleteAllCompletedOrders => 'Elimina tutti gli ordini completati';
+
+  @override
+  String get deleteAllCompletedOrdersQuestion =>
+      'Eliminare tutti gli ordini completati?';
+
+  @override
+  String deleteAllCompletedOrdersBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'questi $count ordini completati dal Server',
+      one: 'questo ordine completato dal Server',
+    );
+    return 'Eliminare definitivamente $_temp0? Le copie sui Client non vengono modificate.';
+  }
+
+  @override
+  String get deleteCompletedOrdersFailed =>
+      'Impossibile eliminare lo storico degli ordini completati.';
 
   @override
   String get clientServerTitle => 'Server ordini facoltativo';

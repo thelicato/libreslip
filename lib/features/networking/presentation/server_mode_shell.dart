@@ -158,6 +158,26 @@ class _ServerModeShellState extends State<ServerModeShell>
                             setState(() => _showCompleted = selection.single),
                         showSelectedIcon: false,
                       ),
+                      if (_showCompleted &&
+                          controller.completedOrders.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: TextButton.icon(
+                            key: const ValueKey('delete-all-completed-orders'),
+                            onPressed: controller.updating
+                                ? null
+                                : _deleteAllCompleted,
+                            style: TextButton.styleFrom(
+                              foregroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .error,
+                            ),
+                            icon: const Icon(Icons.delete_sweep_outlined),
+                            label: Text(l.deleteAllCompletedOrders),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -295,6 +315,38 @@ class _ServerModeShellState extends State<ServerModeShell>
           _OrderDialog(order: order, controller: widget.inboxController),
     );
   }
+
+  Future<void> _deleteAllCompleted() async {
+    final l = AppLocalizations.of(context);
+    final count = widget.inboxController.completedOrders.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.deleteAllCompletedOrdersQuestion),
+        content: Text(l.deleteAllCompletedOrdersBody(count)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-delete-all-completed-orders'),
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final deleted = await widget.inboxController.deleteAllCompleted();
+    if (!mounted || deleted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l.deleteCompletedOrdersFailed)));
+  }
 }
 
 class _PageHeader extends StatelessWidget {
@@ -366,27 +418,73 @@ class _OutstandingItemsCard extends StatelessWidget {
             if (totals.isEmpty)
               Text(l.noOutstandingItems)
             else
-              for (var index = 0; index < totals.length; index++) ...[
-                if (index > 0) const Divider(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        totals[index].name,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      quantityFormat.format(totals[index].quantity),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 680 ? 2 : 1;
+                  const spacing = 12.0;
+                  final tileWidth = columns == 2
+                      ? (constraints.maxWidth - spacing) / 2
+                      : constraints.maxWidth;
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      for (var index = 0; index < totals.length; index++)
+                        SizedBox(
+                          key: ValueKey('outstanding-item-$index'),
+                          width: tileWidth,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    fit: FlexFit.loose,
+                                    child: Text(
+                                      totals[index].name,
+                                      style: theme.textTheme.titleMedium,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      quantityFormat.format(
+                                        totals[index].quantity,
+                                      ),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onPrimaryContainer,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -747,6 +845,18 @@ class _OrderDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
       actions: [
+        if (order.status == ServerOrderStatus.done)
+          TextButton.icon(
+            key: const ValueKey('delete-completed-order'),
+            onPressed: controller.updating
+                ? null
+                : () => _deleteCompleted(context),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: Text(l.deleteCompletedOrder),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(l.close),
@@ -793,6 +903,41 @@ class _OrderDialog extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Future<void> _deleteCompleted(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.deleteCompletedOrderQuestion(order.displayNumber)),
+        content: Text(l.deleteCompletedOrderBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            key: const ValueKey('confirm-delete-completed-order'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final deleted = await controller.deleteCompleted(order.id);
+    if (!context.mounted) return;
+    if (deleted) {
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.deleteCompletedOrdersFailed)));
+    }
   }
 }
 

@@ -894,6 +894,41 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<void> deleteCompletedServerOrder(String id) async {
+    try {
+      final changed = await (await _db).delete(
+        'server_orders',
+        where: 'id = ? AND status = ?',
+        whereArgs: [id, ServerOrderStatus.done.value],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException('The completed order was not found.');
+      }
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not delete the completed order.',
+        error,
+      );
+    }
+  }
+
+  @override
+  Future<int> deleteAllCompletedServerOrders() async {
+    try {
+      return await (await _db).transaction(
+        (transaction) => transaction.delete(
+          'server_orders',
+          where: 'status = ?',
+          whereArgs: [ServerOrderStatus.done.value],
+        ),
+      );
+    } catch (error) {
+      throw OrderStorageException('Could not delete completed orders.', error);
+    }
+  }
+
+  @override
   Future<List<ItemCategory>> loadCategories() async {
     try {
       final rows = await (await _db).query(

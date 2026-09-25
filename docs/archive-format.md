@@ -1,14 +1,14 @@
 # LibreSlip archive format
 
-LibreSlip ZIP archives use format identifier `libreslip-portability` and format version `1`. Configuration archives contain preferences and ticket-field options. Full backups additionally contain local catalogue, composition, ticket and print state plus referenced logo and item-image files. Bluetooth credentials, pairing secrets, caches and temporary files are never included.
+LibreSlip ZIP archives use format identifier `libreslip-portability` and format version `1`. Configuration archives contain preferences and ticket-field options. Full backups additionally contain local catalogue, composition, ticket and print state plus referenced logo and item-image files. Bluetooth credentials, pairing secrets, caches and temporary files are never included. The remembered printer address is a preference rather than a pairing credential; Android pairing must still exist on the restored device.
 
 ## Entries
 
 | Path | Required | Content |
 | --- | --- | --- |
 | `manifest.json` | Always | Archive identity, kind, versions, UTC creation time, counts and payload inventory. |
-| `configuration.json` | Always | Settings format version 3, ticket typography, locale, theme, heading, footer, logo reference, order-field switches and a non-secret printer transport description. |
-| `database.json` | Full backup only | Portable database schema version 9, or accepted legacy version 5 through 8, with categories, items, composition, lines, tickets, ticket lines, counters, print jobs and order-field settings. Binary print payloads use Base64. |
+| `configuration.json` | Always | Settings format version 5, ticket typography, locale, theme, heading, footer, logo reference, order-field switches, remembered printer address and a non-secret printer transport description. |
+| `database.json` | Full backup only | Portable database schema version 10, or accepted legacy version 5 through 9, with categories, items, composition, lines, tickets, ticket lines, counters, print jobs and order-field settings. Binary print payloads use Base64. |
 | `assets/logo.<ext>` | When configured | App-private ticket logo. |
 | `assets/items/<item-id>.<ext>` | When referenced | App-private reusable-item image. |
 

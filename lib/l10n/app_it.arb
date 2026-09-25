@@ -213,7 +213,7 @@
   "noteTooLong": "Questa nota è troppo lunga.",
   "searchTickets": "Cerca comande",
   "printerSetup": "Connessione stampante",
-  "printerSetupBody": "Connetti una stampante Bluetooth Classic già associata. LibreSlip non si riconnette e non ripete mai l’invio da solo.",
+  "printerSetupBody": "Connetti una stampante Bluetooth Classic già associata. LibreSlip la ricorda, controlla la connessione e si riconnette quando possibile. I dati di stampa non vengono mai rinviati automaticamente.",
   "bluetoothUnsupported": "Il Bluetooth non è disponibile su questo telefono.",
   "bluetoothPermissionTitle": "Consenti accesso ai dispositivi vicini",
   "bluetoothPermissionBody": "Android richiede questa autorizzazione per vedere e connettere le stampanti già associate.",
@@ -436,6 +436,27 @@
   "markReceived": "Riporta tra i ricevuti",
   "markingReceived": "Spostamento tra i ricevuti…",
   "markReceivedFailed": "Impossibile riportare l’ordine tra i ricevuti. Resta tra i completati.",
+  "deleteCompletedOrder": "Elimina ordine",
+  "deleteCompletedOrderQuestion": "Eliminare l’ordine completato {number}?",
+  "@deleteCompletedOrderQuestion": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteCompletedOrderBody": "Questo ordine completato verrà eliminato definitivamente dal Server. La copia sul Client non viene modificata.",
+  "deleteAllCompletedOrders": "Elimina tutti gli ordini completati",
+  "deleteAllCompletedOrdersQuestion": "Eliminare tutti gli ordini completati?",
+  "deleteAllCompletedOrdersBody": "Eliminare definitivamente {count, plural, =1{questo ordine completato dal Server} other{questi {count} ordini completati dal Server}}? Le copie sui Client non vengono modificate.",
+  "@deleteAllCompletedOrdersBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteCompletedOrdersFailed": "Impossibile eliminare lo storico degli ordini completati.",
   "clientServerTitle": "Server ordini facoltativo",
   "clientServerBody": "Associa un Server LibreSlip su questa rete locale. La stampa locale e lo storico continuano a funzionare anche quando il Server non è disponibile.",
   "noPairedServer": "Nessun Server associato",
