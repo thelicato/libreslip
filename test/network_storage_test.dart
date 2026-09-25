@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -48,6 +49,69 @@ void main() {
     expect(restored.mode, LibreSlipMode.server);
     expect(restored.installationId, initial.installationId);
     expect((await reopened.loadItems()).single.name, 'Tea');
+  });
+
+  test('schema 9 migrates the previous LibreSlip port only', () async {
+    final first = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: databasePath,
+    );
+    await first.open();
+    final now = DateTime.utc(2026, 9, 25);
+    await first.savePairedServer(
+      PairedServer(
+        id: 'server-old-port',
+        displayName: 'Kitchen tablet',
+        baseUrl: Uri.parse('https://192.168.1.42:42837'),
+        certificateFingerprint:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await first.savePairedServer(
+      PairedServer(
+        id: 'server-custom-port',
+        displayName: 'Custom tablet',
+        baseUrl: Uri.parse('https://192.168.1.43:6000'),
+        certificateFingerprint:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await first.close();
+
+    final database = await databaseFactoryFfiNoIsolate.openDatabase(
+      databasePath,
+      options: OpenDatabaseOptions(singleInstance: false),
+    );
+    await database.execute('PRAGMA user_version = 8');
+    await database.close();
+
+    final migrated = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: databasePath,
+    );
+    await migrated.open();
+    expect((await migrated.loadActiveServer())!.baseUrl.port, 6000);
+    await migrated.close();
+
+    final verification = await databaseFactoryFfiNoIsolate.openDatabase(
+      databasePath,
+      options: OpenDatabaseOptions(singleInstance: false),
+    );
+    addTearDown(verification.close);
+    final destinations = await verification.query(
+      'network_destinations',
+      columns: ['id', 'base_url'],
+    );
+    final urls = {
+      for (final row in destinations)
+        row['id']! as String: Uri.parse(row['base_url']! as String),
+    };
+    expect(urls['server-old-port']!.port, 5119);
+    expect(urls['server-custom-port']!.port, 6000);
   });
 
   test(
@@ -153,7 +217,7 @@ void main() {
   );
 
   test(
-    'schema 5, 6 and 7 backups restore without replacing the local app mode',
+    'schema 5, 6, 7 and 8 backups restore without replacing the local app mode',
     () async {
       final source = SqliteOrderRepository(
         factory: databaseFactoryFfiNoIsolate,
@@ -168,7 +232,7 @@ void main() {
       }
       await source.close();
 
-      for (final version in [5, 6, 7]) {
+      for (final version in [5, 6, 7, 8]) {
         snapshot['schemaVersion'] = version;
         final destination = SqliteOrderRepository(
           factory: databaseFactoryFfiNoIsolate,

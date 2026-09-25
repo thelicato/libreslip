@@ -134,7 +134,7 @@ void main() {
       PairedServer(
         id: 'server-1',
         displayName: 'Kitchen tablet',
-        baseUrl: Uri.parse('https://192.0.2.10:42837'),
+        baseUrl: Uri.parse('https://192.0.2.10:5119'),
         certificateFingerprint:
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         createdAt: now,

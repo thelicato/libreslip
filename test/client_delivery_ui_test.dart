@@ -56,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('server-address-field')),
-      '192.168.1.25:42837',
+      '192.168.1.25:5119',
     );
     await tester.enterText(
       find.byKey(const ValueKey('server-fingerprint-field')),

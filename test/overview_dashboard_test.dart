@@ -54,19 +54,28 @@ void main() {
       ),
       findsOneWidget,
     );
-    final breakdown = find.byKey(const ValueKey('item-statistics-breakdown'));
+    expect(find.text('Toastie'), findsNothing);
+    final totalsButton = find.byKey(const ValueKey('view-item-totals'));
+    await tester.ensureVisible(totalsButton);
+    await tester.tap(totalsButton);
+    await tester.pumpAndSettle();
+
+    final dialog = find.byKey(const ValueKey('item-totals-dialog'));
+    expect(dialog, findsOneWidget);
     expect(
-      find.descendant(of: breakdown, matching: find.text('Toastie')),
+      find.descendant(of: dialog, matching: find.text('Toastie')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: breakdown, matching: find.text('3')),
+      find.descendant(of: dialog, matching: find.text('3')),
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('overview can reveal a longer item breakdown', (tester) async {
+  testWidgets('overview dialog shows the complete item breakdown', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(520, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -89,13 +98,46 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Item 8'), findsNothing);
-    final toggle = find.byKey(const ValueKey('toggle-item-statistics'));
-    await tester.ensureVisible(toggle);
-    await tester.tap(toggle);
+    final totalsButton = find.byKey(const ValueKey('view-item-totals'));
+    await tester.ensureVisible(totalsButton);
+    await tester.tap(totalsButton);
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('item-totals-list')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Item 8'),
+      160,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Item 8'), findsOneWidget);
-    expect(find.text('Show fewer'), findsOneWidget);
+    expect(find.text('View item totals'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('item totals dialog has an honest empty state', (tester) async {
+    tester.view.physicalSize = const Size(520, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(MemorySettingsRepository());
+    final orders = await createMemoryOrders();
+    addTearDown(settings.dispose);
+    addTearDown(orders.dispose);
+    await settings.load();
+
+    await tester.pumpWidget(LibreSlipApp(settings: settings, orders: orders));
+    await tester.pumpAndSettle();
+    final totalsButton = find.byKey(const ValueKey('view-item-totals'));
+    await tester.ensureVisible(totalsButton);
+    await tester.tap(totalsButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('No items were added to saved tickets in this period.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('item-totals-list')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

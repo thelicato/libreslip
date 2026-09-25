@@ -243,7 +243,7 @@ class _FakeServerHost implements ServerHost {
     required bool Function(String code) claimPairingCode,
     required void Function() onOrderReceived,
   }) async =>
-      const RunningServer(port: 42837, addresses: ['https://192.0.2.10:42837']);
+      const RunningServer(port: 5119, addresses: ['https://192.0.2.10:5119']);
 
   @override
   Future<void> stop() async {}
@@ -263,7 +263,7 @@ class _DelayedServerHost implements ServerHost {
   }) async {
     entered.complete();
     await release.future;
-    return const RunningServer(port: 42837, addresses: []);
+    return const RunningServer(port: 5119, addresses: []);
   }
 
   @override

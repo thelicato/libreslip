@@ -1,6 +1,6 @@
 # Local order protocol
 
-LibreSlip protocol version 1 defines the immutable order envelope used by the local client/server transport. Version 0.13.0 implements the foreground Server receiver, optional pinned Client delivery and per-item delivery exclusion without changing the wire version.
+LibreSlip protocol version 1 defines the immutable order envelope used by the local client/server transport. Version 0.14.0 uses TCP port 5119 for the foreground Server receiver and default Client address without changing the wire version, pinned identity or authentication.
 
 ## Encoding and limits
 
@@ -24,17 +24,17 @@ The checksum is lowercase SHA-256 over the canonical JSON object without the che
 
 `clientInstallationId` identifies one app installation. `deliveryId` identifies one durable delivery attempt group. A server enforces uniqueness on their pair and returns the existing acknowledgement if an accepted envelope is repeated. The client ticket identifier is retained for traceability but is not the server idempotency key.
 
-## Persistence in schema 8
+## Persistence in schema 9
 
-Schema 6 introduced the mode, installation identity, destination, outbox, paired-client and immutable Server-order tables. Schema 7 marks at most one destination active and records the Server acknowledgement identifier. Schema 8 adds an enabled-by-default `send_to_server` flag to reusable catalogue items. Outbox states are `pending`, `sending`, `delivered` and `failed`; opening the database returns an interrupted `sending` row to `pending` because Server idempotency makes resending safe. Server order states remain only `received` and `done`.
+Schema 6 introduced the mode, installation identity, destination, outbox, paired-client and immutable Server-order tables. Schema 7 marks at most one destination active and records the Server acknowledgement identifier. Schema 8 adds an enabled-by-default `send_to_server` flag to reusable catalogue items. Schema 9 changes saved destination URLs ending in the former LibreSlip port 42837 to 5119 and leaves every other explicit port unchanged. Outbox states are `pending`, `sending`, `delivered` and `failed`; opening the database returns an interrupted `sending` row to `pending` because Server idempotency makes resending safe. Server order states remain only `received` and `done`.
 
 Ticket finalisation and any eligible outbox creation share one SQLite transaction. The local ticket snapshot always keeps every selected line. A new envelope omits catalogue items whose flag is off; if no eligible lines remain, no outbox record is created. The outbox keeps its canonical immutable JSON and stable delivery identifier even if the catalogue changes or the local ticket is later deleted.
 
-The Server private key, Server-side token hashes and Client access token use separate Android keystore-backed encrypted storage. Pairing codes exist only in memory for five minutes. Private keys, tokens and all networking tables remain outside configuration archives and full backups until Task 14. Full backups retain the catalogue flag. Existing schema 5, 6 and 7 portable snapshots remain restorable and default a missing flag to enabled.
+The Server private key, Server-side token hashes and Client access token use separate Android keystore-backed encrypted storage. Pairing codes exist only in memory for five minutes. Private keys, tokens and all networking tables remain outside configuration archives and full backups until Task 15. Full backups retain the catalogue flag. Existing schema 5, 6, 7 and 8 portable snapshots remain restorable and default a missing flag to enabled.
 
 ## HTTPS endpoints and authentication
 
-The Server listens on IPv4 TCP port 42837 only while LibreSlip is visible in Server mode. It displays each current local-network address and the uppercase SHA-256 fingerprint of its self-signed certificate. It stops on backgrounding, leaving Server mode or process termination. Version 0.13.0 provides no background service, discovery or remote-network relay.
+The Server listens on IPv4 TCP port 5119 only while LibreSlip is visible in Server mode. It displays each current local-network address and the uppercase SHA-256 fingerprint of its self-signed certificate. It stops on backgrounding, leaving Server mode or process termination. Version 0.14.0 provides no background service, discovery or remote-network relay.
 
 `GET /v1/status` returns the protocol version, Server installation identifier, display name and certificate fingerprint. `POST /v1/pair` accepts a one-time code, client installation identifier, display name and 64-character client identity fingerprint. A successful request consumes the five-minute code and returns a random 256-bit access token. Only the token hash is retained. `POST /v1/orders` requires that token as a Bearer credential plus the matching client installation identifier in `X-LibreSlip-Client-Id`.
 

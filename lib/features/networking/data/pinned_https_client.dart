@@ -42,7 +42,7 @@ class PinnedHttpsClient implements ClientServerTransport {
         !_isLocalIpv4(address.rawAddress)) {
       throw const FormatException('A local IPv4 address is required');
     }
-    final port = parsed.hasPort ? parsed.port : 42837;
+    final port = parsed.hasPort ? parsed.port : NetworkProtocol.defaultPort;
     if (port < 1 || port > 65535) {
       throw const FormatException('Invalid server port');
     }

@@ -81,6 +81,7 @@ void main() {
         ThemeMode.light,
         0,
       ),
+      ('item-totals-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 0),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
       ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 2),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
@@ -147,7 +148,7 @@ void main() {
       if (name == 'client-server-settings-phone-en') {
         await clientDelivery.pair(
           configuration: networking.configuration!,
-          address: '192.168.1.42:42837',
+          address: '192.168.1.42:5119',
           fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           code: '123456',
           clientName: 'Front counter',
@@ -203,6 +204,23 @@ void main() {
           sendToServer: name != 'items-tablet-it',
         );
       }
+      if (name == 'item-totals-phone-en') {
+        for (final (itemName, quantity) in [
+          ('Mushroom toastie', 5),
+          ('Tomato soup', 3),
+          ('Tea', 2),
+          ('Still water', 1),
+        ]) {
+          await orders.saveItem(name: itemName);
+          final item = orders.items.singleWhere(
+            (item) => item.name == itemName,
+          );
+          orders.addCatalogueItem(item);
+          orders.setQuantity(orders.activeDraft!.lines.last.id, quantity);
+        }
+        await orders.flushWrites();
+        await orders.saveActiveTicket(heading: 'Corner & Co.');
+      }
       if (name == 'overview-dashboard-phone-it') {
         await orders.saveItem(name: 'Toast ai funghi', categoryName: 'Cucina');
         orders.addCatalogueItem(orders.items.single);
@@ -239,6 +257,12 @@ void main() {
       await tester.pumpAndSettle();
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'item-totals-phone-en') {
+        final totalsButton = find.byKey(const ValueKey('view-item-totals'));
+        await tester.ensureVisible(totalsButton);
+        await tester.tap(totalsButton);
         await tester.pumpAndSettle();
       }
       if (name == 'server-settings-phone-en') {
@@ -408,10 +432,8 @@ class _FakeServerHost implements ServerHost {
     required NetworkConfiguration configuration,
     required bool Function(String code) claimPairingCode,
     required void Function() onOrderReceived,
-  }) async => const RunningServer(
-    port: 42837,
-    addresses: ['https://192.168.1.42:42837'],
-  );
+  }) async =>
+      const RunningServer(port: 5119, addresses: ['https://192.168.1.42:5119']);
 
   @override
   Future<void> stop() async {}

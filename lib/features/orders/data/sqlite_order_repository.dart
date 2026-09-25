@@ -21,8 +21,8 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 8;
-  static const portableSchemaVersions = {5, 6, 7, databaseVersion};
+  static const databaseVersion = 9;
+  static const portableSchemaVersions = {5, 6, 7, 8, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -351,6 +351,14 @@ class SqliteOrderRepository
       await database.execute(
         'ALTER TABLE items ADD COLUMN send_to_server INTEGER NOT NULL '
         'DEFAULT 1 CHECK (send_to_server IN (0, 1))',
+      );
+    }
+    if (oldVersion < 9 && newVersion >= 9) {
+      await database.rawUpdate(
+        'UPDATE network_destinations '
+        'SET base_url = replace(base_url, ?, ?) '
+        'WHERE base_url LIKE ?',
+        [':42837', ':${NetworkProtocol.defaultPort}', '%:42837'],
       );
     }
   }

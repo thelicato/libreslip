@@ -136,7 +136,16 @@ Implemented in LibreSlip 0.13.0.
 - Show item quantities still outstanding across Received orders and remove them when their orders are Done.
 - Make the Client/Server selector a full-width horizontal control.
 
-### Task 14: discovery, portability and hardening
+### Task 14: Server port and Client item totals
+
+Implemented in LibreSlip 0.14.0.
+
+- Move the foreground local HTTPS listener and default Client address to TCP port 5119.
+- Migrate saved LibreSlip destinations from port 42837 without changing unrelated custom ports or pairing trust.
+- Expose every per-item quantity total from immutable saved-ticket snapshots in a scrollable Overview dialog.
+- Apply the existing inclusive Overview date range to ticket, item and per-item totals.
+
+### Task 15: discovery, portability and hardening
 
 - Evaluate mDNS discovery with manual address fallback.
 - Extend full backups and validation for the non-secret networking data.

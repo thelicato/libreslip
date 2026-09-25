@@ -162,7 +162,7 @@ void main() {
     expect(
       await clientDelivery.pair(
         configuration: networking.configuration!,
-        address: '127.0.0.1:42837',
+        address: '127.0.0.1:5119',
         fingerprint: serverInbox.identity!.certificateFingerprint,
         code: pairingCode,
         clientName: 'Android integration client',

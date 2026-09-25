@@ -17,7 +17,8 @@ LibreSlip is an offline order-ticket printer. The user's revised scope replaces 
 | 11. Server inbox | Authenticated foreground-only local HTTPS receiver, explicit pairing, idempotent storage, received/completed board and Mark Done. | Complete |
 | 12. Client delivery | Transactional optional delivery outbox, independent local printing, delivery status and interruption-safe retry. | Complete |
 | 13. Selective delivery and Server workflow | Per-item local-only delivery control, horizontal mode selection, separate Server Orders and Settings tabs, and live outstanding-item totals. | Complete |
-| 14. Discovery, portability and hardening | Evaluate mDNS, extend networking backups, and validate multi-client, security, recovery and physical two-device operation. | Planned |
+| 14. Server port and Client item totals | Move local HTTPS to port 5119 with paired-destination migration, and expose complete date-filtered item totals in an Overview dialog. | Complete |
+| 15. Discovery, portability and hardening | Evaluate mDNS, extend networking backups, and validate multi-client, security, recovery and physical two-device operation. | Planned |
 
 ## Scope boundaries
 
@@ -25,8 +26,8 @@ Payment handling, checkout, financial reports, customer accounts, loyalty, stock
 
 ## Current handover
 
-LibreSlip 0.13.0 separates the foreground Server into Orders and Settings tabs. The Orders tab retains Received and Completed queues and now shows item quantities outstanding across Received orders only. The Settings tab contains listener status, addresses, certificate fingerprint, Client pairing and the horizontal Client/Server mode selector.
+LibreSlip 0.14.0 uses TCP port 5119 for the foreground local HTTPS Server and for Client addresses without an explicit port. SQLite schema 9 transactionally rewrites saved LibreSlip destinations ending in port 42837 while preserving any other custom port. The TLS certificate pin, access token and protocol version remain unchanged, so migrated paired Clients retain their trust relationship.
 
-Each reusable Client item now stores whether it participates in optional Server delivery. New items default to included. Ticket finalisation always preserves the complete immutable local snapshot, but its transactional outbox envelope contains only eligible catalogue items. An all-local ticket creates no outbox row. Later catalogue edits do not rewrite saved tickets or existing delivery envelopes. Full backups preserve the item flag, while legacy schema 5 to 7 snapshots restore it as enabled. Networking data remains excluded from archives until Task 14.
+The Client Overview's existing inclusive date filters now feed a complete item-total dialog. Totals come only from immutable saved-ticket snapshots, remain grouped by catalogue identity and saved name, and show no monetary data. With no date limits selected, the result covers all saved ticket history.
 
-Physical two-device validation, discovery evaluation and networking-data portability hardening remain Task 14 work. See the [client and server plan](client-server-plan.md), [protocol specification](network-protocol.md), [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).
+Physical two-device validation, discovery evaluation and networking-data portability hardening remain Task 15 work. See the [client and server plan](client-server-plan.md), [protocol specification](network-protocol.md), [development instructions](development.md), [hardware requirements](hardware.md) and [milestone validation](validation.md).

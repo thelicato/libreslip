@@ -916,10 +916,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile completare il ripristino in sicurezza. Riavvia LibreSlip e controlla i dati esistenti prima di riprovare.';
 
   @override
-  String get itemBreakdownTitle => 'Articoli nel periodo';
+  String get itemBreakdownTitle => 'Totali articoli';
 
   @override
-  String get itemBreakdownBody => 'Quantità ricavate dalle comande salvate.';
+  String get viewItemTotals => 'Vedi totali articoli';
+
+  @override
+  String get itemBreakdownBody =>
+      'Quantità totali ricavate dalle comande salvate per le date selezionate.';
 
   @override
   String get noItemsInPeriod =>
@@ -1093,7 +1097,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get serverAddressInput => 'Indirizzo Server';
 
   @override
-  String get serverAddressHint => '192.168.1.25:42837';
+  String get serverAddressHint => '192.168.1.25:5119';
 
   @override
   String get serverFingerprintInput => 'Impronta del certificato';

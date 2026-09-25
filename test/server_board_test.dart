@@ -199,7 +199,7 @@ class _FakeServerHost implements ServerHost {
     required bool Function(String code) claimPairingCode,
     required void Function() onOrderReceived,
   }) async =>
-      const RunningServer(port: 42837, addresses: ['https://192.0.2.10:42837']);
+      const RunningServer(port: 5119, addresses: ['https://192.0.2.10:5119']);
 
   @override
   Future<void> stop() async {}

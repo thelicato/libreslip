@@ -905,10 +905,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Restore could not be completed safely. Restart LibreSlip and check the existing data before trying again.';
 
   @override
-  String get itemBreakdownTitle => 'Items in this period';
+  String get itemBreakdownTitle => 'Item totals';
 
   @override
-  String get itemBreakdownBody => 'Quantities from saved ticket snapshots.';
+  String get viewItemTotals => 'View item totals';
+
+  @override
+  String get itemBreakdownBody =>
+      'Total quantities from saved ticket snapshots for the selected dates.';
 
   @override
   String get noItemsInPeriod =>
@@ -1081,7 +1085,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverAddressInput => 'Server address';
 
   @override
-  String get serverAddressHint => '192.168.1.25:42837';
+  String get serverAddressHint => '192.168.1.25:5119';
 
   @override
   String get serverFingerprintInput => 'Certificate fingerprint';

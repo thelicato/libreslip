@@ -603,27 +603,16 @@ class _StatisticMetric extends StatelessWidget {
   }
 }
 
-class _ItemBreakdown extends StatefulWidget {
+class _ItemBreakdown extends StatelessWidget {
   const _ItemBreakdown({required this.items, required this.numberFormat});
 
   final List<TicketItemStatistic> items;
   final NumberFormat numberFormat;
 
   @override
-  State<_ItemBreakdown> createState() => _ItemBreakdownState();
-}
-
-class _ItemBreakdownState extends State<_ItemBreakdown> {
-  static const _collapsedCount = 8;
-  var _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final items = _expanded
-        ? widget.items
-        : widget.items.take(_collapsedCount).toList(growable: false);
     return Column(
       key: const ValueKey('item-statistics-breakdown'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,92 +626,124 @@ class _ItemBreakdownState extends State<_ItemBreakdown> {
           ),
         ),
         const SizedBox(height: 14),
-        if (items.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(18),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            key: const ValueKey('view-item-totals'),
+            onPressed: () => _showItemTotals(context),
+            icon: const Icon(Icons.format_list_numbered_rounded),
+            label: Text(l.viewItemTotals),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showItemTotals(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: const ValueKey('item-totals-dialog'),
+        title: Text(l.itemBreakdownTitle),
+        content: SizedBox(
+          width: 520,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(l.itemBreakdownBody),
+                const SizedBox(height: 16),
+                if (items.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Theme.of(dialogContext)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Text(l.noItemsInPeriod),
+                  )
+                else
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: ListView.separated(
+                      key: const ValueKey('item-totals-list'),
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) => _ItemTotalRow(
+                        item: items[index],
+                        numberFormat: numberFormat,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            child: Text(
-              l.noItemsInPeriod,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+        actions: [
+          TextButton(
+            key: const ValueKey('close-item-totals'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l.close),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemTotalRow extends StatelessWidget {
+  const _ItemTotalRow({required this.item, required this.numberFormat});
+
+  final TicketItemStatistic item;
+  final NumberFormat numberFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Semantics(
+      label: l.itemQuantitySummary(item.name, item.quantity),
+      child: ExcludeSemantics(
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(item.name, style: theme.textTheme.bodyLarge),
               ),
-            ),
-          )
-        else
-          for (final (index, item) in items.indexed) ...[
-            Semantics(
-              label: l.itemQuantitySummary(item.name, item.quantity),
-              child: ExcludeSemantics(
-                child: Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(minHeight: 64),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 48,
-                          minHeight: 48,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          widget.numberFormat.format(item.quantity),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                    ],
+              const SizedBox(width: 12),
+              Container(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  numberFormat.format(item.quantity),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
                   ),
                 ),
               ),
-            ),
-            if (index != items.length - 1) const SizedBox(height: 8),
-          ],
-        if (widget.items.length > _collapsedCount) ...[
-          const SizedBox(height: 6),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: TextButton.icon(
-              key: const ValueKey('toggle-item-statistics'),
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(
-                _expanded
-                    ? Icons.expand_less_rounded
-                    : Icons.expand_more_rounded,
-              ),
-              label: Text(
-                _expanded
-                    ? l.showFewerItemStatistics
-                    : l.showAllItemStatistics(widget.items.length),
-              ),
-            ),
+            ],
           ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 }

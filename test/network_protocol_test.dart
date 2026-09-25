@@ -1,9 +1,22 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libreslip/features/networking/data/pinned_https_client.dart';
 import 'package:libreslip/features/networking/domain/network_protocol.dart';
 
 void main() {
+  test('a Server address without a port uses 5119', () {
+    expect(NetworkProtocol.defaultPort, 5119);
+    expect(
+      PinnedHttpsClient.normaliseServerAddress('192.168.1.25').port,
+      NetworkProtocol.defaultPort,
+    );
+    expect(
+      PinnedHttpsClient.normaliseServerAddress('192.168.1.25:6000').port,
+      6000,
+    );
+  });
+
   OrderDeliveryEnvelope envelope() => OrderDeliveryEnvelope.create(
     clientInstallationId: 'client-7c9a',
     deliveryId: 'delivery-42',

@@ -10,7 +10,11 @@ import '../domain/server_transport.dart';
 import 'server_identity_service.dart';
 
 class LocalHttpsServer implements ServerHost {
-  LocalHttpsServer(this._store, this._secrets, {this.port = 42837});
+  LocalHttpsServer(
+    this._store,
+    this._secrets, {
+    this.port = NetworkProtocol.defaultPort,
+  });
 
   static const _pairPath = '/v1/pair';
   static const _ordersPath = '/v1/orders';

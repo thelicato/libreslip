@@ -7,6 +7,7 @@ class NetworkProtocol {
 
   static const name = 'libreslip-order';
   static const version = 1;
+  static const defaultPort = 5119;
   static const maxEnvelopeBytes = 64 * 1024;
   static const maxLines = 200;
   static const maxIdentifierLength = 128;

@@ -1711,13 +1711,19 @@ abstract class AppLocalizations {
   /// No description provided for @itemBreakdownTitle.
   ///
   /// In en, this message translates to:
-  /// **'Items in this period'**
+  /// **'Item totals'**
   String get itemBreakdownTitle;
+
+  /// No description provided for @viewItemTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'View item totals'**
+  String get viewItemTotals;
 
   /// No description provided for @itemBreakdownBody.
   ///
   /// In en, this message translates to:
-  /// **'Quantities from saved ticket snapshots.'**
+  /// **'Total quantities from saved ticket snapshots for the selected dates.'**
   String get itemBreakdownBody;
 
   /// No description provided for @noItemsInPeriod.
@@ -2023,7 +2029,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverAddressHint.
   ///
   /// In en, this message translates to:
-  /// **'192.168.1.25:42837'**
+  /// **'192.168.1.25:5119'**
   String get serverAddressHint;
 
   /// No description provided for @serverFingerprintInput.
