@@ -21,8 +21,6 @@ LibreSlip keeps order preparation simple. Choose reusable items, adjust quantiti
 
 There is no account, subscription or required cloud service. The catalogue, current order, ticket history, settings and backups stay under your control. Client mode works offline, while optional Server mode can send immutable order copies to another LibreSlip device on the same local network.
 
-![LibreSlip ticket preview in Italian](docs/previews/ticket-preview-phone-it.png)
-
 ## Highlights
 
 - Create a reusable catalogue with categories, search and optional item images.
