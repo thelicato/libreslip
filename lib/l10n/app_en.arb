@@ -291,7 +291,7 @@
       }
     }
   },
-  "hardwareTested": "NETUM NT-1809DD connection test printed successfully on the user’s physical printer.",
+  "hardwareTested": "Physical NETUM NT-1809DD connection and test printing are confirmed.",
   "printStorageError": "The print attempt could not be saved safely, so LibreSlip did not continue automatically.",
   "deleteTicket": "Delete ticket",
   "deleteTicketQuestion": "Delete ticket {number}?",
@@ -474,5 +474,13 @@
   "serverSettingsSubtitle": "Manage this local receiver, pairing and app mode.",
   "outstandingItems": "Still to prepare",
   "outstandingItemsBody": "Item totals across all orders currently in Received.",
-  "noOutstandingItems": "Nothing is waiting to be prepared."
+  "noOutstandingItems": "Nothing is waiting to be prepared.",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }

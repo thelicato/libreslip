@@ -1,102 +1,55 @@
 # LibreSlip
 
-A private, local order-ticket app for Android 14 and later, built with Flutter. No login or cloud service. Client operation has no server or runtime internet requirement. Application identifier: `io.thelicato.libreslip`.
+LibreSlip is a private order-ticket app for Android 14 and later. Build an order from reusable items, print it on a 58 mm Bluetooth printer and keep an immutable local history. LibreSlip has no login, subscription, payment processing or mandatory cloud service.
 
 ![LibreSlip Italian ticket preview on a phone](docs/previews/ticket-preview-phone-it.png)
 
-## Current milestone
+## What LibreSlip does
 
-LibreSlip 0.14.0 moves the foreground local HTTPS Server to TCP port 5119. Client address entry uses 5119 when no port is supplied, Server screens and examples display the new endpoint, and SQLite schema 9 moves existing LibreSlip destinations from port 42837 without changing unrelated custom ports. Certificate pinning, authentication and protocol version 1 are unchanged.
+- Organises reusable items with categories, optional images and search.
+- Builds tickets with quantities, preparation notes, order notes and an optional table or order reference.
+- Keeps the current composition safe across restarts.
+- Prints through Bluetooth Classic SPP to the NETUM NT-1809DD and shares ticket PDFs through Android.
+- Saves ticket snapshots and print attempts without rewriting history when catalogue items change.
+- Shows date-filtered ticket, quantity and per-item totals without prices or financial data.
+- Exports configuration ZIPs and complete local backups with validated, recoverable restore.
+- Works in British English and Italian with light, dark and system appearance settings.
 
-The Client Overview now exposes complete item totals in a dedicated dialog. It sums immutable saved-ticket snapshots for the active inclusive date range and presents every item as a name and quantity. With no date limits, the dialog covers all ticket history. Prices, sales and financial totals remain outside LibreSlip.
+## Client mode
 
-Local printing remains first and independent. An unavailable Server cannot roll back or duplicate the local ticket or print attempt. Client mode remains fully usable without pairing or runtime internet access. The Android internet permission is used only for optional local-network communication.
+Client mode is the normal offline workspace. Add items, compose tickets, connect a paired printer, print, review history and manage backups entirely on the phone. A connected printer is required before creating a new print attempt or explicitly reprinting a ticket.
 
-The user reported successful physical printing with the NETUM NT-1809DD during task 4. Successful byte transmission still cannot prove that paper was produced, so the interface asks the operator to check it. LibreSlip records no sale or financial transaction.
+An optional LibreSlip Server can receive immutable order copies over the local Wi-Fi network. Local composition, printing and history continue when no Server is paired or reachable. Items marked Local only stay on the complete local ticket and are omitted from Server delivery.
 
-## Downloads
+## Server mode
 
-The latest review artefacts are generated in `dist/`:
+Server mode turns another Android device into a focused incoming-order board. The Orders tab shows Received and Completed orders, order details and the quantities still waiting to be prepared. Mark Done is the only order action. The Settings tab shows listener status, local addresses, certificate fingerprint, pairing controls, app mode and the installed LibreSlip version.
 
-- `LibreSlip-task-14-port-item-totals.zip`: complete port migration and Overview item-total source.
-- `LibreSlip-task-14-port-item-totals-preview.apk`: installable Android 14+ preview, signed with a temporary development validation key.
-- `LibreSlip-task-14-port-item-totals-SHA256SUMS.txt`: integrity checksums for both files.
+The Server listens on HTTPS port 5119 only while LibreSlip is open in Server mode. Pairing is explicit and uses the displayed local address, certificate fingerprint and five-minute code. Server mode does not edit the catalogue, compose or print tickets, or process financial information.
 
-The source-delivery ZIP is separate from ZIP files exported inside LibreSlip. The preview supports local item, ticket, PDF, Bluetooth Classic printing and validated portability workflows. Its temporary validation certificate is not the future production certificate, so it must not be used as an upgrade baseline for public releases.
+## Printer and status
 
-## Develop
+LibreSlip supports the NETUM NT-1809DD over Android Bluetooth Classic SPP. Pair the printer in Android first, then select and connect it from LibreSlip Settings. The Overview reports LibreSlip's active connection state. The printer protocol does not expose a reliable battery percentage, so check the physical battery indicator when no percentage is shown.
 
-Use Flutter 3.47.2 and Dart 3.13.2 with the Android toolchain. See [development instructions](docs/development.md) for architecture, tests and packaging.
+A Transmitted result means Android finished writing the bytes. Always check the paper because the printer does not confirm physical output. LibreSlip never automatically repeats an uncertain print.
 
-```sh
-flutter pub get
-flutter run
-```
+## Privacy and local data
 
-## Build
+Settings, items, the current composition, ticket history, print jobs and images stay in app-private storage. Automatic Android cloud backup and device transfer are disabled. LibreSlip contains no analytics, background upload or remote font dependency. Optional Client and Server traffic remains on the configured local network and uses pinned HTTPS authentication.
 
-Build locally with an installed Flutter SDK:
+Exported backups can contain private ticket content. Store them securely. Pairing tokens, private keys and Bluetooth credentials are excluded from exports and backups.
 
-```sh
-python3 build.py local debug
-python3 build.py local prod
-```
+## Install and update
 
-Or build through a compatible Flutter Docker image selected from the SDK constraints in `pubspec.lock`:
+Install the APK from a trusted LibreSlip release. Android 14 or later is required. Android only accepts an update signed by the same certificate as the installed copy, so development-signed previews are not a production upgrade baseline.
 
-```sh
-python3 build.py docker debug
-python3 build.py docker prod
-```
+The installed version appears at the bottom of Settings in both Client and Server modes. Release versions come from the repository `VERSION` file and are changed manually by the release owner.
 
-Generated Android APKs are written to `build/app/outputs/flutter-apk/`. `VERSION` is the only release version file. Update it using the `X.Y.Z` format before a release; both build modes pass it to Flutter as the Android version name.
+## Documentation
 
-## Release signing
-
-Android only accepts an update when it is signed by the same certificate as the installed application. Create one long-lived keystore before publishing, keep at least one secure offline backup, and reuse it for every LibreSlip release.
-
-Create the keystore and local signing properties interactively from the project root. The helper uses `keytool`, asks for a public certificate name and a hidden password, and refuses to overwrite existing signing files:
-
-```sh
-./scripts/generate_release_keystore.sh
-```
-
-The script creates `android/app/libreslip-release.jks` and `android/key.properties`. Both are ignored by Git. A local or Docker production build requires this signing configuration and never falls back to the debug key.
-
-For GitHub releases, add these repository secrets under Settings, Secrets and variables, Actions:
-
-- `LIBRESLIP_KEYSTORE_BASE64` - The single-line Base64 representation of `android/app/libreslip-release.jks`, produced on Linux with `base64 -w 0 android/app/libreslip-release.jks`.
-- `LIBRESLIP_STORE_PASSWORD` - The keystore password.
-- `LIBRESLIP_KEY_ALIAS` - `libreslip`, unless a different alias was used.
-- `LIBRESLIP_KEY_PASSWORD` - The private-key password.
-
-The release workflow decodes the keystore into the temporary runner directory, validates its alias and password, signs the APK, and relies on runner disposal to remove temporary signing material.
-
-## GitHub releases
-
-Update `VERSION`, commit it, then push the matching numeric `vX.Y.Z` tag. `.github/workflows/release.yml` rejects mismatched tags, installs Flutter 3.47.2, analyses and tests LibreSlip, builds `LibreSlip-vX.Y.Z.apk`, creates or updates the GitHub release with `changelogithub`, and uploads the signed APK. GitHub's run number supplies the increasing Android build number.
-
-```sh
-# After updating and committing VERSION.
-git tag v0.14.0
-git push origin v0.14.0
-```
-
-Release notes are generated from Conventional Commits since the previous tag. The workflow stops before building or publishing if a signing secret is missing or invalid.
-
-## Project documents
-
-- [Requirements and agent instructions](AGENTS.md)
-- [Delivery plan](docs/roadmap.md)
-- [Hardware requirements](docs/hardware.md)
-- [Development instructions](docs/development.md)
+- [Hardware compatibility](docs/hardware.md)
+- [Client and Server modes](docs/client-server-plan.md)
 - [Archive format](docs/archive-format.md)
-- [Client and server mode plan](docs/client-server-plan.md)
 - [Local order protocol](docs/network-protocol.md)
-- [Validation results](docs/validation.md)
-- [Italian ticket preview](docs/previews/ticket-preview-phone-it.png)
-- [Compose preview](docs/previews/compose-phone-en.png)
-- [Italian item shelf](docs/previews/items-tablet-it.png)
-- [Ticket history preview](docs/previews/tickets-tablet-en.png)
-
-Task 14 is the latest completed milestone. Further changes should remain coherent, reviewable milestones and include a conventional commit name.
+- [Validation evidence](docs/validation.md)
+- [Development and release instructions](docs/development.md)

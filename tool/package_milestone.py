@@ -1,4 +1,4 @@
-"""Package the current source milestone and optional preview APK."""
+"""Package the current LibreSlip source and optional preview APK."""
 from __future__ import annotations
 
 import argparse
@@ -76,7 +76,7 @@ def main():
             raise RuntimeError('Flutter and Gradle APK outputs do not match')
     destination = ROOT / 'dist'
     destination.mkdir(exist_ok=True)
-    source = destination / 'LibreSlip-task-14-port-item-totals.zip'
+    source = destination / f'LibreSlip-v{version}-source.zip'
     included = list(source_files())
     with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in included:
@@ -91,7 +91,7 @@ def main():
     outputs = [source]
     if args.include_apk:
         built = ROOT / 'build/app/outputs/flutter-apk/app-release.apk'
-        apk = destination / 'LibreSlip-task-14-port-item-totals-preview.apk'
+        apk = destination / f'LibreSlip-v{version}-preview.apk'
         shutil.copy2(built, apk)
         outputs.append(apk)
     checksums = []
@@ -99,7 +99,7 @@ def main():
         digest = hashlib.sha256(output.read_bytes()).hexdigest()
         checksums.append(f'{digest}  {output.name}\n')
         print(f'{output.relative_to(ROOT)} ({output.stat().st_size:,} bytes)')
-    (destination / 'LibreSlip-task-14-port-item-totals-SHA256SUMS.txt').write_text(''.join(checksums))
+    (destination / f'LibreSlip-v{version}-SHA256SUMS.txt').write_text(''.join(checksums))
     print(f'Verified {len(included)} source files; SHA-256 checksums written.')
 
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -95,6 +96,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-4')));
     await tester.pumpAndSettle();
+    final version = File('VERSION').readAsStringSync().trim();
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('app-version')),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Version $version'), findsOneWidget);
     await tester.ensureVisible(find.byKey(const ValueKey('app-mode-selector')));
     await tester.tap(find.text('Server').last);
     await tester.pumpAndSettle();
@@ -115,6 +123,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('server-settings-page')), findsOneWidget);
     expect(find.text('Ready to receive'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('app-version')),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Version $version'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Client'),

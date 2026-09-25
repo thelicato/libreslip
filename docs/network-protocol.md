@@ -1,6 +1,6 @@
 # Local order protocol
 
-LibreSlip protocol version 1 defines the immutable order envelope used by the local client/server transport. Version 0.14.0 uses TCP port 5119 for the foreground Server receiver and default Client address without changing the wire version, pinned identity or authentication.
+LibreSlip protocol version 1 carries immutable order envelopes over pinned HTTPS on the local network. The foreground Server listens on TCP port 5119.
 
 ## Encoding and limits
 
@@ -18,30 +18,32 @@ The source creation time is an ISO 8601 UTC value ending in `Z`. Text containing
 
 ## Order envelope
 
-The top-level fields are `protocol`, `version`, `clientInstallationId`, `deliveryId`, `ticket` and `checksum`. `protocol` is `libreslip-order` and `version` is `1`. The ticket object contains `id`, `number`, `createdAt`, `heading`, `reference`, `orderNote` and `lines`. Each line contains `name`, `quantity` and `preparationNote`.
+Top-level fields are `protocol`, `version`, `clientInstallationId`, `deliveryId`, `ticket` and `checksum`. `protocol` is `libreslip-order` and `version` is `1`. The ticket object contains `id`, `number`, `createdAt`, `heading`, `reference`, `orderNote` and `lines`. Each line contains `name`, `quantity` and `preparationNote`.
 
-The checksum is lowercase SHA-256 over the canonical JSON object without the checksum field. Canonical field insertion order is fixed by the codec and line order is significant. The server must reconstruct this canonical object and reject a mismatch before accepting the order.
+The checksum is lowercase SHA-256 over the canonical JSON object without the checksum field. Canonical field insertion order is fixed by the codec and line order is significant. The Server reconstructs this object and rejects a mismatch before accepting the order.
 
-`clientInstallationId` identifies one app installation. `deliveryId` identifies one durable delivery attempt group. A server enforces uniqueness on their pair and returns the existing acknowledgement if an accepted envelope is repeated. The client ticket identifier is retained for traceability but is not the server idempotency key.
+`clientInstallationId` identifies one app installation. `deliveryId` identifies one durable delivery group. The Server enforces uniqueness on their pair and returns the existing acknowledgement if an accepted envelope is repeated. The Client ticket identifier remains available for traceability but is not the Server idempotency key.
 
-## Persistence in schema 9
+## Persistence
 
-Schema 6 introduced the mode, installation identity, destination, outbox, paired-client and immutable Server-order tables. Schema 7 marks at most one destination active and records the Server acknowledgement identifier. Schema 8 adds an enabled-by-default `send_to_server` flag to reusable catalogue items. Schema 9 changes saved destination URLs ending in the former LibreSlip port 42837 to 5119 and leaves every other explicit port unchanged. Outbox states are `pending`, `sending`, `delivered` and `failed`; opening the database returns an interrupted `sending` row to `pending` because Server idempotency makes resending safe. Server order states remain only `received` and `done`.
+Database schema 6 introduced mode, installation identity, destinations, outbox, paired Client and immutable Server-order tables. Schema 7 marks at most one destination active and records the Server acknowledgement identifier. Schema 8 adds the enabled-by-default `send_to_server` item flag. Schema 9 changes saved destination URLs ending in the former LibreSlip port 42837 to 5119 and leaves every other explicit port unchanged.
 
-Ticket finalisation and any eligible outbox creation share one SQLite transaction. The local ticket snapshot always keeps every selected line. A new envelope omits catalogue items whose flag is off; if no eligible lines remain, no outbox record is created. The outbox keeps its canonical immutable JSON and stable delivery identifier even if the catalogue changes or the local ticket is later deleted.
+Outbox states are `pending`, `sending`, `delivered` and `failed`. Opening the database returns an interrupted `sending` row to `pending` because Server idempotency makes the same envelope safe to resend. Server order states are only `received` and `done`.
 
-The Server private key, Server-side token hashes and Client access token use separate Android keystore-backed encrypted storage. Pairing codes exist only in memory for five minutes. Private keys, tokens and all networking tables remain outside configuration archives and full backups until Task 15. Full backups retain the catalogue flag. Existing schema 5, 6, 7 and 8 portable snapshots remain restorable and default a missing flag to enabled.
+Ticket finalisation and eligible outbox creation share one SQLite transaction. The local ticket snapshot always keeps every selected line. A new envelope omits items whose Server flag is off; if no eligible lines remain, no outbox row is created. The outbox keeps its canonical immutable JSON and stable delivery identifier even if the catalogue changes or the local ticket is deleted.
+
+The Server private key, Server-side token hashes and Client access token use separate Android keystore-backed encrypted storage. Pairing codes exist only in memory for five minutes. Private keys, tokens and networking tables are outside configuration archives and full backups. Full backups retain the per-item Server-delivery flag and accept portable database schemas 5 through 9.
 
 ## HTTPS endpoints and authentication
 
-The Server listens on IPv4 TCP port 5119 only while LibreSlip is visible in Server mode. It displays each current local-network address and the uppercase SHA-256 fingerprint of its self-signed certificate. It stops on backgrounding, leaving Server mode or process termination. Version 0.14.0 provides no background service, discovery or remote-network relay.
+The Server listens on IPv4 TCP port 5119 only while LibreSlip is visible in Server mode. It displays each current local-network address and the uppercase SHA-256 fingerprint of its self-signed certificate. It stops when backgrounded, when Client mode is selected or when the process terminates.
 
-`GET /v1/status` returns the protocol version, Server installation identifier, display name and certificate fingerprint. `POST /v1/pair` accepts a one-time code, client installation identifier, display name and 64-character client identity fingerprint. A successful request consumes the five-minute code and returns a random 256-bit access token. Only the token hash is retained. `POST /v1/orders` requires that token as a Bearer credential plus the matching client installation identifier in `X-LibreSlip-Client-Id`.
+`GET /v1/status` returns the protocol version, Server installation identifier, display name and certificate fingerprint. `POST /v1/pair` accepts a one-time code, Client installation identifier, display name and 64-character Client identity fingerprint. A successful request consumes the code and returns a random 256-bit access token. Only the token hash is retained. `POST /v1/orders` requires that token as a Bearer credential plus the matching Client installation identifier in `X-LibreSlip-Client-Id`.
 
-Requests must use JSON. Pairing bodies are limited to 4,096 bytes and order bodies to 65,536 bytes. Unsupported paths, invalid content, unauthorised credentials, mismatched identities, oversized bodies and conflicting idempotency keys are rejected without storing an order. Successful first receipt returns HTTP 201; an identical repeat returns HTTP 200 with the original Server order identifier and `duplicate: true`.
+Requests must use JSON. Pairing bodies are limited to 4,096 bytes and order bodies to 65,536 bytes. Unsupported paths, invalid content, unauthorised credentials, mismatched identities, oversized bodies and conflicting idempotency keys are rejected without storing an order. A first receipt returns HTTP 201; an identical repeat returns HTTP 200 with the original Server order identifier and `duplicate: true`.
 
-## Client certificate pinning and retry
+## Certificate pinning and retry
 
-Manual Client pairing accepts only an IPv4 loopback, link-local or RFC 1918 address and HTTPS port. The operator copies the fingerprint displayed by the Server. LibreSlip creates an HTTP client with no trusted roots, accepts the self-signed peer only when SHA-256 over its DER certificate exactly matches that fingerprint, and also requires the `/v1/status` identity to report the same fingerprint before sending the one-time code. Redirects are disabled. A general certificate bypass is never used.
+Client pairing accepts only an IPv4 loopback, link-local or RFC 1918 address and HTTPS port. LibreSlip creates an HTTP client with no trusted roots, accepts the self-signed peer only when SHA-256 over its DER certificate exactly matches the entered fingerprint, and requires `/v1/status` to report the same fingerprint before sending the one-time code. Redirects are disabled. There is no general certificate bypass.
 
-After pairing, the Client sends the access token only to that pinned Server identity. A new delivery receives one foreground attempt after local printing. Pending records recovered at startup also receive one bounded attempt. Network, authentication, certificate, protocol and Server failures become Needs attention and require an explicit retry. The retry retains the client installation identifier, delivery identifier, immutable JSON and checksum. It never creates another local ticket or print attempt.
+After pairing, the Client sends the access token only to that pinned Server identity. A new delivery receives one foreground attempt after local printing. Pending records recovered at startup also receive one bounded attempt. Network, authentication, certificate, protocol and Server failures become Needs attention and require explicit retry. Retry retains the Client installation identifier, delivery identifier, immutable JSON and checksum.

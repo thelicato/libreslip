@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/widgets/app_version_footer.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/network_mode_controller.dart';
@@ -236,6 +237,8 @@ class _ServerModeShellState extends State<ServerModeShell>
                     _PairingCard(controller: controller),
                     const SizedBox(height: 24),
                     ModeSettingsCard(controller: widget.modeController),
+                    const SizedBox(height: 28),
+                    const AppVersionFooter(),
                   ],
                 ),
               ),

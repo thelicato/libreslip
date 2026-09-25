@@ -1513,7 +1513,7 @@ abstract class AppLocalizations {
   /// No description provided for @hardwareTested.
   ///
   /// In en, this message translates to:
-  /// **'NETUM NT-1809DD connection test printed successfully on the user’s physical printer.'**
+  /// **'Physical NETUM NT-1809DD connection and test printing are confirmed.'**
   String get hardwareTested;
 
   /// No description provided for @printStorageError.
@@ -2289,6 +2289,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing is waiting to be prepared.'**
   String get noOutstandingItems;
+
+  /// No description provided for @appVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String appVersion(String version);
 }
 
 class _AppLocalizationsDelegate

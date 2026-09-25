@@ -1,164 +1,40 @@
-# Client and server mode plan
+# Client and Server modes
 
-## Product shape
+LibreSlip is one Android application with two selectable modes.
 
-LibreSlip will remain one Android application with two selectable modes:
-
-| Mode | Responsibility |
+| Mode | Purpose |
 | --- | --- |
-| Client | The current catalogue, composition, local history and printing workflow. A configured server is an optional additional destination. The client remains fully usable when the server is absent or unreachable. |
-| Server | A focused incoming-order board. It receives immutable order snapshots, shows received and completed orders, and lets the operator mark a received order as Done. It does not compose, edit, print or financially process orders. |
+| Client | Manages the local catalogue, composition, printing, history, statistics and backups. A paired Server is an optional extra destination. |
+| Server | Receives immutable order snapshots, shows Received and Completed queues and marks a received order Done. |
 
-The first implementation target is communication between Android devices on the same local network. No hosted LibreSlip cloud, account, subscription or mandatory internet connection is planned. Remote operation should be treated as a later product decision because it changes deployment, security and support requirements.
+Switching modes requires confirmation and does not delete Client data or the Server inbox. Client mode remains fully usable without pairing, a reachable Server or internet access.
 
-## Non-negotiable behaviour
+## Client operation
 
-- Existing client operation, local storage and printing continue without a configured server.
-- Printing remains local and requires a connected printer. Server availability never enables or blocks local printing.
-- When a server is configured, finalising the existing Print ticket workflow saves one immutable ticket snapshot and creates one durable server-delivery record in the same local transaction. Delivery runs independently and cannot delay, roll back or duplicate local printing.
-- An unavailable server leaves the delivery pending. The client may retry the same delivery identifier safely while the app is active or after an explicit Retry action.
-- The server stores each delivery once, even if the acknowledgement is lost and the client sends it again.
-- Server orders contain the saved heading, reference, notes, item names, quantities and creation time. They never contain prices, taxes, payments or financial totals.
-- Each reusable item can be excluded from optional Server orders. The complete local ticket remains unchanged, a mixed ticket sends only included items, and an all-excluded ticket creates no delivery.
-- Marking an order Done changes only the server copy. It does not edit or delete the client ticket.
-- Deleting a client ticket after confirmed delivery does not remotely delete the server order.
-- Switching modes does not silently delete either client data or the server inbox.
+Print ticket first requires a connected local printer. Ticket finalisation stores one immutable local snapshot and one durable print attempt. If a Server is paired, the same SQLite transaction also creates one stable delivery envelope containing only items enabled for Server orders. An order containing only Local only items creates no delivery.
 
-## Proposed architecture
+Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Pending, Sending, Delivered and Needs attention. Explicit retry reuses the same delivery identifier and cannot create another local ticket or print attempt.
 
-The networking feature should have its own domain, application, persistence and transport boundaries:
+Deleting a local ticket does not remotely delete an order already accepted by the Server. Marking a Server order Done does not edit or delete the Client snapshot.
 
-- features/networking/domain: mode, paired-server identity, protocol envelope and delivery states.
-- features/networking/application: client outbox coordinator, retry policy, server inbox controller and mode switching.
-- features/networking/data: SQLite repositories, secure secret storage, local-network discovery and the authenticated transport.
-- features/networking/presentation: mode settings, server pairing, delivery status and the server order board.
+## Pairing
 
-Client delivery states should be pending, sending, delivered and failed. An interrupted sending record returns to pending because the server-side idempotency key makes resending safe. This differs from printer transmission, where an interrupted write remains uncertain and must never be retried automatically.
+Both Android devices must be on a local network that permits device-to-device traffic. Server mode displays its IPv4 HTTPS addresses and SHA-256 certificate fingerprint. Allow client pairing opens a five-minute code. Client mode pairs through that address, exact fingerprint, code and a local device name.
 
-Server order states should be only received and done. The server must not edit item content or expose checkout, stock, reporting or other business-management functions.
+The Client pins the self-signed Server certificate and disables redirects. A random access token authenticates later order delivery. The Client token, Server private key and Server token hashes use Android keystore-backed encrypted storage. Pairing secrets never enter logs, configuration ZIPs or full backups.
 
-## Protocol and identity
+Manual IPv4 address entry is the supported connection method. The Server listens on TCP port 5119 only while LibreSlip is visible in Server mode. There is no background service, automatic discovery, hosted relay or remote-network mode.
 
-Use a small versioned protocol over HTTPS on the local network. The initial order envelope should include:
+## Server operation
 
-- protocol version;
-- stable client installation identifier;
-- stable delivery identifier;
-- client ticket identifier and visible ticket number;
-- source creation time in UTC;
-- ticket heading, reference and order note;
-- item snapshot names, quantities and preparation notes;
-- payload checksum.
+The Orders tab contains Received and Completed filters, immutable order details and the Mark Done action. Its summary lists quantities still outstanding across Received orders. The Settings tab contains listener state, local addresses, certificate fingerprint, pairing controls, mode selection and the installed version.
 
-The server should enforce a unique constraint on the client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement without inserting another order.
+Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
 
-Pairing should be explicit. The server creates an app-private identity and displays its address, certificate fingerprint and a short one-time pairing code. The client pins that identity after the operator confirms the code. Pairing secrets, private keys and trust tokens must use Android-backed secure storage and must never enter logs, configuration ZIPs or full backups. Restored devices pair again.
+## Reliability and persistence
 
-Manual address entry is the required fallback. Local discovery can be added after the protocol works reliably; mDNS would add multicast permission and lifecycle complexity. Local networking uses Android's internet permission even though traffic remains on the LAN, and the interface and privacy documentation explain that distinction.
+Ticket finalisation and eligible outbox creation are transactional. The Server stores receipt and acknowledgement atomically and enforces uniqueness on the Client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement rather than inserting another order.
 
-## Client workflow
+An interrupted Client Sending row returns to Pending when the database opens because Server idempotency makes the same delivery safe to resend. This differs from printer transmission: an interrupted printer write remains Uncertain and is never sent again automatically.
 
-The current client interface remains the default. When no server is paired, it behaves exactly as it does now.
-
-When a server is paired:
-
-1. Print ticket validates the connected printer and finalises the immutable local ticket.
-2. The same database transaction creates an outbox delivery containing only catalogue items enabled for Server orders. If no lines remain, it creates no delivery.
-3. Local printing proceeds through the existing durable print-attempt path with every local ticket line intact.
-4. Server delivery proceeds independently with the same stable delivery identifier.
-5. The ticket history shows delivery as Pending, Delivered or Needs attention, without mixing it with printer outcome.
-6. Pending delivery can be retried explicitly. A bounded retry while the app is active may be added only after idempotency and interruption tests pass.
-
-A server outage must not block catalogue editing, composition, local printing, history, PDF sharing, export or backup.
-
-## Server workflow
-
-Entering server mode replaces the client workspace navigation with two deliberately small tabs:
-
-- Orders: Received orders, Completed orders, immutable order detail, one Mark Done action and item quantities still outstanding across Received orders.
-- Settings: listener state, connection addresses, certificate fingerprint, Client pairing and mode switching.
-
-The initial server should listen only while LibreSlip is open in server mode. Reliable background serving on Android requires a foreground service and persistent notification, so that should be a separate, explicit milestone rather than an implicit promise.
-
-## Persistence and portability
-
-Add versioned SQLite migrations for:
-
-- app mode and non-secret server identity metadata;
-- client server-delivery outbox;
-- server paired clients;
-- server received orders and immutable order lines.
-
-The outbox creation must be transactional with ticket finalisation and unique per ticket and destination. Server receipt must store the full order and acknowledgement atomically.
-
-Configuration export may include the selected mode and non-secret server preferences. Full backups should eventually include outbox and server inbox history, but exclude private keys, pairing codes, trust tokens, cached addresses and discovery state. Restoring requires fresh pairing.
-
-## Delivery sequence
-
-### Task 10: mode and protocol foundation
-
-Implemented in LibreSlip 0.10.0 without enabling networking.
-
-- Add Client and Server mode selection with confirmation and persistence.
-- Define and test the versioned protocol, limits, checksums and idempotency identifiers.
-- Add database migrations for outbox and inbox domains.
-- Keep networking disabled and request no new permission until the transport milestone.
-
-### Task 11: server inbox
-
-Implemented in LibreSlip 0.11.0.
-
-- Implement the foreground-only authenticated local HTTPS listener.
-- Add explicit manual pairing and pinned server identity.
-- Validate payload size, text length, quantities, timestamps and protocol version.
-- Store received orders transactionally and idempotently.
-- Build the responsive received/completed board and Mark Done action.
-
-### Task 12: client delivery
-
-Implemented in LibreSlip 0.12.0.
-
-- Pair manually through a local IPv4 address, one-time code and exact SHA-256 certificate pin.
-- Keep the access token in Android keystore-backed encrypted storage and out of archives.
-- Create one stable outbox envelope transactionally when a paired client finalises a ticket.
-- Prioritise local printing, then deliver without changing its outcome.
-- Show Pending, Sending, Delivered and Needs attention independently from print status.
-- Retry explicitly with the same delivery identifier and recover interrupted sending as pending after restart.
-
-### Task 13: selective delivery and Server workflow
-
-Implemented in LibreSlip 0.13.0.
-
-- Add an enabled-by-default per-item switch for participation in optional Server orders.
-- Preserve every line locally while filtering new immutable outbox envelopes transactionally.
-- Skip delivery entirely when every ticket line is local-only.
-- Split Server mode into Orders and Settings tabs.
-- Show item quantities still outstanding across Received orders and remove them when their orders are Done.
-- Make the Client/Server selector a full-width horizontal control.
-
-### Task 14: Server port and Client item totals
-
-Implemented in LibreSlip 0.14.0.
-
-- Move the foreground local HTTPS listener and default Client address to TCP port 5119.
-- Migrate saved LibreSlip destinations from port 42837 without changing unrelated custom ports or pairing trust.
-- Expose every per-item quantity total from immutable saved-ticket snapshots in a scrollable Overview dialog.
-- Apply the existing inclusive Overview date range to ticket, item and per-item totals.
-
-### Task 15: discovery, portability and hardening
-
-- Evaluate mDNS discovery with manual address fallback.
-- Extend full backups and validation for the non-secret networking data.
-- Test mode switching, multiple clients, duplicate delivery, malformed input, unauthorised devices, network changes, large queues, Italian text and Android process death.
-- Decide separately whether foreground-service background hosting or remote-network support is justified.
-
-## Acceptance criteria
-
-- A client with no paired or reachable server retains every current offline capability.
-- An unreachable server never blocks or rolls back printing.
-- A lost acknowledgement and repeated delivery create one server order.
-- Restarting either device preserves pending deliveries, received orders and Done state.
-- The server exposes no item editing, printing, payments, prices or business reporting.
-- Pairing secrets and order contents do not appear in logs or archives.
-- Both modes work in British English and Italian on phone, landscape and tablet layouts.
-- Automated tests cover protocol compatibility, database migrations, idempotency, interruption and malformed input before physical two-device testing.
+Client outbox, paired destinations, paired Client records, Server orders and Done state use versioned SQLite tables. Networking tables and pairing secrets are outside the current archive format, so restoring a backup keeps the destination device's existing mode and networking state. Pair again after moving data to another device.

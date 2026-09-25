@@ -796,7 +796,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get hardwareTested =>
-      'Il test di connessione con la NETUM NT-1809DD è stato stampato correttamente sulla stampante fisica dell’utente.';
+      'La connessione e la stampa di prova con la NETUM NT-1809DD fisica sono confermate.';
 
   @override
   String get printStorageError =>
@@ -1243,6 +1243,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noOutstandingItems =>
       'Non ci sono articoli in attesa di preparazione.';
+
+  @override
+  String appVersion(String version) {
+    return 'Versione $version';
+  }
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

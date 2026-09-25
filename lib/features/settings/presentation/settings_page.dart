@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_version_footer.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/network_mode_controller.dart';
@@ -312,6 +313,8 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 20),
           PortabilitySettingsCard(controller: portability!),
         ],
+        const SizedBox(height: 28),
+        const AppVersionFooter(),
       ],
     );
   }

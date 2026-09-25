@@ -787,7 +787,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hardwareTested =>
-      'NETUM NT-1809DD connection test printed successfully on the user’s physical printer.';
+      'Physical NETUM NT-1809DD connection and test printing are confirmed.';
 
   @override
   String get printStorageError =>
@@ -1230,6 +1230,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noOutstandingItems => 'Nothing is waiting to be prepared.';
+
+  @override
+  String appVersion(String version) {
+    return 'Version $version';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -291,7 +291,7 @@
       }
     }
   },
-  "hardwareTested": "Il test di connessione con la NETUM NT-1809DD è stato stampato correttamente sulla stampante fisica dell’utente.",
+  "hardwareTested": "La connessione e la stampa di prova con la NETUM NT-1809DD fisica sono confermate.",
   "printStorageError": "Impossibile salvare il tentativo di stampa in modo sicuro, quindi LibreSlip non ha continuato automaticamente.",
   "deleteTicket": "Elimina comanda",
   "deleteTicketQuestion": "Eliminare la comanda {number}?",
@@ -474,5 +474,13 @@
   "serverSettingsSubtitle": "Gestisci ricezione locale, associazione e modalità app.",
   "outstandingItems": "Ancora da preparare",
   "outstandingItemsBody": "Totali degli articoli in tutti gli ordini attualmente tra i Ricevuti.",
-  "noOutstandingItems": "Non ci sono articoli in attesa di preparazione."
+  "noOutstandingItems": "Non ci sono articoli in attesa di preparazione.",
+  "appVersion": "Versione {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }
