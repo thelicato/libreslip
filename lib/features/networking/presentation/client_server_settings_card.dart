@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/client_delivery_controller.dart';
@@ -83,15 +82,6 @@ class ClientServerSettingsCard extends StatelessWidget {
               Text(server.displayName, style: theme.textTheme.titleMedium),
               const SizedBox(height: 3),
               SelectableText(server.baseUrl.toString()),
-              const SizedBox(height: 12),
-              Text(l.serverFingerprint, style: theme.textTheme.labelLarge),
-              const SizedBox(height: 4),
-              SelectableText(
-                _formatFingerprint(server.certificateFingerprint),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -172,14 +162,6 @@ class ClientServerSettingsCard extends StatelessWidget {
       ),
     );
   }
-
-  static String _formatFingerprint(String value) {
-    final groups = <String>[];
-    for (var index = 0; index < value.length; index += 8) {
-      groups.add(value.substring(index, index + 8).toUpperCase());
-    }
-    return groups.join(' ');
-  }
 }
 
 class _PairServerDialog extends StatefulWidget {
@@ -198,27 +180,11 @@ class _PairServerDialog extends StatefulWidget {
 class _PairServerDialogState extends State<_PairServerDialog> {
   final _formKey = GlobalKey<FormState>();
   final _address = TextEditingController();
-  final _fingerprint = TextEditingController();
-  final _code = TextEditingController();
-  final _name = TextEditingController();
   bool _working = false;
-  bool _nameInitialised = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_nameInitialised) {
-      _name.text = AppLocalizations.of(context).defaultClientName;
-      _nameInitialised = true;
-    }
-  }
 
   @override
   void dispose() {
     _address.dispose();
-    _fingerprint.dispose();
-    _code.dispose();
-    _name.dispose();
     super.dispose();
   }
 
@@ -252,51 +218,30 @@ class _PairServerDialogState extends State<_PairServerDialog> {
                       ? l.fieldRequired
                       : null,
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('server-fingerprint-field'),
-                  controller: _fingerprint,
-                  enabled: !_working,
-                  autocorrect: false,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    labelText: l.serverFingerprintInput,
-                    hintText: l.serverFingerprintHint,
+                if (_working) ...[
+                  const SizedBox(height: 18),
+                  Container(
+                    key: const ValueKey('waiting-for-server-approval'),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox.square(
+                          dimension: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2.5),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(l.pairingWaitingBody)),
+                      ],
+                    ),
                   ),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? l.fieldRequired
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('server-pairing-code-field'),
-                  controller: _code,
-                  enabled: !_working,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(6),
-                  ],
-                  decoration: InputDecoration(labelText: l.pairingCode),
-                  validator: (value) =>
-                      value?.length == 6 ? null : l.pairingInvalid,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  key: const ValueKey('client-device-name-field'),
-                  controller: _name,
-                  enabled: !_working,
-                  maxLength: 80,
-                  decoration: InputDecoration(
-                    labelText: l.clientDeviceName,
-                    hintText: l.clientDeviceNameHint,
-                  ),
-                  validator: (value) => value == null || value.trim().isEmpty
-                      ? l.fieldRequired
-                      : null,
-                ),
+                ],
                 if (error != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     _errorMessage(l, error),
                     key: const ValueKey('server-pairing-error'),
@@ -326,13 +271,12 @@ class _PairServerDialogState extends State<_PairServerDialog> {
 
   Future<void> _pair() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final l = AppLocalizations.of(context);
     setState(() => _working = true);
     final success = await widget.controller.pair(
       configuration: widget.configuration,
       address: _address.text,
-      fingerprint: _fingerprint.text,
-      code: _code.text,
-      clientName: _name.text,
+      clientName: l.defaultClientName,
     );
     if (!mounted) return;
     if (success) {

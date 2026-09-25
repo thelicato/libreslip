@@ -8,11 +8,26 @@ class RunningServer {
   final List<String> addresses;
 }
 
+class ClientPairingRequest {
+  const ClientPairingRequest({
+    required this.clientInstallationId,
+    required this.displayName,
+    required this.clientIdentityFingerprint,
+    required this.sourceAddress,
+  });
+
+  final String clientInstallationId;
+  final String displayName;
+  final String clientIdentityFingerprint;
+  final String sourceAddress;
+}
+
 abstract interface class ServerHost {
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   });
 

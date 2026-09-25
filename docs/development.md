@@ -77,7 +77,7 @@ New print and reprint actions require an active printer connection. Every accept
 
 Android printing uses Bluetooth Classic RFCOMM/SPP and requests only `BLUETOOTH_CONNECT`. The 58 mm encoder targets 384 printable dots, encodes supported text with PC858, rasterises unsupported text and logos with bundled fonts and writes 256-byte chunks. Socket completion records Transmitted rather than confirmed paper output.
 
-Optional Client delivery begins after local printing. Pairing accepts local IPv4 HTTPS addresses, requires an exact SHA-256 certificate fingerprint and disables redirects. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. The foreground Server listens on port 5119 only while Server mode is visible. Duplicate deliveries return their existing acknowledgement.
+Optional Client delivery begins after local printing. Pairing accepts a local IPv4 address and port, captures and verifies the Server certificate on first contact, then waits for explicit approval in Server Settings. The captured SHA-256 fingerprint pins the approval request and every later connection; redirects remain disabled. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. The foreground Server listens on port 5119 only while Server mode is visible. Duplicate deliveries return their existing acknowledgement.
 
 ## Localisation and interface
 

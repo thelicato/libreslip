@@ -44,7 +44,7 @@ A paired LibreSlip Server is optional. If it becomes unavailable, local composit
 Server mode turns another Android device into a focused preparation board:
 
 - **Orders** shows Received and Completed orders, immutable order details and the quantities still waiting to be prepared.
-- **Settings** shows connection addresses, certificate fingerprint, pairing controls, listener status and app version.
+- **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
 
 Mark Done is the only order action. Server mode does not edit the catalogue, compose or print tickets, process payments or produce financial reports. It listens on HTTPS port 5119 only while LibreSlip remains open in Server mode.
 

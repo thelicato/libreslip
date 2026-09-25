@@ -196,7 +196,8 @@ class _FakeServerHost implements ServerHost {
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   }) async =>
       const RunningServer(port: 5119, addresses: ['https://192.0.2.10:5119']);

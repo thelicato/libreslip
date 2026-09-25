@@ -103,6 +103,13 @@ void main() {
         4,
       ),
       (
+        'pair-server-dialog-phone-en',
+        const Size(520, 1100),
+        'en',
+        ThemeMode.light,
+        4,
+      ),
+      (
         'server-inbox-phone-it',
         const Size(520, 1100),
         'it',
@@ -149,8 +156,6 @@ void main() {
         await clientDelivery.pair(
           configuration: networking.configuration!,
           address: '192.168.1.42:5119',
-          fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          code: '123456',
           clientName: 'Front counter',
         );
       }
@@ -268,6 +273,11 @@ void main() {
       if (name == 'server-settings-phone-en') {
         await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
         await tester.pumpAndSettle();
+        await tester.drag(
+          find.byKey(const ValueKey('server-settings-page')),
+          const Offset(0, -420),
+        );
+        await tester.pumpAndSettle();
       }
       if (name == 'ticket-preview-phone-it') {
         await tester.tap(find.text('Comanda 1'));
@@ -293,6 +303,16 @@ void main() {
           500,
           scrollable: find.byType(Scrollable).first,
         );
+        await tester.pumpAndSettle();
+      }
+      if (name == 'pair-server-dialog-phone-en') {
+        final pairButton = find.byKey(const ValueKey('pair-server'));
+        await tester.scrollUntilVisible(
+          pairButton,
+          500,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(pairButton);
         await tester.pumpAndSettle();
       }
       expect(tester.takeException(), isNull);
@@ -372,7 +392,8 @@ class _FakeClientTransport implements ClientServerTransport {
         id: 'preview-server',
         displayName: 'Kitchen tablet',
         baseUrl: request.baseUrl,
-        certificateFingerprint: request.certificateFingerprint,
+        certificateFingerprint:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         createdAt: now,
         updatedAt: now,
       ),
@@ -430,7 +451,8 @@ class _FakeServerHost implements ServerHost {
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   }) async =>
       const RunningServer(port: 5119, addresses: ['https://192.168.1.42:5119']);

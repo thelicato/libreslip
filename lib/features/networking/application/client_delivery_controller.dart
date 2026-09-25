@@ -71,8 +71,6 @@ class ClientDeliveryController extends ChangeNotifier {
   Future<bool> pair({
     required NetworkConfiguration configuration,
     required String address,
-    required String fingerprint,
-    required String code,
     required String clientName,
   }) async {
     if (pairing || unpairing) return false;
@@ -83,14 +81,9 @@ class ClientDeliveryController extends ChangeNotifier {
     String? previousToken;
     try {
       final baseUrl = PinnedHttpsClient.normaliseServerAddress(address);
-      final cleanFingerprint = PinnedHttpsClient.normaliseFingerprint(
-        fingerprint,
-      );
       final result = await _transport.pair(
         PairServerRequest(
           baseUrl: baseUrl,
-          certificateFingerprint: cleanFingerprint,
-          code: code.trim(),
           clientInstallationId: configuration.installationId,
           clientDisplayName: clientName.trim(),
           clientIdentityFingerprint: _clientIdentityFingerprint(

@@ -1870,12 +1870,6 @@ abstract class AppLocalizations {
   /// **'No local network address is available. Connect this device to the same Wi-Fi network as the client.'**
   String get noLocalAddress;
 
-  /// No description provided for @serverFingerprint.
-  ///
-  /// In en, this message translates to:
-  /// **'Server certificate fingerprint'**
-  String get serverFingerprint;
-
   /// No description provided for @serverRefresh.
   ///
   /// In en, this message translates to:
@@ -1891,32 +1885,44 @@ abstract class AppLocalizations {
   /// No description provided for @clientPairingBody.
   ///
   /// In en, this message translates to:
-  /// **'Open a five-minute pairing window only when you are ready to add a client. Compare this server’s fingerprint on both devices.'**
+  /// **'Connection requests appear here automatically. Check the requesting device, then accept or reject it.'**
   String get clientPairingBody;
 
-  /// No description provided for @allowPairing.
+  /// No description provided for @waitingForPairingRequest.
   ///
   /// In en, this message translates to:
-  /// **'Allow client pairing'**
-  String get allowPairing;
+  /// **'Waiting for a Client'**
+  String get waitingForPairingRequest;
 
-  /// No description provided for @pairingCode.
+  /// No description provided for @waitingForPairingRequestBody.
   ///
   /// In en, this message translates to:
-  /// **'One-time pairing code'**
-  String get pairingCode;
+  /// **'On the Client device, enter one of the connection addresses shown above and tap Pair.'**
+  String get waitingForPairingRequestBody;
 
-  /// No description provided for @pairingExpires.
+  /// No description provided for @pairingRequest.
   ///
   /// In en, this message translates to:
-  /// **'Valid until {time}'**
-  String pairingExpires(String time);
+  /// **'Connection request'**
+  String get pairingRequest;
 
-  /// No description provided for @stopPairing.
+  /// No description provided for @pairingRequestBody.
   ///
   /// In en, this message translates to:
-  /// **'Stop pairing'**
-  String get stopPairing;
+  /// **'{name} is requesting access from {address}.'**
+  String pairingRequestBody(String name, String address);
+
+  /// No description provided for @acceptPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get acceptPairing;
+
+  /// No description provided for @rejectPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get rejectPairing;
 
   /// No description provided for @receivedOrders.
   ///
@@ -2023,7 +2029,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverAddressInput.
   ///
   /// In en, this message translates to:
-  /// **'Server address'**
+  /// **'Server IP and port'**
   String get serverAddressInput;
 
   /// No description provided for @serverAddressHint.
@@ -2031,30 +2037,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'192.168.1.25:5119'**
   String get serverAddressHint;
-
-  /// No description provided for @serverFingerprintInput.
-  ///
-  /// In en, this message translates to:
-  /// **'Certificate fingerprint'**
-  String get serverFingerprintInput;
-
-  /// No description provided for @serverFingerprintHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy the fingerprint shown on the Server device'**
-  String get serverFingerprintHint;
-
-  /// No description provided for @clientDeviceName.
-  ///
-  /// In en, this message translates to:
-  /// **'This device name'**
-  String get clientDeviceName;
-
-  /// No description provided for @clientDeviceNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Front counter'**
-  String get clientDeviceNameHint;
 
   /// No description provided for @pairServerTitle.
   ///
@@ -2065,7 +2047,7 @@ abstract class AppLocalizations {
   /// No description provided for @pairServerBody.
   ///
   /// In en, this message translates to:
-  /// **'On the Server device, open Client pairing. Enter its address, fingerprint and one-time code exactly as shown.'**
+  /// **'Enter the Server IP address and port shown on its Settings screen. The Server must accept this request.'**
   String get pairServerBody;
 
   /// No description provided for @pair.
@@ -2077,8 +2059,14 @@ abstract class AppLocalizations {
   /// No description provided for @pairingServer.
   ///
   /// In en, this message translates to:
-  /// **'Pairing…'**
+  /// **'Waiting for Server…'**
   String get pairingServer;
+
+  /// No description provided for @pairingWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the Server device and accept this connection request.'**
+  String get pairingWaitingBody;
 
   /// No description provided for @serverPaired.
   ///
@@ -2113,19 +2101,19 @@ abstract class AppLocalizations {
   /// No description provided for @pairingInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Check the local address, six-digit code, device name and certificate fingerprint.'**
+  /// **'Enter a valid local IPv4 address and port.'**
   String get pairingInvalid;
 
   /// No description provided for @pairingCertificateError.
   ///
   /// In en, this message translates to:
-  /// **'The Server certificate does not match this fingerprint. Nothing was paired.'**
+  /// **'The Server identity changed during connection. Nothing was paired.'**
   String get pairingCertificateError;
 
   /// No description provided for @pairingDenied.
   ///
   /// In en, this message translates to:
-  /// **'The one-time code was rejected or has expired. Open a new pairing window on the Server.'**
+  /// **'The Server rejected this request or did not accept it in time.'**
   String get pairingDenied;
 
   /// No description provided for @pairingUnreachable.
@@ -2143,7 +2131,7 @@ abstract class AppLocalizations {
   /// No description provided for @pairingStorageFailed.
   ///
   /// In en, this message translates to:
-  /// **'Pairing succeeded remotely, but could not be saved securely on this phone. Pair again with a new code.'**
+  /// **'Pairing succeeded remotely, but could not be saved securely on this phone. Try pairing again.'**
   String get pairingStorageFailed;
 
   /// No description provided for @pendingDeliveries.

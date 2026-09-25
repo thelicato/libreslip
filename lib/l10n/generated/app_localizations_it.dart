@@ -1012,9 +1012,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun indirizzo di rete locale disponibile. Collega questo dispositivo alla stessa rete Wi-Fi del Client.';
 
   @override
-  String get serverFingerprint => 'Impronta del certificato Server';
-
-  @override
   String get serverRefresh => 'Aggiorna ordini del Server';
 
   @override
@@ -1022,21 +1019,28 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get clientPairingBody =>
-      'Apri la finestra di associazione di cinque minuti solo quando vuoi aggiungere un Client. Confronta l’impronta del Server su entrambi i dispositivi.';
+      'Le richieste di connessione vengono mostrate qui automaticamente. Controlla il dispositivo e poi accetta o rifiuta.';
 
   @override
-  String get allowPairing => 'Consenti associazione Client';
+  String get waitingForPairingRequest => 'In attesa di un Client';
 
   @override
-  String get pairingCode => 'Codice di associazione monouso';
+  String get waitingForPairingRequestBody =>
+      'Sul dispositivo Client, inserisci uno degli indirizzi di connessione mostrati sopra e tocca Associa.';
 
   @override
-  String pairingExpires(String time) {
-    return 'Valido fino alle $time';
+  String get pairingRequest => 'Richiesta di connessione';
+
+  @override
+  String pairingRequestBody(String name, String address) {
+    return '$name richiede l’accesso da $address.';
   }
 
   @override
-  String get stopPairing => 'Interrompi associazione';
+  String get acceptPairing => 'Accetta';
+
+  @override
+  String get rejectPairing => 'Rifiuta';
 
   @override
   String get receivedOrders => 'Ricevuti';
@@ -1094,36 +1098,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get pairedServer => 'Server associato';
 
   @override
-  String get serverAddressInput => 'Indirizzo Server';
+  String get serverAddressInput => 'IP e porta del Server';
 
   @override
   String get serverAddressHint => '192.168.1.25:5119';
-
-  @override
-  String get serverFingerprintInput => 'Impronta del certificato';
-
-  @override
-  String get serverFingerprintHint =>
-      'Copia l’impronta mostrata sul dispositivo Server';
-
-  @override
-  String get clientDeviceName => 'Nome di questo dispositivo';
-
-  @override
-  String get clientDeviceNameHint => 'Cassa principale';
 
   @override
   String get pairServerTitle => 'Associa al Server';
 
   @override
   String get pairServerBody =>
-      'Sul dispositivo Server, apri Associazione Client. Inserisci indirizzo, impronta e codice monouso esattamente come mostrati.';
+      'Inserisci l’indirizzo IP e la porta mostrati nelle Impostazioni del Server. Il Server deve accettare la richiesta.';
 
   @override
   String get pair => 'Associa';
 
   @override
-  String get pairingServer => 'Associazione…';
+  String get pairingServer => 'In attesa del Server…';
+
+  @override
+  String get pairingWaitingBody =>
+      'Controlla il dispositivo Server e accetta questa richiesta di connessione.';
 
   @override
   String get serverPaired => 'Server associato';
@@ -1143,15 +1138,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get pairingInvalid =>
-      'Controlla indirizzo locale, codice a sei cifre, nome dispositivo e impronta del certificato.';
+      'Inserisci un indirizzo IPv4 locale e una porta validi.';
 
   @override
   String get pairingCertificateError =>
-      'Il certificato del Server non corrisponde a questa impronta. Non è stato associato nulla.';
+      'L’identità del Server è cambiata durante la connessione. Non è stato associato nulla.';
 
   @override
   String get pairingDenied =>
-      'Il codice monouso è stato rifiutato o è scaduto. Apri una nuova finestra di associazione sul Server.';
+      'Il Server ha rifiutato la richiesta o non l’ha accettata in tempo.';
 
   @override
   String get pairingUnreachable =>
@@ -1163,7 +1158,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get pairingStorageFailed =>
-      'L’associazione remota è riuscita, ma non è stato possibile salvarla in sicurezza sul telefono. Associa di nuovo con un nuovo codice.';
+      'L’associazione remota è riuscita, ma non è stato possibile salvarla in sicurezza sul telefono. Riprova.';
 
   @override
   String get pendingDeliveries => 'In attesa';

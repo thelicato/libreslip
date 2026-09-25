@@ -17,12 +17,6 @@ class PinnedHttpsClient implements ClientServerTransport {
     r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$',
   );
 
-  static String normaliseFingerprint(String value) {
-    final trimmed = value.trim();
-    if (!RegExp(r'^[0-9A-Fa-f:\-\s]+$').hasMatch(trimmed)) return '';
-    return trimmed.replaceAll(RegExp(r'[:\-\s]'), '').toLowerCase();
-  }
-
   static Uri normaliseServerAddress(String value) {
     final source = value.trim();
     final withScheme = source.contains('://') ? source : 'https://$source';
@@ -60,20 +54,16 @@ class PinnedHttpsClient implements ClientServerTransport {
 
   @override
   Future<PairServerResult> pair(PairServerRequest request) async {
-    final fingerprint = normaliseFingerprint(request.certificateFingerprint);
-    if (!_fingerprintPattern.hasMatch(fingerprint) ||
-        !RegExp(r'^\d{6}$').hasMatch(request.code) ||
-        !_identifierPattern.hasMatch(request.clientInstallationId) ||
+    if (!_identifierPattern.hasMatch(request.clientInstallationId) ||
         request.clientDisplayName.trim().isEmpty ||
         request.clientDisplayName.trim().length > 80 ||
         !_fingerprintPattern.hasMatch(request.clientIdentityFingerprint)) {
       throw const ClientTransportException('invalid_pairing');
     }
     final baseUrl = normaliseServerAddress(request.baseUrl.toString());
-    final status = await _request(
-      baseUrl.resolve('/v1/status'),
-      fingerprint: fingerprint,
-    );
+    final discovery = await _requestFirstContact(baseUrl.resolve('/v1/status'));
+    final status = discovery.response;
+    final fingerprint = discovery.certificateFingerprint;
     if (status.statusCode != HttpStatus.ok ||
         status.body['protocol'] != NetworkProtocol.name ||
         status.body['version'] != NetworkProtocol.version ||
@@ -92,8 +82,8 @@ class PinnedHttpsClient implements ClientServerTransport {
     final pairing = await _request(
       baseUrl.resolve('/v1/pair'),
       fingerprint: fingerprint,
+      responseTimeout: const Duration(minutes: 2, seconds: 10),
       body: {
-        'code': request.code,
         'clientInstallationId': request.clientInstallationId,
         'displayName': request.clientDisplayName.trim(),
         'clientIdentityFingerprint': request.clientIdentityFingerprint,
@@ -174,53 +164,40 @@ class PinnedHttpsClient implements ClientServerTransport {
     );
   }
 
-  Future<_JsonResponse> _request(
-    Uri uri, {
-    required String fingerprint,
-    Map<String, Object?>? body,
-    Map<String, String> headers = const {},
-  }) async {
-    var acceptedPin = false;
+  Future<_FirstContactResponse> _requestFirstContact(Uri uri) async {
+    String? callbackFingerprint;
     final context = SecurityContext(withTrustedRoots: false);
     final client = HttpClient(context: context)
       ..connectionTimeout = const Duration(seconds: 5)
-      ..idleTimeout = const Duration(seconds: 5)
+      ..idleTimeout = const Duration(seconds: 10)
       ..badCertificateCallback = (certificate, host, port) {
         final actual = sha256.convert(certificate.der).toString();
-        acceptedPin = actual == fingerprint;
-        return acceptedPin;
+        if (callbackFingerprint != null && callbackFingerprint != actual) {
+          return false;
+        }
+        callbackFingerprint = actual;
+        return true;
       };
     try {
-      final request = body == null
-          ? await client.getUrl(uri)
-          : await client.postUrl(uri);
+      final request = await client.getUrl(uri);
       request.followRedirects = false;
       request.headers.set(HttpHeaders.acceptHeader, ContentType.json.mimeType);
-      for (final entry in headers.entries) {
-        request.headers.set(entry.key, entry.value);
-      }
-      if (body != null) {
-        request.headers.contentType = ContentType.json;
-        request.write(jsonEncode(body));
-      }
       final response = await request.close().timeout(
         const Duration(seconds: 10),
       );
-      if (!acceptedPin) {
+      final certificate = response.certificate;
+      final fingerprint = certificate == null
+          ? callbackFingerprint
+          : sha256.convert(certificate.der).toString();
+      if (fingerprint == null ||
+          !_fingerprintPattern.hasMatch(fingerprint) ||
+          (callbackFingerprint != null && callbackFingerprint != fingerprint)) {
         throw const ClientTransportException('certificate');
       }
-      final bytes = <int>[];
-      await for (final chunk in response.timeout(const Duration(seconds: 10))) {
-        bytes.addAll(chunk);
-        if (bytes.length > _responseLimit) {
-          throw const ClientTransportException('invalid_response');
-        }
-      }
-      final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: false));
-      if (decoded is! Map<String, dynamic>) {
-        throw const ClientTransportException('invalid_response');
-      }
-      return _JsonResponse(response.statusCode, decoded);
+      return _FirstContactResponse(
+        await _readResponse(response, const Duration(seconds: 10)),
+        fingerprint,
+      );
     } on ClientTransportException {
       rethrow;
     } on HandshakeException {
@@ -237,6 +214,81 @@ class PinnedHttpsClient implements ClientServerTransport {
       client.close(force: true);
     }
   }
+
+  Future<_JsonResponse> _request(
+    Uri uri, {
+    required String fingerprint,
+    Map<String, Object?>? body,
+    Map<String, String> headers = const {},
+    Duration responseTimeout = const Duration(seconds: 10),
+  }) async {
+    final context = SecurityContext(withTrustedRoots: false);
+    final client = HttpClient(context: context)
+      ..connectionTimeout = const Duration(seconds: 5)
+      ..idleTimeout = responseTimeout
+      ..badCertificateCallback = (certificate, host, port) =>
+          sha256.convert(certificate.der).toString() == fingerprint;
+    try {
+      final request = body == null
+          ? await client.getUrl(uri)
+          : await client.postUrl(uri);
+      request.followRedirects = false;
+      request.headers.set(HttpHeaders.acceptHeader, ContentType.json.mimeType);
+      for (final entry in headers.entries) {
+        request.headers.set(entry.key, entry.value);
+      }
+      if (body != null) {
+        request.headers.contentType = ContentType.json;
+        request.write(jsonEncode(body));
+      }
+      final response = await request.close().timeout(responseTimeout);
+      final certificate = response.certificate;
+      if (certificate == null ||
+          sha256.convert(certificate.der).toString() != fingerprint) {
+        throw const ClientTransportException('certificate');
+      }
+      return await _readResponse(response, responseTimeout);
+    } on ClientTransportException {
+      rethrow;
+    } on HandshakeException {
+      throw const ClientTransportException('certificate');
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    } on SocketException {
+      throw const ClientTransportException('unreachable');
+    } on TimeoutException {
+      throw const ClientTransportException('unreachable');
+    } on HttpException {
+      throw const ClientTransportException('unreachable');
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<_JsonResponse> _readResponse(
+    HttpClientResponse response,
+    Duration timeout,
+  ) async {
+    final bytes = <int>[];
+    await for (final chunk in response.timeout(timeout)) {
+      bytes.addAll(chunk);
+      if (bytes.length > _responseLimit) {
+        throw const ClientTransportException('invalid_response');
+      }
+    }
+    final decoded = jsonDecode(utf8.decode(bytes, allowMalformed: false));
+    if (decoded is! Map<String, dynamic>) {
+      throw const ClientTransportException('invalid_response');
+    }
+    return _JsonResponse(response.statusCode, decoded);
+  }
+}
+
+class _FirstContactResponse {
+  const _FirstContactResponse(this.response, this.certificateFingerprint);
+
+  final _JsonResponse response;
+  final String certificateFingerprint;
 }
 
 class _JsonResponse {

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../core/widgets/app_version_footer.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../settings/application/settings_controller.dart';
+import '../../settings/presentation/personalisation_settings.dart';
 import '../application/network_mode_controller.dart';
 import '../application/server_inbox_controller.dart';
 import '../domain/server_inbox_models.dart';
@@ -14,10 +16,12 @@ import 'mode_settings_card.dart';
 class ServerModeShell extends StatefulWidget {
   const ServerModeShell({
     super.key,
+    required this.settingsController,
     required this.modeController,
     required this.inboxController,
   });
 
+  final SettingsController settingsController;
   final NetworkModeController modeController;
   final ServerInboxController inboxController;
 
@@ -237,6 +241,12 @@ class _ServerModeShellState extends State<ServerModeShell>
                     _PairingCard(controller: controller),
                     const SizedBox(height: 24),
                     ModeSettingsCard(controller: widget.modeController),
+                    const SizedBox(height: 20),
+                    LanguageSettingsCard(controller: widget.settingsController),
+                    const SizedBox(height: 20),
+                    AppearanceSettingsCard(
+                      controller: widget.settingsController,
+                    ),
                     const SizedBox(height: 28),
                     const AppVersionFooter(),
                   ],
@@ -411,15 +421,6 @@ class _ListenerCard extends StatelessWidget {
               else
                 for (final address in controller.runningServer!.addresses)
                   SelectableText(address),
-              const SizedBox(height: 12),
-              Text(l.serverFingerprint, style: theme.textTheme.labelLarge),
-              const SizedBox(height: 4),
-              SelectableText(
-                _displayFingerprint(
-                  controller.identity!.certificateFingerprint,
-                ),
-                style: theme.textTheme.bodySmall,
-              ),
             ],
           ],
         ),
@@ -437,7 +438,7 @@ class _PairingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final window = controller.pairingWindow;
+    final request = controller.pendingPairingRequest;
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -449,39 +450,70 @@ class _PairingCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(l.clientPairingBody),
             const SizedBox(height: 16),
-            if (window == null || window.expired)
-              FilledButton.icon(
-                key: const ValueKey('open-pairing'),
-                onPressed: controller.listening
-                    ? controller.openPairingWindow
-                    : null,
-                icon: const Icon(Icons.link_rounded),
-                label: Text(l.allowPairing),
-              )
-            else ...[
-              Text(l.pairingCode, style: theme.textTheme.labelLarge),
-              const SizedBox(height: 6),
-              SelectableText(
-                window.code,
-                key: const ValueKey('pairing-code'),
-                textAlign: TextAlign.center,
-                style: theme.textTheme.displaySmall?.copyWith(
-                  letterSpacing: 8,
-                  fontWeight: FontWeight.w700,
-                ),
+            if (request == null) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.hourglass_empty_rounded),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l.waitingForPairingRequest,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(l.waitingForPairingRequestBody),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                l.pairingExpires(
-                  DateFormat.Hm(Localizations.localeOf(context).toLanguageTag())
-                      .format(window.expiresAt),
+            ] else ...[
+              Container(
+                key: const ValueKey('pending-pairing-request'),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(
+                    alpha: 0.45,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                textAlign: TextAlign.center,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.pairingRequest, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 6),
+                    Text(
+                      l.pairingRequestBody(
+                        request.displayName,
+                        request.sourceAddress,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: controller.closePairingWindow,
-                child: Text(l.stopPairing),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      key: const ValueKey('reject-pairing-request'),
+                      onPressed: controller.rejectPairingRequest,
+                      child: Text(l.rejectPairing),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      key: const ValueKey('accept-pairing-request'),
+                      onPressed: controller.acceptPairingRequest,
+                      child: Text(l.acceptPairing),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
@@ -706,12 +738,4 @@ class _DetailRow extends StatelessWidget {
       ],
     ),
   );
-}
-
-String _displayFingerprint(String value) {
-  final groups = <String>[];
-  for (var index = 0; index < value.length; index += 8) {
-    groups.add(value.substring(index, index + 8).toUpperCase());
-  }
-  return groups.join(' ');
 }

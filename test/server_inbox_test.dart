@@ -103,8 +103,10 @@ void main() {
     final running = await host.start(
       identity: identity,
       configuration: configuration,
-      claimPairingCode: (code) {
-        if (!pairingAvailable || code != '123456') return false;
+      requestPairingApproval: (request) async {
+        if (!pairingAvailable) return false;
+        expect(request.clientInstallationId, _client.installationId);
+        expect(request.sourceAddress, '127.0.0.1');
         pairingAvailable = false;
         return true;
       },
@@ -122,7 +124,6 @@ void main() {
     final base = Uri.parse('https://127.0.0.1:${running.port}');
 
     final pair = await _postJson(client, base.resolve('/v1/pair'), {
-      'code': '123456',
       'clientInstallationId': _client.installationId,
       'displayName': _client.displayName,
       'clientIdentityFingerprint': _client.identityFingerprint,
@@ -131,7 +132,6 @@ void main() {
     final token = pair.body['accessToken']! as String;
     expect(token, isNotEmpty);
     final repeatedPairing = await _postJson(client, base.resolve('/v1/pair'), {
-      'code': '123456',
       'clientInstallationId': 'client-installation-2',
       'displayName': 'Other client',
       'clientIdentityFingerprint':

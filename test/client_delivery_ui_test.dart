@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
@@ -58,15 +60,21 @@ void main() {
       find.byKey(const ValueKey('server-address-field')),
       '192.168.1.25:5119',
     );
-    await tester.enterText(
-      find.byKey(const ValueKey('server-fingerprint-field')),
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey('server-pairing-code-field')),
-      '123456',
-    );
     await tester.tap(find.byKey(const ValueKey('confirm-pair-server')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('waiting-for-server-approval')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('server-fingerprint-field')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('server-pairing-code-field')),
+      findsNothing,
+    );
+    transport.acceptPairing();
     await tester.pumpAndSettle();
 
     expect(find.text('Kitchen Server'), findsOneWidget);
@@ -111,20 +119,31 @@ void main() {
 
 class _FakeClientTransport implements ClientServerTransport {
   var shouldFailDelivery = true;
+  PairServerRequest? _pendingRequest;
+  Completer<PairServerResult>? _pairing;
 
   @override
-  Future<PairServerResult> pair(PairServerRequest request) async {
+  Future<PairServerResult> pair(PairServerRequest request) {
+    _pendingRequest = request;
+    _pairing = Completer<PairServerResult>();
+    return _pairing!.future;
+  }
+
+  void acceptPairing() {
+    final request = _pendingRequest!;
     final now = DateTime.utc(2026, 9, 25, 8);
-    return PairServerResult(
-      server: PairedServer(
-        id: 'server-installation-1',
-        displayName: 'Kitchen Server',
-        baseUrl: request.baseUrl,
-        certificateFingerprint: request.certificateFingerprint,
-        createdAt: now,
-        updatedAt: now,
+    _pairing!.complete(
+      PairServerResult(
+        server: PairedServer(
+          id: 'server-installation-1',
+          displayName: 'Kitchen Server',
+          baseUrl: request.baseUrl,
+          certificateFingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        accessToken: 'secret-token',
       ),
-      accessToken: 'secret-token',
     );
   }
 

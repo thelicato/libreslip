@@ -19,15 +19,15 @@ Deleting a local ticket does not remotely delete an order already accepted by th
 
 ## Pairing
 
-Both Android devices must be on a local network that permits device-to-device traffic. Server mode displays its IPv4 HTTPS addresses and SHA-256 certificate fingerprint. Allow client pairing opens a five-minute code. Client mode pairs through that address, exact fingerprint, code and a local device name.
+Both Android devices must be on a local network that permits device-to-device traffic. Client mode needs only the Server IPv4 address and port. The Server displays each pending request with its source address and must explicitly accept it within two minutes. Rejection, timeout or leaving Server mode fails the request without pairing.
 
-The Client pins the self-signed Server certificate and disables redirects. A random access token authenticates later order delivery. The Client token, Server private key and Server token hashes use Android keystore-backed encrypted storage. Pairing secrets never enter logs, configuration ZIPs or full backups.
+On first contact, the Client captures the self-signed Server certificate fingerprint from the TLS connection and verifies that `/v1/status` reports the same identity. The pairing request and all later traffic use that pin with redirects disabled. A random access token authenticates later order delivery. The Client token, Server private key and Server token hashes use Android keystore-backed encrypted storage and never enter logs, configuration ZIPs or full backups. First-contact trust avoids manual fingerprint entry but cannot independently defeat an active local-network interception during that first request, so accept only an expected request on a trusted LAN.
 
 Manual IPv4 address entry is the supported connection method. The Server listens on TCP port 5119 only while LibreSlip is visible in Server mode. There is no background service, automatic discovery, hosted relay or remote-network mode.
 
 ## Server operation
 
-The Orders tab contains Received and Completed filters, immutable order details and the Mark Done action. Its summary lists quantities still outstanding across Received orders. The Settings tab contains listener state, local addresses, certificate fingerprint, pairing controls, mode selection and the installed version.
+The Orders tab contains Received and Completed filters, immutable order details and the Mark Done action. Its summary lists quantities still outstanding across Received orders. The Settings tab contains listener state, local addresses, pending Client approval, mode selection, language, appearance and the installed version.
 
 Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
 

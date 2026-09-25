@@ -15,6 +15,7 @@ import '../../printing/application/printer_controller.dart';
 import '../../printing/domain/ticket_typography.dart';
 import '../../printing/presentation/printer_setup_card.dart';
 import '../application/settings_controller.dart';
+import 'personalisation_settings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({
@@ -252,59 +253,9 @@ class SettingsPage extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 20),
-        _SettingsSection(
-          title: l.language,
-          subtitle: l.languageBody,
-          icon: Icons.translate_rounded,
-          child: _ChoiceWrap(
-            children: [
-              _Choice(
-                key: const ValueKey('language-en'),
-                title: l.english,
-                selected: settings.language == 'en',
-                enabled: !controller.saving,
-                onTap: () =>
-                    controller.update(settings.copyWith(language: 'en')),
-              ),
-              _Choice(
-                key: const ValueKey('language-it'),
-                title: l.italian,
-                selected: settings.language == 'it',
-                enabled: !controller.saving,
-                onTap: () =>
-                    controller.update(settings.copyWith(language: 'it')),
-              ),
-            ],
-          ),
-        ),
+        LanguageSettingsCard(controller: controller),
         const SizedBox(height: 20),
-        _SettingsSection(
-          title: l.appearance,
-          subtitle: l.appearanceBody,
-          icon: Icons.palette_outlined,
-          child: _ChoiceWrap(
-            children: [
-              for (final (mode, label, icon) in [
-                (
-                  ThemeMode.system,
-                  l.systemTheme,
-                  Icons.brightness_auto_outlined,
-                ),
-                (ThemeMode.light, l.lightTheme, Icons.light_mode_outlined),
-                (ThemeMode.dark, l.darkTheme, Icons.dark_mode_outlined),
-              ])
-                _Choice(
-                  key: ValueKey('theme-${mode.name}'),
-                  title: label,
-                  icon: icon,
-                  selected: settings.themeMode == mode,
-                  enabled: !controller.saving,
-                  onTap: () =>
-                      controller.update(settings.copyWith(themeMode: mode)),
-                ),
-            ],
-          ),
-        ),
+        AppearanceSettingsCard(controller: controller),
         if (printer != null) ...[
           const SizedBox(height: 20),
           PrinterSetupCard(controller: printer!),
@@ -505,96 +456,6 @@ class _SettingsSection extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _ChoiceWrap extends StatelessWidget {
-  const _ChoiceWrap({required this.children});
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final scale = MediaQuery.textScalerOf(context).scale(1);
-      final horizontal = constraints.maxWidth >= children.length * 165 * scale;
-      return Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          for (final child in children)
-            SizedBox(
-              width: horizontal
-                  ? (constraints.maxWidth - (children.length - 1) * 12) /
-                        children.length
-                  : constraints.maxWidth,
-              child: child,
-            ),
-        ],
-      );
-    },
-  );
-}
-
-class _Choice extends StatelessWidget {
-  const _Choice({
-    super.key,
-    required this.title,
-    required this.selected,
-    required this.enabled,
-    required this.onTap,
-    this.icon,
-  });
-  final String title;
-  final bool selected;
-  final bool enabled;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      selected: selected,
-      inMutuallyExclusiveGroup: true,
-      child: Material(
-        color: selected
-            ? scheme.primaryContainer.withValues(alpha: 0.55)
-            : scheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: selected ? scheme.primary : scheme.outlineVariant,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            child: Row(
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, size: 22),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  size: 21,
-                  color: selected ? scheme.primary : scheme.outline,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _FooterDialog extends StatefulWidget {

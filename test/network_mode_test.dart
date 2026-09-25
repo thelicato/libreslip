@@ -124,6 +124,18 @@ void main() {
     expect(find.byKey(const ValueKey('server-settings-page')), findsOneWidget);
     expect(find.text('Ready to receive'), findsOneWidget);
     await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('language-it')),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const ValueKey('language-en')), findsOneWidget);
+    expect(find.byKey(const ValueKey('language-it')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('theme-dark')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('theme-dark')));
+    await tester.pumpAndSettle();
+    expect(settings.settings.themeMode, ThemeMode.dark);
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('app-version')),
       500,
       scrollable: find.byType(Scrollable).first,
@@ -144,6 +156,63 @@ void main() {
     expect(networking.mode, LibreSlipMode.client);
     expect(find.byKey(const ValueKey('nav-0')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Server Settings accepts a pending Client request', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(520, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final settings = SettingsController(MemorySettingsRepository());
+    final environment = await createMemoryOrderEnvironment();
+    final networking = NetworkModeController(environment.repository);
+    final host = _FakeServerHost();
+    final inbox = ServerInboxController(
+      environment.repository,
+      _MemoryServerSecrets(),
+      host,
+    );
+    addTearDown(settings.dispose);
+    addTearDown(environment.controller.dispose);
+    addTearDown(networking.dispose);
+    addTearDown(inbox.dispose);
+    await settings.load();
+    await networking.load();
+    await networking.setMode(LibreSlipMode.server);
+
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: settings,
+        orders: environment.controller,
+        networking: networking,
+        serverInbox: inbox,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+    await tester.pumpAndSettle();
+
+    final decision = host.requestPairingApproval!(
+      const ClientPairingRequest(
+        clientInstallationId: 'client-1',
+        displayName: 'LibreSlip Client',
+        clientIdentityFingerprint:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        sourceAddress: '192.168.1.27',
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('pending-pairing-request')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('192.168.1.27'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('accept-pairing-request')));
+    await tester.pump();
+    expect(await decision, isTrue);
+    expect(find.byKey(const ValueKey('pending-pairing-request')), findsNothing);
   });
 
   testWidgets('Italian Server inbox supports large text', (tester) async {
@@ -250,14 +319,22 @@ class _MemoryServerSecrets implements ServerSecretStore {
 }
 
 class _FakeServerHost implements ServerHost {
+  Future<bool> Function(ClientPairingRequest request)? requestPairingApproval;
+
   @override
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
-  }) async =>
-      const RunningServer(port: 5119, addresses: ['https://192.0.2.10:5119']);
+  }) async {
+    this.requestPairingApproval = requestPairingApproval;
+    return const RunningServer(
+      port: 5119,
+      addresses: ['https://192.0.2.10:5119'],
+    );
+  }
 
   @override
   Future<void> stop() async {}
@@ -272,7 +349,8 @@ class _DelayedServerHost implements ServerHost {
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   }) async {
     entered.complete();

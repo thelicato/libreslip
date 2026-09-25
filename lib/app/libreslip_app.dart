@@ -69,6 +69,7 @@ class LibreSlipApp extends StatelessWidget {
               (clientDelivery == null || clientDelivery!.loaded)
           ? networking?.mode == LibreSlipMode.server
                 ? ServerModeShell(
+                    settingsController: settings,
                     modeController: networking!,
                     inboxController: serverInbox!,
                   )

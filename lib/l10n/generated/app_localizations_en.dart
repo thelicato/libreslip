@@ -1001,9 +1001,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'No local network address is available. Connect this device to the same Wi-Fi network as the client.';
 
   @override
-  String get serverFingerprint => 'Server certificate fingerprint';
-
-  @override
   String get serverRefresh => 'Refresh server orders';
 
   @override
@@ -1011,21 +1008,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientPairingBody =>
-      'Open a five-minute pairing window only when you are ready to add a client. Compare this server’s fingerprint on both devices.';
+      'Connection requests appear here automatically. Check the requesting device, then accept or reject it.';
 
   @override
-  String get allowPairing => 'Allow client pairing';
+  String get waitingForPairingRequest => 'Waiting for a Client';
 
   @override
-  String get pairingCode => 'One-time pairing code';
+  String get waitingForPairingRequestBody =>
+      'On the Client device, enter one of the connection addresses shown above and tap Pair.';
 
   @override
-  String pairingExpires(String time) {
-    return 'Valid until $time';
+  String get pairingRequest => 'Connection request';
+
+  @override
+  String pairingRequestBody(String name, String address) {
+    return '$name is requesting access from $address.';
   }
 
   @override
-  String get stopPairing => 'Stop pairing';
+  String get acceptPairing => 'Accept';
+
+  @override
+  String get rejectPairing => 'Reject';
 
   @override
   String get receivedOrders => 'Received';
@@ -1082,36 +1086,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pairedServer => 'Paired server';
 
   @override
-  String get serverAddressInput => 'Server address';
+  String get serverAddressInput => 'Server IP and port';
 
   @override
   String get serverAddressHint => '192.168.1.25:5119';
-
-  @override
-  String get serverFingerprintInput => 'Certificate fingerprint';
-
-  @override
-  String get serverFingerprintHint =>
-      'Copy the fingerprint shown on the Server device';
-
-  @override
-  String get clientDeviceName => 'This device name';
-
-  @override
-  String get clientDeviceNameHint => 'Front counter';
 
   @override
   String get pairServerTitle => 'Pair with Server';
 
   @override
   String get pairServerBody =>
-      'On the Server device, open Client pairing. Enter its address, fingerprint and one-time code exactly as shown.';
+      'Enter the Server IP address and port shown on its Settings screen. The Server must accept this request.';
 
   @override
   String get pair => 'Pair';
 
   @override
-  String get pairingServer => 'Pairing…';
+  String get pairingServer => 'Waiting for Server…';
+
+  @override
+  String get pairingWaitingBody =>
+      'Check the Server device and accept this connection request.';
 
   @override
   String get serverPaired => 'Server paired';
@@ -1130,16 +1125,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverUnpaired => 'Server unpaired';
 
   @override
-  String get pairingInvalid =>
-      'Check the local address, six-digit code, device name and certificate fingerprint.';
+  String get pairingInvalid => 'Enter a valid local IPv4 address and port.';
 
   @override
   String get pairingCertificateError =>
-      'The Server certificate does not match this fingerprint. Nothing was paired.';
+      'The Server identity changed during connection. Nothing was paired.';
 
   @override
   String get pairingDenied =>
-      'The one-time code was rejected or has expired. Open a new pairing window on the Server.';
+      'The Server rejected this request or did not accept it in time.';
 
   @override
   String get pairingUnreachable =>
@@ -1151,7 +1145,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pairingStorageFailed =>
-      'Pairing succeeded remotely, but could not be saved securely on this phone. Pair again with a new code.';
+      'Pairing succeeded remotely, but could not be saved securely on this phone. Try pairing again.';
 
   @override
   String get pendingDeliveries => 'Waiting';

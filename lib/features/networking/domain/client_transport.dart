@@ -3,16 +3,12 @@ import 'client_delivery_models.dart';
 class PairServerRequest {
   const PairServerRequest({
     required this.baseUrl,
-    required this.certificateFingerprint,
-    required this.code,
     required this.clientInstallationId,
     required this.clientDisplayName,
     required this.clientIdentityFingerprint,
   });
 
   final Uri baseUrl;
-  final String certificateFingerprint;
-  final String code;
   final String clientInstallationId;
   final String clientDisplayName;
   final String clientIdentityFingerprint;

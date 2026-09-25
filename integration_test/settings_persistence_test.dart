@@ -157,19 +157,21 @@ void main() {
       reason: serverInbox.lastError?.toString(),
     );
     expect(serverInbox.identity!.certificateFingerprint, hasLength(64));
-    serverInbox.openPairingWindow();
-    final pairingCode = serverInbox.pairingWindow!.code;
-    expect(
-      await clientDelivery.pair(
-        configuration: networking.configuration!,
-        address: '127.0.0.1:5119',
-        fingerprint: serverInbox.identity!.certificateFingerprint,
-        code: pairingCode,
-        clientName: 'Android integration client',
-      ),
-      isTrue,
-      reason: clientDelivery.lastPairingError,
+    final pairing = clientDelivery.pair(
+      configuration: networking.configuration!,
+      address: '127.0.0.1:5119',
+      clientName: 'Android integration client',
     );
+    for (
+      var attempt = 0;
+      attempt < 50 && serverInbox.pendingPairingRequest == null;
+      attempt++
+    ) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    expect(serverInbox.pendingPairingRequest, isNotNull);
+    serverInbox.acceptPairingRequest();
+    expect(await pairing, isTrue, reason: clientDelivery.lastPairingError);
     final deliveryDraft = await orderRepository.createDraft();
     final deliveryTicket = await orderRepository.convertDraftToTicket(
       deliveryDraft.copyWith(

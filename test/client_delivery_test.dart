@@ -46,13 +46,13 @@ void main() {
           .loadOrCreate();
       final host = LocalHttpsServer(repository, serverSecrets, port: 0);
       addTearDown(host.stop);
-      var pairingOpen = true;
       final running = await host.start(
         identity: identity,
         configuration: configuration,
-        claimPairingCode: (code) {
-          if (!pairingOpen || code != '123456') return false;
-          pairingOpen = false;
+        requestPairingApproval: (request) async {
+          expect(request.clientInstallationId, configuration.installationId);
+          expect(request.displayName, 'Front counter');
+          expect(request.sourceAddress, '127.0.0.1');
           return true;
         },
         onOrderReceived: () {},
@@ -73,13 +73,15 @@ void main() {
         await controller.pair(
           configuration: configuration,
           address: '127.0.0.1:${running.port}',
-          fingerprint: _spaced(identity.certificateFingerprint),
-          code: '123456',
           clientName: 'Front counter',
         ),
         isTrue,
       );
       expect(controller.activeServer?.id, configuration.installationId);
+      expect(
+        controller.activeServer?.certificateFingerprint,
+        identity.certificateFingerprint,
+      );
       expect(clientSecrets.tokens.values.single, isNotEmpty);
 
       final draft = await repository.createDraft();
@@ -118,6 +120,29 @@ void main() {
       expect(delivery.attemptCount, 2);
       expect(delivery.serverOrderId, isNotEmpty);
       expect(await repository.loadServerOrders(), hasLength(1));
+
+      final pairedServer = controller.activeServer!;
+      await expectLater(
+        const PinnedHttpsClient().deliver(
+          server: PairedServer(
+            id: pairedServer.id,
+            displayName: pairedServer.displayName,
+            baseUrl: pairedServer.baseUrl,
+            certificateFingerprint: '0' * 64,
+            createdAt: pairedServer.createdAt,
+            updatedAt: pairedServer.updatedAt,
+          ),
+          accessToken: clientSecrets.tokens.values.single,
+          delivery: delivery,
+        ),
+        throwsA(
+          isA<ClientTransportException>().having(
+            (error) => error.code,
+            'code',
+            'certificate',
+          ),
+        ),
+      );
 
       await repository.deleteTicket(ticket.id);
       expect(await repository.loadTickets(), isEmpty);
@@ -227,7 +252,7 @@ void main() {
     },
   );
 
-  test('a mismatched self-signed certificate is rejected', () async {
+  test('a rejected approval does not pair the Client', () async {
     final configuration = await repository.loadNetworkConfiguration();
     final serverSecrets = _MemoryServerSecrets();
     final identity = await ServerIdentityService(serverSecrets).loadOrCreate();
@@ -236,49 +261,29 @@ void main() {
     final running = await host.start(
       identity: identity,
       configuration: configuration,
-      claimPairingCode: (_) => true,
+      requestPairingApproval: (_) async => false,
       onOrderReceived: () {},
     );
 
     await expectLater(
       const PinnedHttpsClient().pair(
         PairServerRequest(
-          baseUrl: Uri(scheme: 'https', host: '127.0.0.1', port: 1),
-          certificateFingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          code: '123456',
+          baseUrl: Uri(scheme: 'https', host: '127.0.0.1', port: running.port),
           clientInstallationId: 'client-installation-1',
           clientDisplayName: 'Front counter',
           clientIdentityFingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-        ).withPort(running.port),
+        ),
       ),
       throwsA(
         isA<ClientTransportException>().having(
           (error) => error.code,
           'code',
-          'certificate',
+          'pairing_denied',
         ),
       ),
     );
+    expect(await repository.findPairedClient('client-installation-1'), isNull);
   });
-}
-
-extension on PairServerRequest {
-  PairServerRequest withPort(int port) => PairServerRequest(
-    baseUrl: Uri(scheme: 'https', host: baseUrl.host, port: port),
-    certificateFingerprint: certificateFingerprint,
-    code: code,
-    clientInstallationId: clientInstallationId,
-    clientDisplayName: clientDisplayName,
-    clientIdentityFingerprint: clientIdentityFingerprint,
-  );
-}
-
-String _spaced(String fingerprint) {
-  final groups = <String>[];
-  for (var index = 0; index < fingerprint.length; index += 8) {
-    groups.add(fingerprint.substring(index, index + 8).toUpperCase());
-  }
-  return groups.join(' ');
 }
 
 class _LoseFirstAcknowledgementTransport implements ClientServerTransport {

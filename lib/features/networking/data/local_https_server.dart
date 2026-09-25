@@ -32,7 +32,8 @@ class LocalHttpsServer implements ServerHost {
   Future<RunningServer> start({
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   }) async {
     final current = _server;
@@ -59,7 +60,7 @@ class LocalHttpsServer implements ServerHost {
           request,
           identity: identity,
           configuration: configuration,
-          claimPairingCode: claimPairingCode,
+          requestPairingApproval: requestPairingApproval,
           onOrderReceived: onOrderReceived,
         ),
       ),
@@ -74,7 +75,8 @@ class LocalHttpsServer implements ServerHost {
     HttpRequest request, {
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
     required void Function() onOrderReceived,
   }) async {
     request.response.headers.contentType = ContentType.json;
@@ -96,7 +98,7 @@ class LocalHttpsServer implements ServerHost {
           request,
           identity: identity,
           configuration: configuration,
-          claimPairingCode: claimPairingCode,
+          requestPairingApproval: requestPairingApproval,
         );
         return;
       }
@@ -138,13 +140,13 @@ class LocalHttpsServer implements ServerHost {
     HttpRequest request, {
     required ServerIdentity identity,
     required NetworkConfiguration configuration,
-    required bool Function(String code) claimPairingCode,
+    required Future<bool> Function(ClientPairingRequest request)
+    requestPairingApproval,
   }) async {
     _requireJson(request);
     final body = await _readBody(request, _maxPairingBytes);
     final decoded = jsonDecode(body);
     const keys = {
-      'code',
       'clientInstallationId',
       'displayName',
       'clientIdentityFingerprint',
@@ -155,7 +157,6 @@ class LocalHttpsServer implements ServerHost {
         decoded.values.any((value) => value is! String)) {
       throw const FormatException('Invalid pairing request');
     }
-    final code = decoded['code']! as String;
     final clientId = decoded['clientInstallationId']! as String;
     final displayName = (decoded['displayName']! as String).trim();
     final clientFingerprint = decoded['clientIdentityFingerprint']! as String;
@@ -165,7 +166,16 @@ class LocalHttpsServer implements ServerHost {
         !_fingerprintPattern.hasMatch(clientFingerprint)) {
       throw const FormatException('Invalid pairing identity');
     }
-    if (!claimPairingCode(code)) {
+    final approved = await requestPairingApproval(
+      ClientPairingRequest(
+        clientInstallationId: clientId,
+        displayName: displayName,
+        clientIdentityFingerprint: clientFingerprint,
+        sourceAddress:
+            request.connectionInfo?.remoteAddress.address ?? 'unknown',
+      ),
+    );
+    if (!approved) {
       await _writeError(
         request.response,
         HttpStatus.forbidden,
