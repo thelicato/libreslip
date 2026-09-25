@@ -38,7 +38,7 @@ void main() {
   });
 
   test(
-    'pinned pairing and a lost acknowledgement retry store one server order',
+    'pinned pairing automatically resends a lost acknowledgement once',
     () async {
       final configuration = await repository.loadNetworkConfiguration();
       final serverSecrets = _MemoryServerSecrets();
@@ -65,6 +65,7 @@ void main() {
         repository,
         clientSecrets,
         transport,
+        retryDelay: const Duration(milliseconds: 20),
       );
       addTearDown(controller.dispose);
       await controller.load();
@@ -114,7 +115,11 @@ void main() {
       expect(delivery.errorCode, 'unreachable');
       expect(await repository.loadServerOrders(), hasLength(1));
 
-      expect(await controller.retry(delivery.id), isTrue);
+      await _waitUntil(
+        () =>
+            controller.deliveryForTicket(ticket.id)?.status ==
+            ClientDeliveryStatus.delivered,
+      );
       delivery = controller.deliveryForTicket(ticket.id)!;
       expect(delivery.status, ClientDeliveryStatus.delivered);
       expect(delivery.attemptCount, 2);
@@ -284,6 +289,14 @@ void main() {
     );
     expect(await repository.findPairedClient('client-installation-1'), isNull);
   });
+}
+
+Future<void> _waitUntil(bool Function() condition) async {
+  for (var attempt = 0; attempt < 100; attempt++) {
+    if (condition()) return;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  fail('Timed out waiting for automatic delivery retry.');
 }
 
 class _LoseFirstAcknowledgementTransport implements ClientServerTransport {

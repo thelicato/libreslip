@@ -13,7 +13,7 @@ Switching modes requires confirmation and does not delete Client data or the Ser
 
 Print ticket first requires a connected local printer. Ticket finalisation stores one immutable local snapshot and one durable print attempt. If a Server is paired, the same SQLite transaction also creates one stable delivery envelope containing only items enabled for Server orders. An order containing only Local only items creates no delivery.
 
-Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Pending, Sending, Delivered and Needs attention. Explicit retry reuses the same delivery identifier and cannot create another local ticket or print attempt.
+Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Pending, Sending, Delivered and Needs attention. Transient network or Server failures retry automatically every ten seconds while the Client process is available and again after restart. Automatic and explicit retries reuse the same delivery identifier and cannot create another local ticket or print attempt.
 
 Deleting a local ticket does not remotely delete an order already accepted by the Server. Marking a Server order Done does not edit or delete the Client snapshot.
 
@@ -23,11 +23,11 @@ Both Android devices must be on a local network that permits device-to-device tr
 
 On first contact, the Client captures the self-signed Server certificate fingerprint from the TLS connection and verifies that `/v1/status` reports the same identity. The pairing request and all later traffic use that pin with redirects disabled. A random access token authenticates later order delivery. The Client token, Server private key and Server token hashes use Android keystore-backed encrypted storage and never enter logs, configuration ZIPs or full backups. First-contact trust avoids manual fingerprint entry but cannot independently defeat an active local-network interception during that first request, so accept only an expected request on a trusted LAN.
 
-Manual IPv4 address entry is the supported connection method. The Server listens on TCP port 5119 only while LibreSlip is visible in Server mode. There is no background service, automatic discovery, hosted relay or remote-network mode.
+Manual IPv4 address entry is the supported connection method. An Android foreground service, CPU wake lock and Wi-Fi lock keep TCP port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Force-stopping LibreSlip, restarting the device or terminating its process stops reception until Server mode is opened again. There is no automatic discovery, hosted relay or remote-network mode.
 
 ## Server operation
 
-The Orders tab contains Received and Completed filters, immutable order details and the Mark Done action. Its summary lists quantities still outstanding across Received orders. The Settings tab contains listener state, local addresses, pending Client approval, mode selection, language, appearance and the installed version.
+The Orders tab lists oldest orders first. Each constrained card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and Mark Done action. Origin device names are not displayed. The summary lists quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
 
 Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
 

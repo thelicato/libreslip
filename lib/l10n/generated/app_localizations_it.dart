@@ -204,6 +204,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get appearanceBody => 'Scegli lo stile o segui quello del telefono.';
 
   @override
+  String get appTextSize => 'Dimensione del testo';
+
+  @override
+  String get appTextSizeBody =>
+      'Ingrandisci il testo in LibreSlip mantenendo le impostazioni di accessibilità di Android.';
+
+  @override
+  String get appTextSizeDefault => 'Predefinita';
+
+  @override
+  String get appTextSizeLarge => 'Grande';
+
+  @override
+  String get appTextSizeLargest => 'Molto grande';
+
+  @override
   String get systemTheme => 'Sistema';
 
   @override
@@ -961,14 +977,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get serverModeBody =>
-      'Ricevi ordini su questo dispositivo e segnali come completati. La ricezione funziona solo mentre LibreSlip è aperto.';
+      'Ricevi gli ordini su questo dispositivo e contrassegnali come completati. Un servizio in primo piano mantiene attiva la ricezione quando lo schermo è bloccato.';
 
   @override
   String get switchToServerTitle => 'Passare alla modalità Server?';
 
   @override
   String get switchToServerBody =>
-      'Articoli, bozze e storico del Client restano su questo telefono. La modalità Server riceve ordini non modificabili sulla rete locale mentre LibreSlip è aperto.';
+      'Gli articoli, la composizione e lo storico del Client restano su questo telefono. La modalità Server riceve ordini non modificabili sulla rete locale, anche quando lo schermo è bloccato.';
 
   @override
   String get switchToClientTitle => 'Passare alla modalità Client?';
@@ -1002,7 +1018,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get serverForegroundOnly =>
-      'Solo HTTPS locale. La ricezione si interrompe quando LibreSlip non è aperto in modalità Server.';
+      'Solo HTTPS locale. Un servizio in primo piano continua a ricevere quando il dispositivo è bloccato o LibreSlip è in background. Passa alla modalità Client per interromperlo.';
 
   @override
   String get serverAddresses => 'Indirizzi di connessione';
@@ -1061,9 +1077,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get noCompletedOrdersBody =>
       'Gli ordini che segnali come completati resteranno qui.';
-
-  @override
-  String get sourceDevice => 'Dispositivo di origine';
 
   @override
   String get receivedAt => 'Ricevuto';
@@ -1150,7 +1163,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get pairingUnreachable =>
-      'Impossibile raggiungere il Server. Mantieni entrambi i dispositivi sulla stessa rete locale e lascia aperta la modalità Server.';
+      'Impossibile raggiungere il Server. Mantieni entrambi i dispositivi sulla stessa rete locale e verifica che la modalità Server sia attiva.';
 
   @override
   String get pairingFailed =>
@@ -1183,7 +1196,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryPendingBody =>
-      'Questa comanda è salvata in locale e verrà inviata mentre LibreSlip è aperto e il Server associato è raggiungibile.';
+      'Questa comanda è salvata in locale e verrà inviata automaticamente quando il Server associato sarà raggiungibile.';
 
   @override
   String get deliveryDeliveredBody =>
@@ -1191,7 +1204,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryFailedBody =>
-      'La stampa locale e lo storico non sono interessati. Controlla il Server e riprova la stessa consegna in sicurezza.';
+      'La stampa locale e lo storico non sono interessati. Gli errori di rete temporanei vengono riprovati automaticamente; puoi anche riprovare subito la stessa consegna.';
 
   @override
   String get retryDelivery => 'Riprova consegna';

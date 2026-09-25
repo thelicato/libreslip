@@ -95,6 +95,7 @@ void main() {
         heading: 'Bottega Libertà',
         language: 'it',
         themeMode: ThemeMode.dark,
+        appTextScale: 1.3,
         typography: TicketTypography(
           heading: 20,
           details: 10,
@@ -198,6 +199,7 @@ void main() {
     expect(restored!.heading, 'Bottega Libertà');
     expect(restored.language, 'it');
     expect(restored.themeMode, ThemeMode.dark);
+    expect(restored.appTextScale, 1.3);
     expect(restored.typography.heading, 20);
     expect(restored.typography.details, 10);
     expect(restored.typography.items, 12);
@@ -299,6 +301,7 @@ void main() {
     expect(freshSettings.stored!.heading, 'Bottega Libertà');
     expect(freshSettings.stored!.language, 'it');
     expect(freshSettings.stored!.themeMode, ThemeMode.dark);
+    expect(freshSettings.stored!.appTextScale, 1.3);
     expect(freshSettings.stored!.typography.heading, 20);
     expect(await freshRepository.loadItems(), hasLength(1));
     expect(await freshRepository.loadDrafts(), hasLength(1));

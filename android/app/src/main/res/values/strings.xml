@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_service_channel">Server orders</string>
+    <string name="server_service_title">LibreSlip Server is running</string>
+    <string name="server_service_text">Ready to receive orders on the local network</string>
+</resources>

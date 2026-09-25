@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="server_service_channel">Ordini del Server</string>
+    <string name="server_service_title">Il Server LibreSlip è attivo</string>
+    <string name="server_service_text">Pronto a ricevere ordini sulla rete locale</string>
+</resources>

@@ -466,6 +466,36 @@ abstract class AppLocalizations {
   /// **'Set the mood, or follow your phone.'**
   String get appearanceBody;
 
+  /// No description provided for @appTextSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get appTextSize;
+
+  /// No description provided for @appTextSizeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase text throughout LibreSlip while keeping Android accessibility scaling.'**
+  String get appTextSizeBody;
+
+  /// No description provided for @appTextSizeDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get appTextSizeDefault;
+
+  /// No description provided for @appTextSizeLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get appTextSizeLarge;
+
+  /// No description provided for @appTextSizeLargest.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra large'**
+  String get appTextSizeLargest;
+
   /// No description provided for @systemTheme.
   ///
   /// In en, this message translates to:
@@ -1783,7 +1813,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverModeBody.
   ///
   /// In en, this message translates to:
-  /// **'Receive orders on this device and mark them Done. The listener runs only while LibreSlip is open.'**
+  /// **'Receive orders on this device and mark them Done. A foreground service keeps the receiver available while the screen is locked.'**
   String get serverModeBody;
 
   /// No description provided for @switchToServerTitle.
@@ -1795,7 +1825,7 @@ abstract class AppLocalizations {
   /// No description provided for @switchToServerBody.
   ///
   /// In en, this message translates to:
-  /// **'Your client items, drafts and ticket history stay on this phone. Server mode receives immutable orders on your local network while LibreSlip is open.'**
+  /// **'Your Client items, composition and ticket history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.'**
   String get switchToServerBody;
 
   /// No description provided for @switchToClientTitle.
@@ -1855,7 +1885,7 @@ abstract class AppLocalizations {
   /// No description provided for @serverForegroundOnly.
   ///
   /// In en, this message translates to:
-  /// **'Local HTTPS only. Receiving stops whenever LibreSlip is not open in Server mode.'**
+  /// **'Local HTTPS only. A foreground service keeps receiving while this device is locked or LibreSlip is in the background. Switch to Client mode to stop it.'**
   String get serverForegroundOnly;
 
   /// No description provided for @serverAddresses.
@@ -1959,12 +1989,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Orders you mark Done will stay here.'**
   String get noCompletedOrdersBody;
-
-  /// No description provided for @sourceDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'Source device'**
-  String get sourceDevice;
 
   /// No description provided for @receivedAt.
   ///
@@ -2119,7 +2143,7 @@ abstract class AppLocalizations {
   /// No description provided for @pairingUnreachable.
   ///
   /// In en, this message translates to:
-  /// **'The Server could not be reached. Keep both devices on the same local network and leave Server mode open.'**
+  /// **'The Server could not be reached. Keep both devices on the same local network and make sure Server mode is active.'**
   String get pairingUnreachable;
 
   /// No description provided for @pairingFailed.
@@ -2179,7 +2203,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryPendingBody.
   ///
   /// In en, this message translates to:
-  /// **'This ticket is saved locally and will be sent while LibreSlip is open and the paired Server is reachable.'**
+  /// **'This ticket is saved locally and will be sent automatically when the paired Server is reachable.'**
   String get deliveryPendingBody;
 
   /// No description provided for @deliveryDeliveredBody.
@@ -2191,7 +2215,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryFailedBody.
   ///
   /// In en, this message translates to:
-  /// **'Local printing and history are unaffected. Check the Server and retry this same delivery safely.'**
+  /// **'Local printing and history are unaffected. Transient network failures retry automatically; you can also retry this same delivery now.'**
   String get deliveryFailedBody;
 
   /// No description provided for @retryDelivery.

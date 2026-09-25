@@ -1,6 +1,6 @@
 # Local order protocol
 
-LibreSlip protocol version 1 carries immutable order envelopes over pinned HTTPS on the local network. The foreground Server listens on TCP port 5119.
+LibreSlip protocol version 1 carries immutable order envelopes over pinned HTTPS on the local network. An Android foreground service keeps the Server listening on TCP port 5119 while Server mode is active.
 
 ## Encoding and limits
 
@@ -36,7 +36,7 @@ The Server private key, Server-side token hashes and Client access token use sep
 
 ## HTTPS endpoints and authentication
 
-The Server listens on IPv4 TCP port 5119 only while LibreSlip is visible in Server mode. It displays each current local-network address and stops when backgrounded, when Client mode is selected or when the process terminates.
+The Server listens on IPv4 TCP port 5119 while Server mode is active. A foreground service retains the Flutter engine and holds CPU and Wi-Fi locks so the HTTPS listener continues when the screen locks or the activity is backgrounded. It displays each current local-network address and stops when Client mode is selected, LibreSlip is force-stopped, the process terminates or the device restarts.
 
 `GET /v1/status` returns the protocol version, Server installation identifier, display name and certificate fingerprint. `POST /v1/pair` accepts the Client installation identifier, display name and 64-character Client identity fingerprint, then waits for explicit approval in Server Settings. An accepted request returns a random 256-bit access token; only its hash is retained. A rejected, concurrent or two-minute-expired request returns HTTP 403. `POST /v1/orders` requires the token as a Bearer credential plus the matching Client installation identifier in `X-LibreSlip-Client-Id`.
 
@@ -46,4 +46,4 @@ Requests must use JSON. Pairing bodies are limited to 4,096 bytes and order bodi
 
 Client pairing accepts only an IPv4 loopback, link-local or RFC 1918 address and HTTPS port. For the first `/v1/status` request, LibreSlip uses a trust store with no roots, captures SHA-256 over the presented DER certificate and requires the status response to advertise that exact fingerprint. The subsequent approval request and every later connection require the captured pin. Redirects are disabled. This trust-on-first-contact flow removes manual fingerprint entry; explicit Server acceptance prevents silent pairing, but an active LAN interceptor during first contact is outside this model.
 
-After pairing, the Client sends the access token only to that pinned Server identity. A new delivery receives one foreground attempt after local printing. Pending records recovered at startup also receive one bounded attempt. Network, authentication, certificate, protocol and Server failures become Needs attention and require explicit retry. Retry retains the Client installation identifier, delivery identifier, immutable JSON and checksum.
+After pairing, the Client sends the access token only to that pinned Server identity. A new delivery is attempted after local printing. Lost acknowledgements, unreachable-network failures and Server failures are retried automatically every ten seconds while the Client process is available and again when the app opens. Authentication, certificate, destination, storage and protocol errors remain Needs attention for explicit action. Every attempt retains the Client installation identifier, delivery identifier, immutable JSON and checksum. The Server commits an order and its acknowledgement atomically, then returns the existing acknowledgement for an identical resend.

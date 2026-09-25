@@ -117,6 +117,13 @@ void main() {
         5,
       ),
       (
+        'server-order-dialog-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
         'server-settings-phone-en',
         const Size(520, 1100),
         'en',
@@ -270,12 +277,17 @@ void main() {
         await tester.tap(totalsButton);
         await tester.pumpAndSettle();
       }
+      if (name == 'server-order-dialog-tablet-en') {
+        await tester.tap(find.text('Order 12'));
+        await tester.pumpAndSettle();
+      }
       if (name == 'server-settings-phone-en') {
         await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
         await tester.pumpAndSettle();
-        await tester.drag(
-          find.byKey(const ValueKey('server-settings-page')),
-          const Offset(0, -420),
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('app-version')),
+          500,
+          scrollable: find.byType(Scrollable).first,
         );
         await tester.pumpAndSettle();
       }

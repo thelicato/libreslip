@@ -664,7 +664,7 @@ class SqliteOrderRepository
         FROM server_orders o
         JOIN server_clients c
           ON c.installation_id = o.client_installation_id
-        ORDER BY o.received_at DESC
+        ORDER BY o.received_at ASC, o.id ASC
       ''');
       final orders = <ServerOrder>[];
       for (final row in rows) {

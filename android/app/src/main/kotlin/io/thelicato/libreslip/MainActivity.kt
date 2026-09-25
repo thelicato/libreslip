@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,13 +20,17 @@ class MainActivity : FlutterActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private var socket: BluetoothSocket? = null
     private var permissionResult: MethodChannel.Result? = null
+    private var printerChannel: MethodChannel? = null
+    private var serverServiceChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(
+        val printer = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             CHANNEL_NAME,
-        ).setMethodCallHandler { call, result ->
+        )
+        printerChannel = printer
+        printer.setMethodCallHandler { call, result ->
             when (call.method) {
                 "getState" -> getState(result)
                 "requestPermission" -> requestBluetoothPermission(result)
@@ -54,6 +59,55 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        val serverService = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            SERVER_SERVICE_CHANNEL_NAME,
+        )
+        serverServiceChannel = serverService
+        serverService.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> startServerService(flutterEngine, result)
+                "stop" -> {
+                    LibreSlipServerService.stop(applicationContext)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    private fun startServerService(flutterEngine: FlutterEngine, result: MethodChannel.Result) {
+        try {
+            LibreSlipServerService.start(applicationContext, flutterEngine)
+            if (
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST,
+                )
+            }
+            result.success(null)
+        } catch (_: Exception) {
+            LibreSlipServerService.stop(applicationContext)
+            result.error("serverServiceFailed", null, null)
+        }
+    }
+
+    override fun provideFlutterEngine(context: Context): FlutterEngine? =
+        LibreSlipServerService.retainedEngine()
+
+    override fun shouldDestroyEngineWithHost(): Boolean =
+        !LibreSlipServerService.isRetainingEngine
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        printerChannel?.setMethodCallHandler(null)
+        printerChannel = null
+        serverServiceChannel?.setMethodCallHandler(null)
+        serverServiceChannel = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 
     @SuppressLint("MissingPermission")
@@ -206,7 +260,10 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL_NAME = "io.thelicato.libreslip/printer"
+        private const val SERVER_SERVICE_CHANNEL_NAME =
+            "io.thelicato.libreslip/server_service"
         private const val PERMISSION_REQUEST = 401
+        private const val NOTIFICATION_PERMISSION_REQUEST = 402
         private val SERIAL_PORT_PROFILE_UUID: UUID =
             UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     }

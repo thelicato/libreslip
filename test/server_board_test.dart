@@ -53,8 +53,58 @@ void main() {
     expect(totals.map((total) => total.quantity), [5, 1]);
   });
 
+  test('Server orders load oldest first', () async {
+    final environment = await createMemoryOrderEnvironment();
+    addTearDown(environment.controller.dispose);
+    final repository = environment.repository;
+    await repository.pairClient(
+      PairedClient(
+        installationId: 'client-1',
+        displayName: 'Front counter',
+        identityFingerprint: 'b' * 64,
+        pairedAt: DateTime.utc(2026, 9, 25, 8),
+      ),
+    );
+    Future<void> receive({
+      required String id,
+      required int number,
+      required DateTime receivedAt,
+    }) => repository
+        .receiveServerOrder(
+          OrderDeliveryEnvelope.create(
+            clientInstallationId: 'client-1',
+            deliveryId: 'delivery-$id',
+            ticketId: 'ticket-$id',
+            ticketNumber: number,
+            createdAt: receivedAt.subtract(const Duration(minutes: 1)),
+            heading: 'Kitchen',
+            reference: '',
+            orderNote: '',
+            lines: const [DeliveryLine(name: 'Soup', quantity: 1)],
+          ),
+          receivedAt: receivedAt,
+        )
+        .then((_) {});
+
+    await receive(
+      id: 'newer',
+      number: 2,
+      receivedAt: DateTime.utc(2026, 9, 25, 10),
+    );
+    await receive(
+      id: 'older',
+      number: 1,
+      receivedAt: DateTime.utc(2026, 9, 25, 9),
+    );
+
+    expect(
+      (await repository.loadServerOrders()).map((order) => order.displayNumber),
+      [1, 2],
+    );
+  });
+
   testWidgets('received order detail can be marked Done', (tester) async {
-    tester.view.physicalSize = const Size(520, 1000);
+    tester.view.physicalSize = const Size(1100, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -116,7 +166,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Still to prepare'), findsOneWidget);
-    expect(find.text('Soup'), findsOneWidget);
+    expect(find.text('Soup'), findsWidgets);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('Ready to receive'), findsNothing);
 
@@ -132,12 +182,27 @@ void main() {
     await tester.ensureVisible(find.text('Order 17'));
     await tester.pumpAndSettle();
     final orderFinder = find.byKey(ValueKey('server-order-$receivedId'));
+    expect(
+      find.descendant(of: orderFinder, matching: find.text('2×')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: orderFinder, matching: find.text('Soup')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: orderFinder, matching: find.text('No cream')),
+      findsOneWidget,
+    );
+    expect(find.text('Front counter'), findsNothing);
+    expect(tester.getSize(orderFinder).width, lessThanOrEqualTo(760));
     await tester.tap(orderFinder);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
+    expect(tester.getSize(find.byType(AlertDialog)).width, greaterThan(680));
     expect(find.text('2×  Soup'), findsOneWidget);
-    expect(find.text('No cream'), findsOneWidget);
-    expect(find.text('Front counter'), findsWidgets);
+    expect(find.text('No cream'), findsWidgets);
+    expect(find.text('Front counter'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('mark-order-done')));
     await tester.pumpAndSettle();

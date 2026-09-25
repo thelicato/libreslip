@@ -38,6 +38,40 @@ class LanguageSettingsCard extends StatelessWidget {
   }
 }
 
+class TextSizeSettingsCard extends StatelessWidget {
+  const TextSizeSettingsCard({super.key, required this.controller});
+
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final settings = controller.settings;
+    return _PersonalisationCard(
+      title: l.appTextSize,
+      subtitle: l.appTextSizeBody,
+      icon: Icons.format_size_rounded,
+      child: _ChoiceWrap(
+        children: [
+          for (final (scale, label) in [
+            (1.0, l.appTextSizeDefault),
+            (1.15, l.appTextSizeLarge),
+            (1.3, l.appTextSizeLargest),
+          ])
+            _Choice(
+              key: ValueKey('text-scale-$scale'),
+              title: label,
+              selected: (settings.appTextScale - scale).abs() < 0.001,
+              enabled: !controller.saving,
+              onTap: () =>
+                  controller.update(settings.copyWith(appTextScale: scale)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class AppearanceSettingsCard extends StatelessWidget {
   const AppearanceSettingsCard({super.key, required this.controller});
 

@@ -30,7 +30,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Reprint or share a ticket as a PDF without creating a second order.
 - Browse immutable ticket history and delete individual tickets or clear the history when needed.
 - Review ticket counts, total quantities and per-item totals for any date range.
-- Switch instantly between British English and Italian, plus light, dark or system appearance.
+- Switch instantly between British English and Italian, choose light, dark or system appearance and increase the app text size.
 - Export configuration ZIPs or complete local backups with validated, recoverable restore.
 
 ## Client mode
@@ -46,7 +46,7 @@ Server mode turns another Android device into a focused preparation board:
 - **Orders** shows Received and Completed orders, immutable order details and the quantities still waiting to be prepared.
 - **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
 
-Mark Done is the only order action. Server mode does not edit the catalogue, compose or print tickets, process payments or produce financial reports. It listens on HTTPS port 5119 only while LibreSlip remains open in Server mode.
+Mark Done is the only order action. Server mode does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
 
 ## Printing
 

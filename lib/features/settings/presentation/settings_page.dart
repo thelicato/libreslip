@@ -256,6 +256,8 @@ class SettingsPage extends StatelessWidget {
         LanguageSettingsCard(controller: controller),
         const SizedBox(height: 20),
         AppearanceSettingsCard(controller: controller),
+        const SizedBox(height: 20),
+        TextSizeSettingsCard(controller: controller),
         if (printer != null) ...[
           const SizedBox(height: 20),
           PrinterSetupCard(controller: printer!),

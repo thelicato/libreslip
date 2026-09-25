@@ -54,11 +54,7 @@ class _ServerModeShellState extends State<ServerModeShell>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_start());
-    } else if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached ||
-        state == AppLifecycleState.hidden) {
-      unawaited(widget.inboxController.stop());
+      unawaited(widget.inboxController.refresh());
     }
   }
 
@@ -178,23 +174,22 @@ class _ServerModeShellState extends State<ServerModeShell>
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              sliver: SliverLayoutBuilder(
-                builder: (context, constraints) {
-                  final columns = constraints.crossAxisExtent >= 760 ? 2 : 1;
-                  return SliverGrid.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      mainAxisExtent: 190,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+              sliver: SliverList.builder(
+                itemCount: orders.length,
+                itemBuilder: (context, index) => Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == orders.length - 1 ? 0 : 16,
+                      ),
+                      child: _OrderCard(
+                        order: orders[index],
+                        onTap: () => _showOrder(orders[index]),
+                      ),
                     ),
-                    itemCount: orders.length,
-                    itemBuilder: (context, index) => _OrderCard(
-                      order: orders[index],
-                      onTap: () => _showOrder(orders[index]),
-                    ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           SliverPadding(
@@ -247,6 +242,8 @@ class _ServerModeShellState extends State<ServerModeShell>
                     AppearanceSettingsCard(
                       controller: widget.settingsController,
                     ),
+                    const SizedBox(height: 20),
+                    TextSizeSettingsCard(controller: widget.settingsController),
                     const SizedBox(height: 28),
                     const AppVersionFooter(),
                   ],
@@ -573,10 +570,6 @@ class _OrderCard extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final itemCount = order.lines.fold<int>(
-      0,
-      (total, line) => total + line.quantity,
-    );
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -601,28 +594,48 @@ class _OrderCard extends StatelessWidget {
               ),
               if (order.reference.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(
-                  order.reference,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium,
-                ),
+                Text(order.reference, style: theme.textTheme.titleMedium),
               ],
-              const Spacer(),
-              Text(order.clientDisplayName),
-              const SizedBox(height: 4),
-              Text(
-                l.itemCount(itemCount),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(height: 16),
+              for (var index = 0; index < order.lines.length; index++) ...[
+                if (index > 0) const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        '${order.lines[index].quantity}×',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        order.lines[index].name,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
+                if (order.lines[index].preparationNote.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 48, top: 3),
+                    child: Text(
+                      order.lines[index].preparationNote,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 16),
               Text(
                 DateFormat.yMMMd(locale)
                     .add_Hm()
                     .format(order.receivedAt.toLocal()),
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -643,15 +656,25 @@ class _OrderDialog extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final size = MediaQuery.sizeOf(context);
+    final wide = size.width >= 760;
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: wide ? 48 : 20,
+        vertical: 24,
+      ),
+      constraints: BoxConstraints(
+        minWidth: wide ? (size.width - 96).clamp(560, 720) : 0,
+        maxWidth: 760,
+        maxHeight: size.height - 48,
+      ),
       title: Text(l.orderNumber(order.displayNumber)),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+      content: SizedBox(
+        width: wide ? 680 : null,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _DetailRow(label: l.sourceDevice, value: order.clientDisplayName),
               _DetailRow(
                 label: l.receivedAt,
                 value: DateFormat.yMMMd(locale)

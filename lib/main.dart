@@ -6,6 +6,7 @@ import 'app/libreslip_app.dart';
 import 'features/networking/application/client_delivery_controller.dart';
 import 'features/networking/application/network_mode_controller.dart';
 import 'features/networking/application/server_inbox_controller.dart';
+import 'features/networking/data/android_server_runtime_service.dart';
 import 'features/networking/data/local_https_server.dart';
 import 'features/networking/data/pinned_https_client.dart';
 import 'features/networking/data/secure_client_secret_store.dart';
@@ -43,6 +44,7 @@ void main() {
     repository,
     serverSecrets,
     LocalHttpsServer(repository, serverSecrets),
+    runtimeService: const AndroidServerRuntimeService(),
   );
   final clientDelivery = ClientDeliveryController(
     repository,

@@ -24,6 +24,7 @@ void main() {
       ),
       language: 'it',
       themeMode: ThemeMode.dark,
+      appTextScale: 1.3,
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -38,6 +39,7 @@ void main() {
     expect(decoded.typography.items, 12);
     expect(decoded.typography.notes, 9);
     expect(decoded.typography.footer, 11);
+    expect(decoded.appTextScale, 1.3);
   });
 
   test('version 1 preferences migrate with an empty footer and no logo', () {
@@ -64,6 +66,31 @@ void main() {
     expect(legacy.typography.toJson(), const TicketTypography().toJson());
   });
 
+  test('version 3 preferences migrate with the default app text size', () {
+    final legacy = AppSettings.fromJson({
+      'version': 3,
+      'heading': 'Corner & Co.',
+      'footer': 'Thank you',
+      'logoPath': null,
+      'typography': const TicketTypography().toJson(),
+      'language': 'en',
+      'theme': 'system',
+    });
+    expect(legacy.appTextScale, AppSettings.defaultAppTextScale);
+  });
+
+  test('app text scaling enforces hard minimum and maximum sizes', () {
+    for (final scale in [0.99, 1.31, double.nan]) {
+      expect(
+        () => AppSettings.fromJson({
+          ...const AppSettings().toJson(),
+          'appTextScale': scale,
+        }),
+        throwsFormatException,
+      );
+    }
+  });
+
   test('ticket typography enforces hard minimum and maximum sizes', () {
     expect(
       () => TicketTypography.fromJson({
@@ -83,7 +110,7 @@ void main() {
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 4},
+      {...const AppSettings().toJson(), 'version': 5},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
@@ -119,6 +146,7 @@ void main() {
         heading: 'Corner & Co.',
         language: 'it',
         themeMode: ThemeMode.dark,
+        appTextScale: 1.15,
       ),
     );
     first.dispose();
@@ -128,6 +156,7 @@ void main() {
     expect(next.settings.heading, 'Corner & Co.');
     expect(next.settings.language, 'it');
     expect(next.settings.themeMode, ThemeMode.dark);
+    expect(next.settings.appTextScale, 1.15);
   });
 
   test('a failed read neither overwrites data nor enables editing, and can recover', () async {

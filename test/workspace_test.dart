@@ -211,6 +211,20 @@ void main() {
       Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
       Brightness.dark,
     );
+    final largestText = find.byKey(const ValueKey('text-scale-1.3'));
+    await tester.scrollUntilVisible(
+      largestText,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(largestText);
+    await tester.pumpAndSettle();
+    expect(controller.settings.appTextScale, 1.3);
+    expect(
+      MediaQuery.textScalerOf(tester.element(find.byType(Scaffold).first))
+          .scale(10),
+      closeTo(13, 0.01),
+    );
     expect(tester.takeException(), isNull);
   });
 

@@ -54,6 +54,18 @@ class LibreSlipApp extends StatelessWidget {
       theme: AppTheme.build(Brightness.light),
       darkTheme: AppTheme.build(Brightness.dark),
       themeMode: settings.settings.themeMode,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: _AppTextScaler(
+              mediaQuery.textScaler,
+              settings.settings.appTextScale,
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       themeAnimationDuration:
           WidgetsBinding
               .instance
@@ -165,4 +177,26 @@ class _StartupScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AppTextScaler extends TextScaler {
+  const _AppTextScaler(this.systemScaler, this.appScale);
+
+  final TextScaler systemScaler;
+  final double appScale;
+
+  @override
+  double scale(double fontSize) => systemScaler.scale(fontSize) * appScale;
+
+  @override
+  double get textScaleFactor => systemScaler.scale(1) * appScale;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _AppTextScaler &&
+      other.systemScaler == systemScaler &&
+      other.appScale == appScale;
+
+  @override
+  int get hashCode => Object.hash(systemScaler, appScale);
 }

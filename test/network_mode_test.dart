@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/networking/application/network_mode_controller.dart';
 import 'package:libreslip/features/networking/application/server_inbox_controller.dart';
+import 'package:libreslip/features/networking/domain/server_runtime_service.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
@@ -65,6 +66,57 @@ void main() {
 
     expect(inbox.listening, isFalse);
     expect(host.stopCalls, 2);
+  });
+
+  testWidgets('Server listener stays active while the app is paused', (
+    tester,
+  ) async {
+    final settings = SettingsController(MemorySettingsRepository());
+    final environment = await createMemoryOrderEnvironment();
+    final networking = NetworkModeController(environment.repository);
+    final runtime = _FakeServerRuntimeService();
+    final host = _FakeServerHost();
+    final inbox = ServerInboxController(
+      environment.repository,
+      _MemoryServerSecrets(),
+      host,
+      runtimeService: runtime,
+    );
+    addTearDown(settings.dispose);
+    addTearDown(environment.controller.dispose);
+    addTearDown(networking.dispose);
+    addTearDown(inbox.dispose);
+    await settings.load();
+    await networking.load();
+    await networking.setMode(LibreSlipMode.server);
+
+    await tester.pumpWidget(
+      LibreSlipApp(
+        settings: settings,
+        orders: environment.controller,
+        networking: networking,
+        serverInbox: inbox,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(inbox.listening, isTrue);
+    expect(runtime.startCalls, 1);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    expect(inbox.listening, isTrue);
+    expect(host.stopCalls, 0);
+    expect(runtime.stopCalls, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(inbox.listening, isTrue);
+    expect(runtime.startCalls, 1);
+
+    await inbox.stop();
+    expect(inbox.listening, isFalse);
+    expect(host.stopCalls, 1);
+    expect(runtime.stopCalls, 1);
   });
 
   testWidgets('confirmed mode changes replace and restore the client shell', (
@@ -135,6 +187,15 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('theme-dark')));
     await tester.pumpAndSettle();
     expect(settings.settings.themeMode, ThemeMode.dark);
+    final largestText = find.byKey(const ValueKey('text-scale-1.3'));
+    await tester.scrollUntilVisible(
+      largestText,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(largestText);
+    await tester.pumpAndSettle();
+    expect(settings.settings.appTextScale, 1.3);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('app-version')),
       500,
@@ -320,6 +381,8 @@ class _MemoryServerSecrets implements ServerSecretStore {
 
 class _FakeServerHost implements ServerHost {
   Future<bool> Function(ClientPairingRequest request)? requestPairingApproval;
+  var startCalls = 0;
+  var stopCalls = 0;
 
   @override
   Future<RunningServer> start({
@@ -329,6 +392,7 @@ class _FakeServerHost implements ServerHost {
     requestPairingApproval,
     required void Function() onOrderReceived,
   }) async {
+    startCalls++;
     this.requestPairingApproval = requestPairingApproval;
     return const RunningServer(
       port: 5119,
@@ -337,7 +401,24 @@ class _FakeServerHost implements ServerHost {
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stopCalls++;
+  }
+}
+
+class _FakeServerRuntimeService implements ServerRuntimeService {
+  var startCalls = 0;
+  var stopCalls = 0;
+
+  @override
+  Future<void> start() async {
+    startCalls++;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCalls++;
+  }
 }
 
 class _DelayedServerHost implements ServerHost {

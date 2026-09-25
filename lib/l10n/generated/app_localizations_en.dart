@@ -201,6 +201,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearanceBody => 'Set the mood, or follow your phone.';
 
   @override
+  String get appTextSize => 'Text size';
+
+  @override
+  String get appTextSizeBody =>
+      'Increase text throughout LibreSlip while keeping Android accessibility scaling.';
+
+  @override
+  String get appTextSizeDefault => 'Default';
+
+  @override
+  String get appTextSizeLarge => 'Large';
+
+  @override
+  String get appTextSizeLargest => 'Extra large';
+
+  @override
   String get systemTheme => 'System';
 
   @override
@@ -950,14 +966,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverModeBody =>
-      'Receive orders on this device and mark them Done. The listener runs only while LibreSlip is open.';
+      'Receive orders on this device and mark them Done. A foreground service keeps the receiver available while the screen is locked.';
 
   @override
   String get switchToServerTitle => 'Switch to Server mode?';
 
   @override
   String get switchToServerBody =>
-      'Your client items, drafts and ticket history stay on this phone. Server mode receives immutable orders on your local network while LibreSlip is open.';
+      'Your Client items, composition and ticket history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.';
 
   @override
   String get switchToClientTitle => 'Switch to Client mode?';
@@ -991,7 +1007,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverForegroundOnly =>
-      'Local HTTPS only. Receiving stops whenever LibreSlip is not open in Server mode.';
+      'Local HTTPS only. A foreground service keeps receiving while this device is locked or LibreSlip is in the background. Switch to Client mode to stop it.';
 
   @override
   String get serverAddresses => 'Connection addresses';
@@ -1049,9 +1065,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCompletedOrdersBody => 'Orders you mark Done will stay here.';
-
-  @override
-  String get sourceDevice => 'Source device';
 
   @override
   String get receivedAt => 'Received';
@@ -1137,7 +1150,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pairingUnreachable =>
-      'The Server could not be reached. Keep both devices on the same local network and leave Server mode open.';
+      'The Server could not be reached. Keep both devices on the same local network and make sure Server mode is active.';
 
   @override
   String get pairingFailed =>
@@ -1170,7 +1183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryPendingBody =>
-      'This ticket is saved locally and will be sent while LibreSlip is open and the paired Server is reachable.';
+      'This ticket is saved locally and will be sent automatically when the paired Server is reachable.';
 
   @override
   String get deliveryDeliveredBody =>
@@ -1178,7 +1191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryFailedBody =>
-      'Local printing and history are unaffected. Check the Server and retry this same delivery safely.';
+      'Local printing and history are unaffected. Transient network failures retry automatically; you can also retry this same delivery now.';
 
   @override
   String get retryDelivery => 'Retry delivery';

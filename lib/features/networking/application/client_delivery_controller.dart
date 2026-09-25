@@ -11,11 +11,17 @@ import '../domain/client_transport.dart';
 import '../domain/network_models.dart';
 
 class ClientDeliveryController extends ChangeNotifier {
-  ClientDeliveryController(this._store, this._secrets, this._transport);
+  ClientDeliveryController(
+    this._store,
+    this._secrets,
+    this._transport, {
+    this.retryDelay = const Duration(seconds: 10),
+  });
 
   final ClientDeliveryStore _store;
   final ClientSecretStore _secrets;
   final ClientServerTransport _transport;
+  final Duration retryDelay;
 
   PairedServer? activeServer;
   List<ClientDelivery> deliveries = const [];
@@ -25,6 +31,11 @@ class ClientDeliveryController extends ChangeNotifier {
   bool unpairing = false;
   String? lastPairingError;
   final Set<String> _sendingIds = {};
+  Timer? _retryTimer;
+  bool _draining = false;
+  bool _disposed = false;
+
+  static const _automaticallyRetryableErrors = {'unreachable', 'server'};
 
   int get pendingCount => deliveries
       .where(
@@ -60,7 +71,7 @@ class ClientDeliveryController extends ChangeNotifier {
       activeServer = await _store.loadActiveServer();
       deliveries = await _store.loadClientDeliveries();
       loaded = true;
-      unawaited(_sendRecoveredPending());
+      unawaited(_drainRecoverableDeliveries());
     } catch (_) {
       loaded = false;
       loadFailed = true;
@@ -131,6 +142,8 @@ class ClientDeliveryController extends ChangeNotifier {
     try {
       await _secrets.deleteServerAccessToken(server.id);
       await _store.deactivateServer(server.id);
+      _retryTimer?.cancel();
+      _retryTimer = null;
       activeServer = null;
       deliveries = await _store.loadClientDeliveries();
       return true;
@@ -163,12 +176,56 @@ class ClientDeliveryController extends ChangeNotifier {
     }
   }
 
-  Future<void> _sendRecoveredPending() async {
-    for (final delivery in List<ClientDelivery>.from(deliveries)) {
-      if (delivery.status == ClientDeliveryStatus.pending) {
-        await _send(delivery);
+  Future<void> _drainRecoverableDeliveries() async {
+    if (_disposed || _draining) return;
+    _draining = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    try {
+      for (var delivery in List<ClientDelivery>.from(deliveries)) {
+        if (_disposed) return;
+        if (delivery.status == ClientDeliveryStatus.failed &&
+            _isAutomaticallyRetryable(delivery)) {
+          try {
+            delivery = await _store.resetClientDeliveryForRetry(delivery.id);
+            await _refresh();
+          } catch (_) {
+            await _refreshSafely();
+            continue;
+          }
+        }
+        if (delivery.status == ClientDeliveryStatus.pending) {
+          await _send(delivery);
+        }
       }
+    } finally {
+      _draining = false;
+      _scheduleRetry();
     }
+  }
+
+  bool _isAutomaticallyRetryable(ClientDelivery delivery) =>
+      delivery.status == ClientDeliveryStatus.failed &&
+      _automaticallyRetryableErrors.contains(delivery.errorCode);
+
+  void _cancelRetryWhenSettled() {
+    if (deliveries.any(_isAutomaticallyRetryable)) return;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+  }
+
+  void _scheduleRetry() {
+    if (_disposed ||
+        _draining ||
+        _retryTimer != null ||
+        activeServer == null ||
+        !deliveries.any(_isAutomaticallyRetryable)) {
+      return;
+    }
+    _retryTimer = Timer(retryDelay, () {
+      _retryTimer = null;
+      unawaited(_drainRecoverableDeliveries());
+    });
   }
 
   Future<bool> _send(ClientDelivery delivery) async {
@@ -199,6 +256,7 @@ class ClientDeliveryController extends ChangeNotifier {
         deliveredAt: DateTime.now().toUtc(),
       );
       await _refresh();
+      _cancelRetryWhenSettled();
       return true;
     } on ClientTransportException catch (error) {
       await _fail(delivery.id, error.code);
@@ -219,6 +277,7 @@ class ClientDeliveryController extends ChangeNotifier {
       // A sending row is recovered to pending when storage next opens.
     }
     await _refreshSafely();
+    _scheduleRetry();
   }
 
   Future<void> _refresh() async {
@@ -234,6 +293,14 @@ class ClientDeliveryController extends ChangeNotifier {
       loadFailed = true;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    super.dispose();
   }
 
   static String _clientIdentityFingerprint(String installationId) => sha256

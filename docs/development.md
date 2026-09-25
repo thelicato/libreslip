@@ -62,10 +62,10 @@ The generated keystore and properties are ignored by Git. Keep secure offline ba
 - `features/orders`: catalogue, composition, immutable tickets, history, numbering and SQLite.
 - `features/printing`: ticket documents, 58 mm rendering, ESC/POS, durable jobs, Bluetooth transport and PDF sharing.
 - `features/portability`: archive creation, validation, preview, transactional restore and recovery.
-- `features/networking`: mode selection, pairing, protocol, encrypted secrets, Client outbox, foreground HTTPS Server and received or completed board.
+- `features/networking`: mode selection, pairing, protocol, encrypted secrets, durable Client outbox, Android foreground HTTPS Server service and received or completed board.
 - `features/workspace`: responsive navigation, Overview and non-financial statistics.
 
-Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 3 stores locale, appearance, ticket heading, footer, logo and bounded printed-ticket typography.
+Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 4 stores locale, appearance, bounded app text scaling, ticket heading, footer, logo and bounded printed-ticket typography. Versions 1 through 3 migrate with the default app text size.
 
 Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 9. Migrations are transactional. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
 
@@ -77,7 +77,7 @@ New print and reprint actions require an active printer connection. Every accept
 
 Android printing uses Bluetooth Classic RFCOMM/SPP and requests only `BLUETOOTH_CONNECT`. The 58 mm encoder targets 384 printable dots, encodes supported text with PC858, rasterises unsupported text and logos with bundled fonts and writes 256-byte chunks. Socket completion records Transmitted rather than confirmed paper output.
 
-Optional Client delivery begins after local printing. Pairing accepts a local IPv4 address and port, captures and verifies the Server certificate on first contact, then waits for explicit approval in Server Settings. The captured SHA-256 fingerprint pins the approval request and every later connection; redirects remain disabled. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. The foreground Server listens on port 5119 only while Server mode is visible. Duplicate deliveries return their existing acknowledgement.
+Optional Client delivery begins after local printing. Pairing accepts a local IPv4 address and port, captures and verifies the Server certificate on first contact, then waits for explicit approval in Server Settings. The captured SHA-256 fingerprint pins the approval request and every later connection; redirects remain disabled. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. Transient deliveries retry from the durable outbox with the same idempotency key. The Android connected-device foreground service retains the Flutter engine and CPU or Wi-Fi locks so the Server stays on port 5119 while locked or backgrounded. Duplicate deliveries return their existing acknowledgement.
 
 ## Localisation and interface
 

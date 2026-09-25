@@ -5,16 +5,22 @@ import 'package:flutter/foundation.dart';
 import '../data/server_identity_service.dart';
 import '../domain/network_models.dart';
 import '../domain/server_inbox_models.dart';
+import '../domain/server_runtime_service.dart';
 import '../domain/server_security.dart';
 import '../domain/server_transport.dart';
 
 class ServerInboxController extends ChangeNotifier {
-  ServerInboxController(this._store, ServerSecretStore secrets, this._host)
-    : _identityService = ServerIdentityService(secrets);
+  ServerInboxController(
+    this._store,
+    ServerSecretStore secrets,
+    this._host, {
+    this.runtimeService = const NoopServerRuntimeService(),
+  }) : _identityService = ServerIdentityService(secrets);
 
   final ServerInboxStore _store;
   final ServerIdentityService _identityService;
   final ServerHost _host;
+  final ServerRuntimeService runtimeService;
 
   bool loading = false;
   bool listening = false;
@@ -61,6 +67,12 @@ class ServerInboxController extends ChangeNotifier {
         await _host.stop();
         return;
       }
+      await runtimeService.start();
+      if (!_shouldListen || _disposed) {
+        await _host.stop();
+        await runtimeService.stop();
+        return;
+      }
       runningServer = started;
       listening = true;
     } catch (error) {
@@ -69,6 +81,7 @@ class ServerInboxController extends ChangeNotifier {
       listening = false;
       runningServer = null;
       await _host.stop();
+      await runtimeService.stop();
     } finally {
       loading = false;
       _notify();
@@ -79,6 +92,7 @@ class ServerInboxController extends ChangeNotifier {
     _shouldListen = false;
     _completePairingRequest(false);
     await _host.stop();
+    await runtimeService.stop();
     listening = false;
     runningServer = null;
     _notify();
@@ -154,7 +168,8 @@ class ServerInboxController extends ChangeNotifier {
     _disposed = true;
     _shouldListen = false;
     _completePairingRequest(false);
-    _host.stop();
+    unawaited(_host.stop());
+    unawaited(runtimeService.stop());
     super.dispose();
   }
 }
