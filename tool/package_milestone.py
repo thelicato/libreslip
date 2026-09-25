@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = {
     '.gitignore', '.metadata', 'AGENTS.md', 'README.md',
     'analysis_options.yaml', 'build.py', 'l10n.yaml', 'pubspec.yaml',
-    'pubspec.lock', 'VERSION',
+    'pubspec.lock', 'VERSION', 'logo.svg',
 }
 SOURCE_DIRS = {
     '.github', 'android', 'assets', 'docs', 'integration_test', 'lib',
