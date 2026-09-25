@@ -207,8 +207,8 @@ class _ComposePageState extends State<ComposePage> {
       ticket: ticket,
       document: _document(ticket),
     );
-    if (widget.delivery != null) {
-      unawaited(widget.delivery!.ticketFinalised(ticket.id));
+    if (result == TicketPrintResult.transmitted && widget.delivery != null) {
+      unawaited(widget.delivery!.ticketPrinted(ticket.id));
     }
     if (!mounted) return;
     setState(() => _printing = false);

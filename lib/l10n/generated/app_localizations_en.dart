@@ -819,7 +819,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteTicketBody =>
-      'This saved ticket and its print-attempt history will be removed. The current order number will not change.';
+      'This saved ticket and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.';
 
   @override
   String get deleteAllTickets => 'Delete all previous tickets';
@@ -829,7 +829,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAllTicketsBody =>
-      'All saved tickets and print-attempt history will be removed. The current draft and order number will not change.';
+      'All saved tickets and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.';
 
   @override
   String get ticketDeleted => 'Ticket deleted';
@@ -1083,6 +1083,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'The order could not be marked Done. It remains in Received.';
 
   @override
+  String get markReceived => 'Move to Received';
+
+  @override
+  String get markingReceived => 'Moving to Received…';
+
+  @override
+  String get markReceivedFailed =>
+      'The order could not be moved back. It remains in Completed.';
+
+  @override
   String get clientServerTitle => 'Optional order server';
 
   @override
@@ -1168,6 +1178,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverDelivery => 'Server delivery';
+
+  @override
+  String get deliveryAwaitingPrint => 'Waiting for print';
+
+  @override
+  String get deliveryAwaitingPrintBody =>
+      'This order will not be sent to the Server until a local print is transmitted successfully.';
 
   @override
   String get deliveryPending => 'Pending';

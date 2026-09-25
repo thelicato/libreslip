@@ -155,6 +155,23 @@ class ServerInboxController extends ChangeNotifier {
     }
   }
 
+  Future<bool> markReceived(String id) async {
+    if (updating) return false;
+    updating = true;
+    _notify();
+    try {
+      await _store.markServerOrderReceived(id);
+      orders = await _store.loadServerOrders();
+      return true;
+    } catch (_) {
+      failed = true;
+      return false;
+    } finally {
+      updating = false;
+      _notify();
+    }
+  }
+
   void _reloadAfterReceipt() {
     Future<void>(refresh);
   }

@@ -103,7 +103,9 @@ void main() {
     );
   });
 
-  testWidgets('received order detail can be marked Done', (tester) async {
+  testWidgets('Server board aligns pairs and Done can be undone', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1100, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -135,6 +137,20 @@ void main() {
       ),
       receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
     );
+    await repository.receiveServerOrder(
+      OrderDeliveryEnvelope.create(
+        clientInstallationId: 'client-1',
+        deliveryId: 'delivery-2',
+        ticketId: 'ticket-2',
+        ticketNumber: 18,
+        createdAt: DateTime.utc(2026, 9, 24, 18, 32),
+        heading: 'Kitchen',
+        reference: '',
+        orderNote: '',
+        lines: const [DeliveryLine(name: 'Tea', quantity: 1)],
+      ),
+      receivedAt: DateTime.utc(2026, 9, 24, 18, 33),
+    );
     final settings = SettingsController(MemorySettingsRepository());
     final networking = NetworkModeController(repository);
     final inbox = ServerInboxController(
@@ -161,6 +177,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Order 17'), findsOneWidget);
+    expect(find.text('Order 18'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('outstanding-items-card')),
       findsOneWidget,
@@ -178,10 +195,18 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('server-tab-orders')));
     await tester.pumpAndSettle();
 
-    final receivedId = inbox.receivedOrders.single.id;
+    final firstOrder = inbox.receivedOrders.singleWhere(
+      (order) => order.displayNumber == 17,
+    );
+    final secondOrder = inbox.receivedOrders.singleWhere(
+      (order) => order.displayNumber == 18,
+    );
     await tester.ensureVisible(find.text('Order 17'));
     await tester.pumpAndSettle();
-    final orderFinder = find.byKey(ValueKey('server-order-$receivedId'));
+    final orderFinder = find.byKey(ValueKey('server-order-${firstOrder.id}'));
+    final secondOrderFinder = find.byKey(
+      ValueKey('server-order-${secondOrder.id}'),
+    );
     expect(
       find.descendant(of: orderFinder, matching: find.text('2×')),
       findsOneWidget,
@@ -195,7 +220,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Front counter'), findsNothing);
-    expect(tester.getSize(orderFinder).width, lessThanOrEqualTo(760));
+    final firstRect = tester.getRect(orderFinder);
+    final secondRect = tester.getRect(secondOrderFinder);
+    final summaryRect = tester.getRect(
+      find.byKey(const ValueKey('outstanding-items-card')),
+    );
+    expect(firstRect.top, secondRect.top);
+    expect(firstRect.width, closeTo(secondRect.width, 0.1));
+    expect(secondRect.right - firstRect.left, closeTo(summaryRect.width, 0.1));
     await tester.tap(orderFinder);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -206,8 +238,16 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('mark-order-done')));
     await tester.pumpAndSettle();
-    expect(inbox.receivedOrders, isEmpty);
+    expect(inbox.receivedOrders, hasLength(1));
     expect(inbox.completedOrders, hasLength(1));
+
+    await tester.ensureVisible(find.text('Order 18'));
+    await tester.tap(secondOrderFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mark-order-done')));
+    await tester.pumpAndSettle();
+    expect(inbox.receivedOrders, isEmpty);
+    expect(inbox.completedOrders, hasLength(2));
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('outstanding-items-card')),
       300,
@@ -216,7 +256,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Nothing is waiting to be prepared.'), findsOneWidget);
 
-    await tester.tap(find.text('Completed (1)'));
+    await tester.tap(find.text('Completed (2)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Order 17'), findsOneWidget);
+    await tester.tap(find.byKey(ValueKey('server-order-${firstOrder.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('mark-order-received')));
+    await tester.pumpAndSettle();
+    expect(inbox.receivedOrders, hasLength(1));
+    expect(inbox.completedOrders, hasLength(1));
+    await tester.tap(find.text('Received (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Order 17'), findsOneWidget);
     expect(tester.takeException(), isNull);

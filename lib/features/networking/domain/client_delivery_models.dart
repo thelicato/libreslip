@@ -1,11 +1,15 @@
 import 'network_protocol.dart';
 
-enum ClientDeliveryStatus { pending, sending, delivered, failed }
+enum ClientDeliveryStatus { awaitingPrint, pending, sending, delivered, failed }
 
 extension ClientDeliveryStatusValue on ClientDeliveryStatus {
-  String get value => name;
+  String get value => switch (this) {
+    ClientDeliveryStatus.awaitingPrint => 'awaiting_print',
+    _ => name,
+  };
 
   static ClientDeliveryStatus parse(String value) => switch (value) {
+    'awaiting_print' => ClientDeliveryStatus.awaitingPrint,
     'pending' => ClientDeliveryStatus.pending,
     'sending' => ClientDeliveryStatus.sending,
     'delivered' => ClientDeliveryStatus.delivered,

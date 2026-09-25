@@ -73,12 +73,23 @@ void main() {
         factory: databaseFactoryFfiNoIsolate,
         databasePath: databasePath,
       );
-      addTearDown(reopened.close);
       await reopened.open();
-      final restored = (await reopened.loadServerOrders()).single;
+      var restored = (await reopened.loadServerOrders()).single;
       expect(restored.status, ServerOrderStatus.done);
       expect(restored.lines.single.name, 'Soup');
       expect(restored.completedAt, DateTime.utc(2026, 9, 24, 19, 3));
+
+      await reopened.markServerOrderReceived(restored.id);
+      await reopened.close();
+      final reopenedAgain = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      addTearDown(reopenedAgain.close);
+      await reopenedAgain.open();
+      restored = (await reopenedAgain.loadServerOrders()).single;
+      expect(restored.status, ServerOrderStatus.received);
+      expect(restored.completedAt, isNull);
     },
   );
 

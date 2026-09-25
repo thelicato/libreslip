@@ -1,24 +1,24 @@
 # Validation evidence
 
-Validated on 25 September 2026 for LibreSlip 1.1.0, Android application identifier `io.thelicato.libreslip`.
+Validated on 25 September 2026 for LibreSlip 1.2.0, Android application identifier `io.thelicato.libreslip`.
 
 | Check | Result |
 | --- | --- |
 | Dart formatting | Passed across application, test and integration-test Dart sources. |
 | Static analysis | Passed with no issues. |
-| Unit and widget tests | All 95 active tests passed; the normal run skipped only opt-in preview capture. |
+| Unit and widget tests | All 96 active tests passed; the normal run skipped only opt-in preview capture. |
 | Version display | Client and Server Settings both load the unchanged bundled `VERSION` value and show it at the end of the screen. |
-| Port 5119 and migration | Passed address normalisation, listener defaults and schema 9 migration from the former LibreSlip port while preserving unrelated custom ports and pairing trust. |
+| Port 5119 and migrations | Passed address normalisation, listener defaults, schema 9 port migration and schema 10 print-gated outbox migration. Unprinted rows remain blocked after restart. |
 | Ticket and item persistence | Passed transactional composition recovery, immutable snapshots, visible-number reset, deletion, migration and duplicate-ticket protection. |
 | Printing | Passed encoding, durable print states, disconnected printing gate, interruption recovery and reprint without creating another ticket. Physical Bluetooth printing completed on a NETUM NT-1809DD. A socket write still cannot prove paper output. |
-| Client and Server HTTPS | Passed address-only loopback TLS pairing, explicit Server approval and rejection, first-contact certificate capture, retained SHA-256 pinning, mismatched-certificate rejection, authentication, item filtering, automatic lost-acknowledgement resend and idempotent Server receipt. Lifecycle tests confirm that pausing the activity does not stop the listener service boundary. |
+| Client and Server HTTPS | Passed address-only loopback TLS pairing, explicit Server approval and rejection, first-contact certificate capture, retained SHA-256 pinning, mismatched-certificate rejection, authentication, item filtering, failed-print delivery blocking, automatic lost-acknowledgement resend and idempotent Server receipt. Server Done and move-back-to-Received states survive restart. Lifecycle tests confirm that pausing the activity does not stop the listener service boundary. |
 | Statistics | Passed all-history, empty and inclusive local date ranges. Totals use immutable saved-ticket snapshots and keep renamed item labels distinct. |
-| Backup compatibility | Passed configuration and full-backup round trips, fresh-install restore, rollback and malicious archive checks for portable schema 9. Legacy portable schemas 5 through 8 remain accepted. Networking tables and pairing secrets are excluded. |
+| Backup compatibility | Passed configuration and full-backup round trips, fresh-install restore, rollback and malicious archive checks for portable schema 10. Legacy portable schemas 5 through 9 remain accepted. Networking tables and pairing secrets are excluded. |
 | Accessibility and localisation | Passed British English and Italian phone, landscape, tablet and doubled-text tests. The persisted 100%, 115% and 130% app text sizes compose with Android accessibility scaling. |
-| Representative renders | Fifteen previews completed without framework errors. Client pairing, paired Client, Server order cards, the enlarged tablet order dialog, Overview, Compose, item, ticket, Settings, portability and item-total screens were visually inspected. The constrained cards, item details and Server text-size controls are aligned and readable. |
+| Representative renders | Sixteen previews completed without framework errors. Client pairing, paired Client, the two-column Server board, the enlarged tablet order dialog, Overview, Compose, item, ticket, Settings, portability and item-total screens were visually inspected. The paired order cards match the Still to prepare content width and remain readable. |
 | Android platform integration | The latest connected-device run passed real DataStore, SQLite, secure identity and token storage, pinned loopback delivery, listener shutdown, restart recovery and archive exclusion. It was not repeated after the emulator was stopped. |
 | Offline cold launch | A development-signed release passed clean offline cold launch on Android 14. This was not repeated after the emulator was stopped. |
-| Release APK | Passed with a temporary development validation certificate. Verified version 1.1.0, application identifier `io.thelicato.libreslip`, minimum API 34, target API 36 and APK Signature Scheme v2. Flutter and Gradle outputs matched byte for byte. |
+| Release APK | Passed with a temporary development validation certificate. Verified version 1.2.0, application identifier `io.thelicato.libreslip`, minimum API 34, target API 36 and APK Signature Scheme v2. Flutter and Gradle outputs matched byte for byte. |
 | Permissions and backup | The release requests `BLUETOOTH_CONNECT`, `INTERNET`, notification, foreground connected-device service, wake-lock, Wi-Fi-state and Android's app-local dynamic-receiver signature permissions. It requests no location or broad storage permission. Automatic cloud backup and device transfer are disabled. |
 
 ## Current limitations
@@ -27,6 +27,7 @@ Validated on 25 September 2026 for LibreSlip 1.1.0, Android application identifi
 - The Android foreground service and retained-engine lifecycle compile and have host lifecycle coverage, but locked-screen receipt has not yet been verified on a physical Android device. Force-stop, process termination or device restart stops reception until LibreSlip is opened in Server mode again.
 - Server mode supports manual IPv4 address entry. There is no automatic discovery, boot start, hosted relay or remote-network support.
 - Networking tables and pairing secrets are outside the archive format. Moving data to another device requires fresh pairing.
+- Server Received or Done state is not synchronised back to the Client. Deleting one or all Client tickets leaves durable delivery records and Server copies untouched; per-ticket delivery status is no longer available from history after the local ticket is deleted.
 - The Android document picker and share sheet compile into the release and have automated cancellation and state coverage, but the latest validation did not repeat every platform-owned destination flow manually.
 - USB printing is not implemented. The NETUM Classic SPP protocol does not provide battery percentage.
 - The GitHub release workflow has not been executed because no release tag was pushed and no repository signing secrets were changed.

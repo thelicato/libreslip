@@ -188,7 +188,21 @@ void main() {
       ),
       heading: 'Bottega Libertà',
     );
-    await clientDelivery.ticketFinalised(deliveryTicket.id);
+    final deliveryPrintJob = await orderRepository.createPrintJob(
+      requestId: 'android-delivery-print',
+      ticketId: deliveryTicket.id,
+      payload: Uint8List.fromList([0x1B, 0x40, 0x0A]),
+    );
+    await orderRepository.markPrintJobSending(
+      deliveryPrintJob.id,
+      printerAddress: '00:11:22:33:44:55',
+      printerName: 'NT-1809DD',
+    );
+    await orderRepository.markPrintJobOutcome(
+      deliveryPrintJob.id,
+      status: PrintJobStatus.transmitted,
+    );
+    await clientDelivery.ticketPrinted(deliveryTicket.id);
     expect(
       clientDelivery.deliveryForTicket(deliveryTicket.id)!.status,
       ClientDeliveryStatus.delivered,

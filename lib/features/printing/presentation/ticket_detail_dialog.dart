@@ -133,14 +133,15 @@ class TicketDetailDialog extends StatelessWidget {
                   ),
                   onPressed: working || !controller.printer.connected
                       ? null
-                      : () {
-                          if (queued != null) {
-                            controller.sendQueued(queued);
-                          } else {
-                            controller.printTicket(
-                              ticket: ticket,
-                              document: document,
-                            );
+                      : () async {
+                          final result = queued != null
+                              ? await controller.sendQueued(queued)
+                              : await controller.printTicket(
+                                  ticket: ticket,
+                                  document: document,
+                                );
+                          if (result == TicketPrintResult.transmitted) {
+                            await delivery?.ticketPrinted(ticket.id);
                           }
                         },
                   icon: working

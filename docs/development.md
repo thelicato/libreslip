@@ -67,9 +67,9 @@ The generated keystore and properties are ignored by Git. Keep secure offline ba
 
 Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 4 stores locale, appearance, bounded app text scaling, ticket heading, footer, logo and bounded printed-ticket typography. Versions 1 through 3 migrate with the default app text size.
 
-Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 9. Migrations are transactional. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
+Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 10. Migrations are transactional. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
 
-Full backups serialise the portable catalogue, composition, ticket and print tables in one read transaction and include referenced item images and the ticket logo. Networking tables and encrypted pairing secrets are excluded by archive format version 1. Portable database schemas 5 through 9 are accepted.
+Full backups serialise the portable catalogue, composition, ticket and print tables in one read transaction and include referenced item images and the ticket logo. Networking tables and encrypted pairing secrets are excluded by archive format version 1. Portable database schemas 5 through 10 are accepted.
 
 ## Printing and local networking
 
@@ -77,7 +77,7 @@ New print and reprint actions require an active printer connection. Every accept
 
 Android printing uses Bluetooth Classic RFCOMM/SPP and requests only `BLUETOOTH_CONNECT`. The 58 mm encoder targets 384 printable dots, encodes supported text with PC858, rasterises unsupported text and logos with bundled fonts and writes 256-byte chunks. Socket completion records Transmitted rather than confirmed paper output.
 
-Optional Client delivery begins after local printing. Pairing accepts a local IPv4 address and port, captures and verifies the Server certificate on first contact, then waits for explicit approval in Server Settings. The captured SHA-256 fingerprint pins the approval request and every later connection; redirects remain disabled. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. Transient deliveries retry from the durable outbox with the same idempotency key. The Android connected-device foreground service retains the Flutter engine and CPU or Wi-Fi locks so the Server stays on port 5119 while locked or backgrounded. Duplicate deliveries return their existing acknowledgement.
+Optional Client delivery remains durably gated until a local print is recorded as Transmitted. Failed, disconnected or uncertain printing never starts Server delivery. Pairing accepts a local IPv4 address and port, captures and verifies the Server certificate on first contact, then waits for explicit approval in Server Settings. The captured SHA-256 fingerprint pins the approval request and every later connection; redirects remain disabled. Tokens and Server keys use `flutter_secure_storage` with Android keystore-backed protection. Transient deliveries retry from the durable outbox with the same idempotency key. The Android connected-device foreground service retains the Flutter engine and CPU or Wi-Fi locks so the Server stays on port 5119 while locked or backgrounded. Duplicate deliveries return their existing acknowledgement.
 
 ## Localisation and interface
 

@@ -139,4 +139,6 @@ abstract interface class ServerInboxStore {
     String id, {
     required DateTime completedAt,
   });
+
+  Future<ServerOrder> markServerOrderReceived(String id);
 }

@@ -40,6 +40,7 @@ class ClientDeliveryController extends ChangeNotifier {
   int get pendingCount => deliveries
       .where(
         (delivery) =>
+            delivery.status == ClientDeliveryStatus.awaitingPrint ||
             delivery.status == ClientDeliveryStatus.pending ||
             delivery.status == ClientDeliveryStatus.sending,
       )
@@ -156,7 +157,7 @@ class ClientDeliveryController extends ChangeNotifier {
     }
   }
 
-  Future<void> ticketFinalised(String ticketId) async {
+  Future<void> ticketPrinted(String ticketId) async {
     await _refresh();
     final delivery = deliveryForTicket(ticketId);
     if (delivery?.status == ClientDeliveryStatus.pending) {

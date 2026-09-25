@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
+import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -113,6 +114,55 @@ void main() {
     expect(urls['server-old-port']!.port, 5119);
     expect(urls['server-custom-port']!.port, 6000);
   });
+
+  test(
+    'schema 10 gates an unprinted pending delivery after migration',
+    () async {
+      final repository = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      await repository.open();
+      final now = DateTime.utc(2026, 9, 25);
+      await repository.savePairedServer(
+        PairedServer(
+          id: 'server-1',
+          displayName: 'Kitchen tablet',
+          baseUrl: Uri.parse('https://192.168.1.42:5119'),
+          certificateFingerprint: 'a' * 64,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      final draft = await repository.createDraft();
+      await repository.convertDraftToTicket(
+        draft.copyWith(
+          lines: [TicketLine(id: createLocalId(), name: 'Tea', quantity: 1)],
+        ),
+        heading: 'Kitchen',
+      );
+      await repository.close();
+
+      final legacy = await databaseFactoryFfiNoIsolate.openDatabase(
+        databasePath,
+        options: OpenDatabaseOptions(singleInstance: false),
+      );
+      await legacy.update('server_delivery_outbox', {'status': 'pending'});
+      await legacy.execute('PRAGMA user_version = 9');
+      await legacy.close();
+
+      final migrated = SqliteOrderRepository(
+        factory: databaseFactoryFfiNoIsolate,
+        databasePath: databasePath,
+      );
+      addTearDown(migrated.close);
+      await migrated.open();
+      expect(
+        (await migrated.loadClientDeliveries()).single.status,
+        ClientDeliveryStatus.awaitingPrint,
+      );
+    },
+  );
 
   test(
     'outbox interruption recovers and inbox delivery is idempotent',

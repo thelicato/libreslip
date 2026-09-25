@@ -828,7 +828,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deleteTicketBody =>
-      'La comanda salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà.';
+      'La comanda salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
 
   @override
   String get deleteAllTickets => 'Elimina tutte le comande precedenti';
@@ -839,7 +839,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deleteAllTicketsBody =>
-      'Tutte le comande salvate e la cronologia dei tentativi di stampa verranno eliminate. La bozza e il numero d’ordine correnti non cambieranno.';
+      'Tutte le comande salvate e la cronologia dei tentativi di stampa verranno eliminate. La bozza e il numero d’ordine correnti non cambieranno. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
 
   @override
   String get ticketDeleted => 'Comanda eliminata';
@@ -1095,6 +1095,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile segnare l’ordine come completato. Resta tra i ricevuti.';
 
   @override
+  String get markReceived => 'Riporta tra i ricevuti';
+
+  @override
+  String get markingReceived => 'Spostamento tra i ricevuti…';
+
+  @override
+  String get markReceivedFailed =>
+      'Impossibile riportare l’ordine tra i ricevuti. Resta tra i completati.';
+
+  @override
   String get clientServerTitle => 'Server ordini facoltativo';
 
   @override
@@ -1181,6 +1191,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get serverDelivery => 'Consegna al Server';
+
+  @override
+  String get deliveryAwaitingPrint => 'In attesa della stampa';
+
+  @override
+  String get deliveryAwaitingPrintBody =>
+      'Questo ordine non verrà inviato al Server finché una stampa locale non sarà trasmessa correttamente.';
 
   @override
   String get deliveryPending => 'In attesa';

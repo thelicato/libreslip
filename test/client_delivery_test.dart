@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/features/networking/application/client_delivery_controller.dart';
@@ -11,6 +12,7 @@ import 'package:libreslip/features/networking/domain/client_transport.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
+import 'package:libreslip/features/printing/domain/print_job.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -105,11 +107,53 @@ void main() {
 
       var delivery = (await repository.loadClientDeliveries()).single;
       expect(delivery.ticketId, ticket.id);
-      expect(delivery.status, ClientDeliveryStatus.pending);
+      expect(delivery.status, ClientDeliveryStatus.awaitingPrint);
       expect(delivery.envelope.reference, 'Table 4');
       expect(delivery.envelope.lines.single.name, 'Soup');
 
-      await controller.ticketFinalised(ticket.id);
+      await controller.load();
+      expect(transport.loseAcknowledgement, isTrue);
+      expect(
+        controller.deliveryForTicket(ticket.id)?.status,
+        ClientDeliveryStatus.awaitingPrint,
+      );
+      final failedPrint = await repository.createPrintJob(
+        requestId: 'failed-print-before-server-delivery',
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([0x1b, 0x40]),
+      );
+      await repository.markPrintJobSending(
+        failedPrint.id,
+        printerAddress: '00:11:22:33:44:55',
+        printerName: 'NETUM',
+      );
+      await repository.markPrintJobOutcome(
+        failedPrint.id,
+        status: PrintJobStatus.failed,
+        errorCode: 'write_failed',
+      );
+      await controller.load();
+      expect(transport.loseAcknowledgement, isTrue);
+      expect(
+        controller.deliveryForTicket(ticket.id)?.status,
+        ClientDeliveryStatus.awaitingPrint,
+      );
+
+      final printJob = await repository.createPrintJob(
+        requestId: 'successful-print-before-server-delivery',
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([0x1b, 0x40]),
+      );
+      await repository.markPrintJobSending(
+        printJob.id,
+        printerAddress: '00:11:22:33:44:55',
+        printerName: 'NETUM',
+      );
+      await repository.markPrintJobOutcome(
+        printJob.id,
+        status: PrintJobStatus.transmitted,
+      );
+      await controller.ticketPrinted(ticket.id);
       delivery = controller.deliveryForTicket(ticket.id)!;
       expect(delivery.status, ClientDeliveryStatus.failed);
       expect(delivery.errorCode, 'unreachable');
@@ -151,6 +195,11 @@ void main() {
 
       await repository.deleteTicket(ticket.id);
       expect(await repository.loadTickets(), isEmpty);
+      expect(
+        (await repository.loadClientDeliveries()).single.status,
+        ClientDeliveryStatus.delivered,
+      );
+      await repository.deleteAllTickets();
       expect(
         (await repository.loadClientDeliveries()).single.status,
         ClientDeliveryStatus.delivered,

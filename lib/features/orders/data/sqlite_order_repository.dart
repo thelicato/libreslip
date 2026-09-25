@@ -21,8 +21,8 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 9;
-  static const portableSchemaVersions = {5, 6, 7, 8, databaseVersion};
+  static const databaseVersion = 10;
+  static const portableSchemaVersions = {5, 6, 7, 8, 9, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -360,6 +360,65 @@ class SqliteOrderRepository
         'WHERE base_url LIKE ?',
         [':42837', ':${NetworkProtocol.defaultPort}', '%:42837'],
       );
+    }
+    if (oldVersion < 10 && newVersion >= 10) {
+      await database.execute(
+        'ALTER TABLE server_delivery_outbox '
+        'RENAME TO server_delivery_outbox_before_print_gate',
+      );
+      await database.execute('''
+        CREATE TABLE server_delivery_outbox (
+          id TEXT PRIMARY KEY,
+          destination_id TEXT NOT NULL
+            REFERENCES network_destinations(id) ON DELETE RESTRICT,
+          client_installation_id TEXT NOT NULL,
+          ticket_id TEXT NOT NULL,
+          payload_json TEXT NOT NULL CHECK (length(payload_json) <= 65536),
+          payload_checksum TEXT NOT NULL CHECK (length(payload_checksum) = 64),
+          status TEXT NOT NULL CHECK (
+            status IN (
+              'awaiting_print', 'pending', 'sending', 'delivered', 'failed'
+            )
+          ),
+          attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+          error_code TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          delivered_at TEXT,
+          server_order_id TEXT,
+          UNIQUE(destination_id, ticket_id),
+          UNIQUE(client_installation_id, id)
+        )
+      ''');
+      await database.execute('''
+        INSERT INTO server_delivery_outbox (
+          id, destination_id, client_installation_id, ticket_id, payload_json,
+          payload_checksum, status, attempt_count, error_code, created_at,
+          updated_at, delivered_at, server_order_id
+        )
+        SELECT
+          id, destination_id, client_installation_id, ticket_id, payload_json,
+          payload_checksum,
+          CASE
+            WHEN status = 'pending' AND NOT EXISTS (
+              SELECT 1 FROM print_jobs
+              WHERE print_jobs.ticket_id =
+                server_delivery_outbox_before_print_gate.ticket_id
+                AND print_jobs.status = 'transmitted'
+            ) THEN 'awaiting_print'
+            ELSE status
+          END,
+          attempt_count, error_code, created_at, updated_at, delivered_at,
+          server_order_id
+        FROM server_delivery_outbox_before_print_gate
+      ''');
+      await database.execute(
+        'DROP TABLE server_delivery_outbox_before_print_gate',
+      );
+      await database.execute('''
+        CREATE INDEX server_delivery_outbox_status_index
+        ON server_delivery_outbox(status, created_at)
+      ''');
     }
   }
 
@@ -799,6 +858,42 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<ServerOrder> markServerOrderReceived(String id) async {
+    try {
+      final database = await _db;
+      await database.transaction((transaction) async {
+        final rows = await transaction.query(
+          'server_orders',
+          columns: ['status'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (rows.isEmpty) {
+          throw const OrderStorageException(
+            'The received order was not found.',
+          );
+        }
+        if (rows.single['status'] == ServerOrderStatus.done.value) {
+          await transaction.update(
+            'server_orders',
+            {'status': ServerOrderStatus.received.value, 'completed_at': null},
+            where: 'id = ? AND status = ?',
+            whereArgs: [id, ServerOrderStatus.done.value],
+          );
+        }
+      });
+      return await _loadServerOrder(database, id);
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException(
+        'Could not move the order back to Received.',
+        error,
+      );
+    }
+  }
+
+  @override
   Future<List<ItemCategory>> loadCategories() async {
     try {
       final rows = await (await _db).query(
@@ -1232,7 +1327,7 @@ class SqliteOrderRepository
               'ticket_id': id,
               'payload_json': envelope.toJsonString(),
               'payload_checksum': envelope.payloadChecksum,
-              'status': ClientDeliveryStatus.pending.value,
+              'status': ClientDeliveryStatus.awaitingPrint.value,
               'attempt_count': 0,
               'created_at': now,
               'updated_at': now,
@@ -1522,21 +1617,36 @@ class SqliteOrderRepository
     }
     try {
       final database = await _db;
-      final changed = await database.update(
-        'print_jobs',
-        {
-          'status': printJobStatusValue(status),
-          'error_code': errorCode,
-          'updated_at': _timestamp(DateTime.now()),
-        },
-        where: 'id = ? AND status = ?',
-        whereArgs: [id, printJobStatusValue(PrintJobStatus.sending)],
-      );
-      if (changed != 1) {
-        throw const OrderStorageException(
-          'Only a sending print job can receive an outcome.',
+      await database.transaction((transaction) async {
+        final now = _timestamp(DateTime.now());
+        final changed = await transaction.update(
+          'print_jobs',
+          {
+            'status': printJobStatusValue(status),
+            'error_code': errorCode,
+            'updated_at': now,
+          },
+          where: 'id = ? AND status = ?',
+          whereArgs: [id, printJobStatusValue(PrintJobStatus.sending)],
         );
-      }
+        if (changed != 1) {
+          throw const OrderStorageException(
+            'Only a sending print job can receive an outcome.',
+          );
+        }
+        if (status == PrintJobStatus.transmitted) {
+          await transaction.rawUpdate(
+            '''
+            UPDATE server_delivery_outbox
+            SET status = 'pending', error_code = NULL, updated_at = ?
+            WHERE ticket_id = (
+              SELECT ticket_id FROM print_jobs WHERE id = ?
+            ) AND status = 'awaiting_print'
+            ''',
+            [now, id],
+          );
+        }
+      });
       return await _loadPrintJob(database, id);
     } catch (error) {
       if (error is OrderStorageException) rethrow;

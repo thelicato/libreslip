@@ -13,6 +13,10 @@ class ClientDeliveryStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final (icon, label) = switch (delivery.status) {
+      ClientDeliveryStatus.awaitingPrint => (
+        Icons.print_disabled_outlined,
+        l.deliveryAwaitingPrint,
+      ),
       ClientDeliveryStatus.pending => (
         Icons.schedule_rounded,
         l.deliveryPending,
@@ -52,6 +56,7 @@ class ClientDeliveryStatusPanel extends StatelessWidget {
           delivery.status == ClientDeliveryStatus.sending ||
           controller.isSending(delivery.id);
       final body = switch (delivery.status) {
+        ClientDeliveryStatus.awaitingPrint => l.deliveryAwaitingPrintBody,
         ClientDeliveryStatus.delivered => l.deliveryDeliveredBody,
         ClientDeliveryStatus.failed => l.deliveryFailedBody,
         _ => l.deliveryPendingBody,

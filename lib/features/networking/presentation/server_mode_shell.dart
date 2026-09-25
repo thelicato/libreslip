@@ -174,22 +174,54 @@ class _ServerModeShellState extends State<ServerModeShell>
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              sliver: SliverList.builder(
-                itemCount: orders.length,
-                itemBuilder: (context, index) => Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 760),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == orders.length - 1 ? 0 : 16,
-                      ),
-                      child: _OrderCard(
-                        order: orders[index],
-                        onTap: () => _showOrder(orders[index]),
-                      ),
-                    ),
-                  ),
-                ),
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.crossAxisExtent >= 720 ? 2 : 1;
+                  final rowCount = (orders.length / columns).ceil();
+                  return SliverList.builder(
+                    itemCount: rowCount,
+                    itemBuilder: (context, rowIndex) {
+                      final firstIndex = rowIndex * columns;
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1000),
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: rowIndex == rowCount - 1 ? 0 : 16,
+                            ),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: _OrderCard(
+                                      order: orders[firstIndex],
+                                      onTap: () =>
+                                          _showOrder(orders[firstIndex]),
+                                    ),
+                                  ),
+                                  if (columns == 2) ...[
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: firstIndex + 1 < orders.length
+                                          ? _OrderCard(
+                                              order: orders[firstIndex + 1],
+                                              onTap: () => _showOrder(
+                                                orders[firstIndex + 1],
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           SliverPadding(
@@ -737,6 +769,27 @@ class _OrderDialog extends StatelessWidget {
                   },
             icon: const Icon(Icons.task_alt_rounded),
             label: Text(controller.updating ? l.markingDone : l.markDone),
+          )
+        else
+          FilledButton.tonalIcon(
+            key: const ValueKey('mark-order-received'),
+            onPressed: controller.updating
+                ? null
+                : () async {
+                    final success = await controller.markReceived(order.id);
+                    if (!context.mounted) return;
+                    if (success) {
+                      Navigator.pop(context);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l.markReceivedFailed)),
+                      );
+                    }
+                  },
+            icon: const Icon(Icons.undo_rounded),
+            label: Text(
+              controller.updating ? l.markingReceived : l.markReceived,
+            ),
           ),
       ],
     );

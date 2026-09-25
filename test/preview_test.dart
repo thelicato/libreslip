@@ -117,6 +117,13 @@ void main() {
         5,
       ),
       (
+        'server-inbox-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
         'server-order-dialog-tablet-en',
         const Size(1100, 900),
         'en',
@@ -195,6 +202,23 @@ void main() {
             ],
           ),
           receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
+        );
+        await environment.repository.receiveServerOrder(
+          OrderDeliveryEnvelope.create(
+            clientInstallationId: 'preview-client',
+            deliveryId: 'preview-delivery-2',
+            ticketId: 'preview-ticket-2',
+            ticketNumber: 13,
+            createdAt: DateTime.utc(2026, 9, 24, 18, 32),
+            heading: 'Cucina',
+            reference: 'Tavolo 7',
+            orderNote: '',
+            lines: const [
+              DeliveryLine(name: 'Soup', quantity: 1),
+              DeliveryLine(name: 'Tea', quantity: 3),
+            ],
+          ),
+          receivedAt: DateTime.utc(2026, 9, 24, 18, 33),
         );
         final secrets = _MemoryServerSecrets();
         inbox = ServerInboxController(

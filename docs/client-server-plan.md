@@ -13,9 +13,9 @@ Switching modes requires confirmation and does not delete Client data or the Ser
 
 Print ticket first requires a connected local printer. Ticket finalisation stores one immutable local snapshot and one durable print attempt. If a Server is paired, the same SQLite transaction also creates one stable delivery envelope containing only items enabled for Server orders. An order containing only Local only items creates no delivery.
 
-Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Pending, Sending, Delivered and Needs attention. Transient network or Server failures retry automatically every ten seconds while the Client process is available and again after restart. Automatic and explicit retries reuse the same delivery identifier and cannot create another local ticket or print attempt.
+Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Waiting for print, Pending, Sending, Delivered and Needs attention. A disconnected, failed or uncertain print leaves the delivery at Waiting for print; a successful explicit reprint can release it. Transient network or Server failures retry automatically every ten seconds while the Client process is available and again after restart. Automatic and explicit retries reuse the same delivery identifier and cannot create another local ticket or print attempt.
 
-Deleting a local ticket does not remotely delete an order already accepted by the Server. Marking a Server order Done does not edit or delete the Client snapshot.
+Deleting one or all local tickets does not remotely delete an order already accepted by the Server. The durable delivery record remains locally, but its per-ticket status is no longer available from history after the ticket is deleted. Server Received or Done status is not synchronised back to the Client. Marking a Server order Done does not edit or delete the Client snapshot.
 
 ## Pairing
 
@@ -27,13 +27,13 @@ Manual IPv4 address entry is the supported connection method. An Android foregro
 
 ## Server operation
 
-The Orders tab lists oldest orders first. Each constrained card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and Mark Done action. Origin device names are not displayed. The summary lists quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
+The Orders tab lists oldest orders first. Wider layouts show two order cards per row within the same content width as Still to prepare. Each card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and actions to mark an order Done or move it back to Received. Origin device names are not displayed. The summary lists quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
 
 Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
 
 ## Reliability and persistence
 
-Ticket finalisation and eligible outbox creation are transactional. The Server stores receipt and acknowledgement atomically and enforces uniqueness on the Client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement rather than inserting another order.
+Ticket finalisation and eligible print-gated outbox creation are transactional. Recording a Transmitted print releases the delivery in the same transaction as the print outcome. The Server stores receipt and acknowledgement atomically and enforces uniqueness on the Client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement rather than inserting another order.
 
 An interrupted Client Sending row returns to Pending when the database opens because Server idempotency makes the same delivery safe to resend. This differs from printer transmission: an interrupted printer write remains Uncertain and is never sent again automatically.
 

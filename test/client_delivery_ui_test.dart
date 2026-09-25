@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +11,7 @@ import 'package:libreslip/features/networking/domain/client_security.dart';
 import 'package:libreslip/features/networking/domain/client_transport.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
+import 'package:libreslip/features/printing/domain/print_job.dart';
 
 import 'test_support.dart';
 
@@ -91,7 +93,21 @@ void main() {
       heading: 'Kitchen',
     );
     expect(ticket, isNotNull);
-    await delivery.ticketFinalised(ticket!.id);
+    final printJob = await environment.repository.createPrintJob(
+      requestId: 'client-ui-print',
+      ticketId: ticket!.id,
+      payload: Uint8List.fromList([0x1b, 0x40]),
+    );
+    await environment.repository.markPrintJobSending(
+      printJob.id,
+      printerAddress: '00:11:22:33:44:55',
+      printerName: 'NETUM',
+    );
+    await environment.repository.markPrintJobOutcome(
+      printJob.id,
+      status: PrintJobStatus.transmitted,
+    );
+    await delivery.ticketPrinted(ticket.id);
     expect(
       delivery.deliveryForTicket(ticket.id)?.status,
       ClientDeliveryStatus.failed,

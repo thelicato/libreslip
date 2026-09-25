@@ -1567,7 +1567,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteTicketBody.
   ///
   /// In en, this message translates to:
-  /// **'This saved ticket and its print-attempt history will be removed. The current order number will not change.'**
+  /// **'This saved ticket and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.'**
   String get deleteTicketBody;
 
   /// No description provided for @deleteAllTickets.
@@ -1585,7 +1585,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAllTicketsBody.
   ///
   /// In en, this message translates to:
-  /// **'All saved tickets and print-attempt history will be removed. The current draft and order number will not change.'**
+  /// **'All saved tickets and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.'**
   String get deleteAllTicketsBody;
 
   /// No description provided for @ticketDeleted.
@@ -2020,6 +2020,24 @@ abstract class AppLocalizations {
   /// **'The order could not be marked Done. It remains in Received.'**
   String get markDoneFailed;
 
+  /// No description provided for @markReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to Received'**
+  String get markReceived;
+
+  /// No description provided for @markingReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to Received…'**
+  String get markingReceived;
+
+  /// No description provided for @markReceivedFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The order could not be moved back. It remains in Completed.'**
+  String get markReceivedFailed;
+
   /// No description provided for @clientServerTitle.
   ///
   /// In en, this message translates to:
@@ -2175,6 +2193,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server delivery'**
   String get serverDelivery;
+
+  /// No description provided for @deliveryAwaitingPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for print'**
+  String get deliveryAwaitingPrint;
+
+  /// No description provided for @deliveryAwaitingPrintBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This order will not be sent to the Server until a local print is transmitted successfully.'**
+  String get deliveryAwaitingPrintBody;
 
   /// No description provided for @deliveryPending.
   ///
