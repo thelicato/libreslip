@@ -70,6 +70,32 @@ class ComposePageState extends State<ComposePage> {
             const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
+              if (widget.settings.compactCompose) {
+                return _CompactComposePanel(
+                  items: widget.controller.items,
+                  categories: widget.controller.categories,
+                  draft: draft,
+                  orderNumber: widget.controller.nextOrderNumber,
+                  features: widget.controller.featureSettings,
+                  busy: widget.controller.saving || widget.printing.value,
+                  query: _query,
+                  categoryId: _categoryId,
+                  onQueryChanged: (value) => setState(() => _query = value),
+                  onCategoryChanged: (value) =>
+                      setState(() => _categoryId = value),
+                  onIncrement: widget.controller.addCatalogueItem,
+                  onDecrement: (line) => line.quantity > 1
+                      ? widget.controller.setQuantity(
+                          line.id,
+                          line.quantity - 1,
+                        )
+                      : widget.controller.removeLine(line.id),
+                  onEditReference: () => _editReference(draft),
+                  onEditOrderNote: () => _editOrderNote(draft),
+                  onEditNote: _editPreparationNote,
+                  onResetOrderNumber: _resetOrderNumber,
+                );
+              }
               final split = constraints.maxWidth >= 860;
               final catalogue = _CataloguePanel(
                 items: widget.controller.items,
@@ -87,7 +113,6 @@ class ComposePageState extends State<ComposePage> {
                 orderNumber: widget.controller.nextOrderNumber,
                 features: widget.controller.featureSettings,
                 busy: widget.controller.saving || widget.printing.value,
-                compact: widget.settings.compactCompose,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
@@ -108,9 +133,7 @@ class ComposePageState extends State<ComposePage> {
               }
               return Card(
                 child: Column(
-                  children: widget.settings.compactCompose
-                      ? [order, const Divider(height: 1), catalogue]
-                      : [catalogue, const Divider(height: 1), order],
+                  children: [catalogue, const Divider(height: 1), order],
                 ),
               );
             },
@@ -153,6 +176,78 @@ class ComposePageState extends State<ComposePage> {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     input.dispose();
     if (note != null) widget.controller.setPreparationNote(line.id, note);
+  }
+
+  Future<void> _editReference(OrderDraft draft) async {
+    final l = AppLocalizations.of(context);
+    final input = TextEditingController(text: draft.reference);
+    final reference = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.orderReference),
+        content: SizedBox(
+          width: 420,
+          child: TextField(
+            key: const ValueKey('compact-reference-input'),
+            controller: input,
+            autofocus: true,
+            maxLength: 80,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(hintText: l.orderReferenceHint),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, input.text.trim()),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    input.dispose();
+    if (reference != null) widget.controller.setReference(reference);
+  }
+
+  Future<void> _editOrderNote(OrderDraft draft) async {
+    final l = AppLocalizations.of(context);
+    final input = TextEditingController(text: draft.orderNote);
+    final note = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.orderNotes),
+        content: SizedBox(
+          width: 420,
+          child: TextField(
+            key: const ValueKey('compact-order-note-input'),
+            controller: input,
+            autofocus: true,
+            maxLength: 500,
+            minLines: 2,
+            maxLines: 4,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(hintText: l.orderNotesHint),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, input.text.trim()),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    input.dispose();
+    if (note != null) widget.controller.setOrderNote(note);
   }
 
   Future<void> _resetOrderNumber() async {
@@ -244,6 +339,329 @@ class ComposePageState extends State<ComposePage> {
       footer: widget.settings.footer,
       logoPath: widget.settings.logoPath,
       typography: widget.settings.typography,
+    );
+  }
+}
+
+class _CompactComposePanel extends StatelessWidget {
+  const _CompactComposePanel({
+    required this.items,
+    required this.categories,
+    required this.draft,
+    required this.orderNumber,
+    required this.features,
+    required this.busy,
+    required this.query,
+    required this.categoryId,
+    required this.onQueryChanged,
+    required this.onCategoryChanged,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onEditReference,
+    required this.onEditOrderNote,
+    required this.onEditNote,
+    required this.onResetOrderNumber,
+  });
+
+  final List<CatalogueItem> items;
+  final List<ItemCategory> categories;
+  final OrderDraft draft;
+  final int orderNumber;
+  final OrderFeatureSettings features;
+  final bool busy;
+  final String query;
+  final String? categoryId;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<CatalogueItem> onIncrement;
+  final ValueChanged<TicketLine> onDecrement;
+  final VoidCallback onEditReference;
+  final VoidCallback onEditOrderNote;
+  final ValueChanged<TicketLine> onEditNote;
+  final VoidCallback onResetOrderNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final cleanQuery = query.trim().toLowerCase();
+    final filtered = items
+        .where(
+          (item) =>
+              (cleanQuery.isEmpty ||
+                  item.name.toLowerCase().contains(cleanQuery) ||
+                  (item.category?.name.toLowerCase().contains(cleanQuery) ??
+                      false)) &&
+              (categoryId == null || item.category?.id == categoryId),
+        )
+        .toList();
+    return Card(
+      key: const ValueKey('compact-compose-panel'),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.orderNumber(orderNumber),
+                    style: theme.textTheme.titleLarge,
+                  ),
+                ),
+                TextButton.icon(
+                  key: const ValueKey('reset-order-number'),
+                  onPressed: busy || orderNumber == 1
+                      ? null
+                      : onResetOrderNumber,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text(l.reset),
+                ),
+              ],
+            ),
+            if (features.orderReferenceEnabled ||
+                features.orderNotesEnabled) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (features.orderReferenceEnabled)
+                    OutlinedButton.icon(
+                      key: const ValueKey('compact-edit-reference'),
+                      onPressed: busy ? null : onEditReference,
+                      icon: const Icon(Icons.tag_rounded),
+                      label: Text(
+                        draft.reference.isEmpty
+                            ? l.orderReference
+                            : draft.reference,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  if (features.orderNotesEnabled)
+                    OutlinedButton.icon(
+                      key: const ValueKey('compact-edit-order-note'),
+                      onPressed: busy ? null : onEditOrderNote,
+                      icon: const Icon(Icons.notes_rounded),
+                      label: Text(
+                        draft.orderNote.isEmpty
+                            ? l.orderNotes
+                            : draft.orderNote,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 6),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final search = TextField(
+                  decoration: InputDecoration(
+                    labelText: l.searchItems,
+                    prefixIcon: const Icon(Icons.search_rounded),
+                  ),
+                  onChanged: onQueryChanged,
+                );
+                if (categories.length <= 1) return search;
+                final category = DropdownButtonFormField<String?>(
+                  isExpanded: true,
+                  initialValue: categoryId,
+                  decoration: InputDecoration(labelText: l.category),
+                  items: [
+                    DropdownMenuItem(value: null, child: Text(l.allCategories)),
+                    for (final category in categories)
+                      DropdownMenuItem(
+                        value: category.id,
+                        child: Text(category.name),
+                      ),
+                  ],
+                  onChanged: onCategoryChanged,
+                );
+                if (constraints.maxWidth < 700) {
+                  return Column(
+                    children: [search, const SizedBox(height: 8), category],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: search),
+                    const SizedBox(width: 10),
+                    Expanded(child: category),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            if (filtered.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: Text(
+                  items.isEmpty ? l.emptyItemsBody : l.noItemsFound,
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 760 ? 2 : 1;
+                  final width =
+                      (constraints.maxWidth - (columns - 1) * 10) / columns;
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      for (final item in filtered)
+                        SizedBox(
+                          width: width,
+                          child: _CompactCatalogueRow(
+                            item: item,
+                            lines: draft.lines
+                                .where(
+                                  (line) => line.catalogueItemId == item.id,
+                                )
+                                .toList(),
+                            preparationNotesEnabled:
+                                features.preparationNotesEnabled,
+                            onIncrement: () => onIncrement(item),
+                            onDecrement: onDecrement,
+                            onEditNote: onEditNote,
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactCatalogueRow extends StatelessWidget {
+  const _CompactCatalogueRow({
+    required this.item,
+    required this.lines,
+    required this.preparationNotesEnabled,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onEditNote,
+  });
+
+  final CatalogueItem item;
+  final List<TicketLine> lines;
+  final bool preparationNotesEnabled;
+  final VoidCallback onIncrement;
+  final ValueChanged<TicketLine> onDecrement;
+  final ValueChanged<TicketLine> onEditNote;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final quantity = lines.fold<int>(0, (total, line) => total + line.quantity);
+    TicketLine? noteLine;
+    for (final line in lines) {
+      if (line.preparationNote.isNotEmpty) {
+        noteLine = line;
+        break;
+      }
+    }
+    noteLine ??= lines.firstOrNull;
+    final decrementLine = lines.lastOrNull;
+    return Material(
+      key: ValueKey('compact-item-${item.id}'),
+      color: quantity == 0
+          ? theme.colorScheme.surfaceContainerLow
+          : theme.colorScheme.primaryContainer.withValues(alpha: 0.42),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 4, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.name, style: theme.textTheme.titleSmall),
+                      if (item.category != null)
+                        Text(
+                          item.category!.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
+                if (preparationNotesEnabled && quantity > 0)
+                  IconButton(
+                    key: ValueKey('compact-note-${item.id}'),
+                    onPressed: noteLine == null
+                        ? null
+                        : () => onEditNote(noteLine!),
+                    tooltip: l.preparationNote,
+                    icon: const Icon(Icons.sticky_note_2_outlined),
+                  ),
+                Material(
+                  key: ValueKey('quantity-stepper-${item.id}'),
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: ValueKey('compact-minus-${item.id}'),
+                        onPressed: decrementLine == null
+                            ? null
+                            : () => onDecrement(decrementLine),
+                        tooltip: l.decreaseQuantity,
+                        icon: const Icon(Icons.remove_rounded),
+                      ),
+                      SizedBox(
+                        width: 30,
+                        child: Text(
+                          '$quantity',
+                          key: ValueKey('compact-quantity-${item.id}'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      IconButton(
+                        key: ValueKey('compose-item-${item.id}'),
+                        onPressed: quantity >= 999 ? null : onIncrement,
+                        tooltip: l.increaseQuantity,
+                        icon: const Icon(Icons.add_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (noteLine?.preparationNote.isNotEmpty ?? false)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  start: 2,
+                  end: 8,
+                  bottom: 6,
+                ),
+                child: Text(
+                  noteLine!.preparationNote,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -376,7 +794,6 @@ class _OrderPanel extends StatelessWidget {
     required this.orderNumber,
     required this.features,
     required this.busy,
-    required this.compact,
     required this.standalone,
     required this.onReferenceChanged,
     required this.onOrderNoteChanged,
@@ -390,7 +807,6 @@ class _OrderPanel extends StatelessWidget {
   final int orderNumber;
   final OrderFeatureSettings features;
   final bool busy;
-  final bool compact;
   final bool standalone;
   final ValueChanged<String> onReferenceChanged;
   final ValueChanged<String> onOrderNoteChanged;
@@ -470,7 +886,6 @@ class _OrderPanel extends StatelessWidget {
               _OrderLineCard(
                 line: line,
                 preparationNotesEnabled: features.preparationNotesEnabled,
-                compact: compact,
                 onQuantityChanged: (value) => onQuantityChanged(line.id, value),
                 onEditNote: () => onEditNote(line),
                 onRemove: () => onRemoveLine(line.id),
@@ -481,8 +896,8 @@ class _OrderPanel extends StatelessWidget {
               key: ValueKey('order-note-${draft.id}'),
               initialValue: draft.orderNote,
               maxLength: 500,
-              minLines: compact ? 1 : 2,
-              maxLines: compact ? 3 : 5,
+              minLines: 2,
+              maxLines: 5,
               decoration: InputDecoration(
                 labelText: l.orderNotes,
                 hintText: l.orderNotesHint,
@@ -490,7 +905,7 @@ class _OrderPanel extends StatelessWidget {
               onChanged: onOrderNoteChanged,
             ),
           ],
-          if (!compact) const SizedBox(height: 4),
+          const SizedBox(height: 4),
         ],
       ),
     );
@@ -502,7 +917,6 @@ class _OrderLineCard extends StatelessWidget {
   const _OrderLineCard({
     required this.line,
     required this.preparationNotesEnabled,
-    required this.compact,
     required this.onQuantityChanged,
     required this.onEditNote,
     required this.onRemove,
@@ -510,7 +924,6 @@ class _OrderLineCard extends StatelessWidget {
 
   final TicketLine line;
   final bool preparationNotesEnabled;
-  final bool compact;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback onEditNote;
   final VoidCallback onRemove;
@@ -519,51 +932,10 @@ class _OrderLineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final stepper = Material(
-      key: ValueKey('quantity-stepper-${line.id}'),
-      color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(14),
-      child: Row(
-        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
-        children: [
-          IconButton(
-            onPressed: line.quantity > 1
-                ? () => onQuantityChanged(line.quantity - 1)
-                : null,
-            tooltip: l.decreaseQuantity,
-            icon: const Icon(Icons.remove_rounded),
-          ),
-          if (compact)
-            SizedBox(
-              width: 28,
-              child: Text(
-                '${line.quantity}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium,
-              ),
-            )
-          else
-            Expanded(
-              child: Text(
-                '${line.quantity}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium,
-              ),
-            ),
-          IconButton(
-            onPressed: line.quantity < 999
-                ? () => onQuantityChanged(line.quantity + 1)
-                : null,
-            tooltip: l.increaseQuantity,
-            icon: const Icon(Icons.add_rounded),
-          ),
-        ],
-      ),
-    );
     return Container(
       key: ValueKey('order-line-${line.id}'),
       margin: const EdgeInsets.only(bottom: 10),
-      padding: EdgeInsets.all(compact ? 8 : 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(17),
@@ -571,57 +943,64 @@ class _OrderLineCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (compact)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(line.name, style: theme.textTheme.titleMedium),
-                ),
-                stepper,
-                if (preparationNotesEnabled)
-                  IconButton(
-                    onPressed: onEditNote,
-                    tooltip: l.preparationNote,
-                    icon: const Icon(Icons.sticky_note_2_outlined),
-                  ),
-                IconButton(
-                  onPressed: onRemove,
-                  tooltip: l.removeLine,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            )
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(line.name, style: theme.textTheme.titleMedium),
-                ),
-                IconButton(
-                  onPressed: onRemove,
-                  tooltip: l.removeLine,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-            stepper,
-            if (preparationNotesEnabled) ...[
-              const SizedBox(height: 6),
-              TextButton.icon(
-                onPressed: onEditNote,
-                icon: const Icon(Icons.sticky_note_2_outlined),
-                label: Text(l.preparationNote),
+          Row(
+            children: [
+              Expanded(
+                child: Text(line.name, style: theme.textTheme.titleMedium),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                tooltip: l.removeLine,
+                icon: const Icon(Icons.close_rounded),
               ),
             ],
-          ],
-          if (preparationNotesEnabled && line.preparationNote.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              line.preparationNote,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          ),
+          Material(
+            key: ValueKey('quantity-stepper-${line.id}'),
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(14),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: line.quantity > 1
+                      ? () => onQuantityChanged(line.quantity - 1)
+                      : null,
+                  tooltip: l.decreaseQuantity,
+                  icon: const Icon(Icons.remove_rounded),
+                ),
+                Expanded(
+                  child: Text(
+                    '${line.quantity}',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  onPressed: line.quantity < 999
+                      ? () => onQuantityChanged(line.quantity + 1)
+                      : null,
+                  tooltip: l.increaseQuantity,
+                  icon: const Icon(Icons.add_rounded),
+                ),
+              ],
             ),
+          ),
+          if (preparationNotesEnabled) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: onEditNote,
+              icon: const Icon(Icons.sticky_note_2_outlined),
+              label: Text(l.preparationNote),
+            ),
+            if (line.preparationNote.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                line.preparationNote,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ],
         ],
       ),

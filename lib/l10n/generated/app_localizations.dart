@@ -160,12 +160,6 @@ abstract class AppLocalizations {
   /// **'Your workspace'**
   String get defaultHeading;
 
-  /// No description provided for @overviewSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'A little order for your working day.'**
-  String get overviewSubtitle;
-
   /// No description provided for @heroEyebrow.
   ///
   /// In en, this message translates to:
@@ -424,12 +418,6 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
-  /// No description provided for @settingsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Small details. A space that feels yours.'**
-  String get settingsSubtitle;
-
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -615,24 +603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'These settings work without an internet connection. Automatic cloud backup is switched off.'**
   String get privacyBody;
-
-  /// No description provided for @composeSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Build an order and keep every detail safe as you work.'**
-  String get composeSubtitle;
-
-  /// No description provided for @itemsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Reusable items for faster ticket composition.'**
-  String get itemsSubtitle;
-
-  /// No description provided for @ticketsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved order snapshots, kept separately from printing.'**
-  String get ticketsSubtitle;
 
   /// No description provided for @newDraft.
   ///
@@ -889,7 +859,7 @@ abstract class AppLocalizations {
   /// No description provided for @compactComposeBody.
   ///
   /// In en, this message translates to:
-  /// **'Keep each selected item and its quantity controls together in one row.'**
+  /// **'Show every reusable item with a quantity starting at 0 in one order card.'**
   String get compactComposeBody;
 
   /// No description provided for @preparationNotes.
@@ -1867,14 +1837,8 @@ abstract class AppLocalizations {
   /// No description provided for @serverInboxTitle.
   ///
   /// In en, this message translates to:
-  /// **'Server orders'**
+  /// **'Orders'**
   String get serverInboxTitle;
-
-  /// No description provided for @serverInboxSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive immutable orders from paired LibreSlip clients and mark them Done.'**
-  String get serverInboxSubtitle;
 
   /// No description provided for @serverStarting.
   ///
@@ -2359,14 +2323,8 @@ abstract class AppLocalizations {
   /// No description provided for @serverSettingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Server settings'**
+  /// **'Settings'**
   String get serverSettingsTitle;
-
-  /// No description provided for @serverSettingsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage this local receiver, pairing and app mode.'**
-  String get serverSettingsSubtitle;
 
   /// No description provided for @outstandingItems.
   ///

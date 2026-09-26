@@ -150,10 +150,11 @@ class OrderWorkspaceController extends ChangeNotifier {
     if (draft == null) return;
     final lines = [...draft.lines];
     final existingIndex = lines.indexWhere(
-      (line) => line.catalogueItemId == item.id && line.preparationNote.isEmpty,
+      (line) => line.catalogueItemId == item.id,
     );
-    if (existingIndex >= 0 && lines[existingIndex].quantity < 999) {
+    if (existingIndex >= 0) {
       final existing = lines[existingIndex];
+      if (existing.quantity >= 999) return;
       lines[existingIndex] = existing.copyWith(quantity: existing.quantity + 1);
     } else {
       lines.add(

@@ -135,13 +135,6 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         printer: widget.printer,
       ),
     };
-    final subtitle = switch (_selected) {
-      0 => l.overviewSubtitle,
-      1 => l.itemsSubtitle,
-      2 => l.composeSubtitle,
-      3 => l.ticketsSubtitle,
-      _ => l.settingsSubtitle,
-    };
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 760;
@@ -265,19 +258,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                                           .textTheme
                                           .headlineLarge,
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      subtitle,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 28),
+                                    const SizedBox(height: 20),
                                     page,
                                     const SizedBox(height: 16),
                                   ],

@@ -40,9 +40,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get defaultHeading => 'Il tuo spazio';
 
   @override
-  String get overviewSubtitle => 'Più ordine nella tua giornata.';
-
-  @override
   String get heroEyebrow => 'UNA COMANDA. TUTTO PIÙ CHIARO.';
 
   @override
@@ -182,10 +179,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get cancel => 'Annulla';
 
   @override
-  String get settingsSubtitle =>
-      'Piccoli dettagli. Uno spazio che ti somiglia.';
-
-  @override
   String get language => 'Lingua';
 
   @override
@@ -284,18 +277,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get privacyBody =>
       'Queste impostazioni funzionano senza connessione a Internet. Il backup automatico sul cloud è disattivato.';
-
-  @override
-  String get composeSubtitle =>
-      'Crea un ordine e salva ogni dettaglio mentre lavori.';
-
-  @override
-  String get itemsSubtitle =>
-      'Articoli riutilizzabili per comporre le comande più velocemente.';
-
-  @override
-  String get ticketsSubtitle =>
-      'Istantanee degli ordini salvati, separate dalla stampa.';
 
   @override
   String get newDraft => 'Nuova bozza';
@@ -434,7 +415,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get compactComposeBody =>
-      'Mantiene ogni articolo selezionato e i controlli della quantità insieme su una sola riga.';
+      'Mostra ogni articolo riutilizzabile in un’unica scheda ordine, con quantità iniziale 0.';
 
   @override
   String get preparationNotes => 'Note di preparazione';
@@ -1008,11 +989,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare la modalità dell’app. Non è stato modificato nulla.';
 
   @override
-  String get serverInboxTitle => 'Ordini del Server';
-
-  @override
-  String get serverInboxSubtitle =>
-      'Ricevi ordini non modificabili dai Client LibreSlip associati e segnali come completati.';
+  String get serverInboxTitle => 'Ordini';
 
   @override
   String get serverStarting => 'Avvio ricezione locale…';
@@ -1293,11 +1270,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get serverSettingsTab => 'Impostazioni';
 
   @override
-  String get serverSettingsTitle => 'Impostazioni Server';
-
-  @override
-  String get serverSettingsSubtitle =>
-      'Gestisci ricezione locale, associazione e modalità app.';
+  String get serverSettingsTitle => 'Impostazioni';
 
   @override
   String get outstandingItems => 'Ancora da preparare';

@@ -92,11 +92,7 @@ class _ItemsPageState extends State<ItemsPage> {
           if (widget.controller.items.isEmpty)
             _EmptyItems(onAdd: _openEditor)
           else if (filtered.isEmpty)
-            _MessageCard(
-              icon: Icons.search_off_rounded,
-              title: l.noItemsFound,
-              body: l.itemsSubtitle,
-            )
+            _MessageCard(icon: Icons.search_off_rounded, title: l.noItemsFound)
           else
             LayoutBuilder(
               builder: (context, constraints) {
@@ -461,13 +457,13 @@ class _MessageCard extends StatelessWidget {
   const _MessageCard({
     required this.icon,
     required this.title,
-    required this.body,
+    this.body,
     this.action,
   });
 
   final IconData icon;
   final String title;
-  final String body;
+  final String? body;
   final Widget? action;
 
   @override
@@ -485,8 +481,10 @@ class _MessageCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 8),
-            Text(body, textAlign: TextAlign.center),
+            if (body != null) ...[
+              const SizedBox(height: 8),
+              Text(body!, textAlign: TextAlign.center),
+            ],
             if (action != null) ...[const SizedBox(height: 20), action!],
           ],
         ),

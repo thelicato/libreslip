@@ -83,7 +83,7 @@ Optional Client delivery remains durably gated until a local print is recorded a
 
 Edit `lib/l10n/app_en.arb` and `app_it.arb`, then run `flutter gen-l10n`. Regional ARB files select `en_GB` and `it_IT`. Stored item names, references and notes are never translated.
 
-The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination, with a print action pinned outside the scrolling content. Compact Compose places the active order before the catalogue on phones and combines each item with its quantity controls. Tests cover phone, landscape, tablet, both languages and doubled text.
+The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination, with a print action pinned outside the scrolling content. Compact Compose replaces the separate catalogue and selected-order panels with one order card. Every reusable item has a zero-based quantity stepper; reference and order notes use compact edit dialogs. Tests cover phone, landscape, tablet, both languages and doubled text.
 
 Generate review images with installed Flutter SDK fonts:
 

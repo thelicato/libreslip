@@ -40,9 +40,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultHeading => 'Your workspace';
 
   @override
-  String get overviewSubtitle => 'A little order for your working day.';
-
-  @override
   String get heroEyebrow => 'A LITTLE SLIP. A CLEARER DAY.';
 
   @override
@@ -180,9 +177,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
-  String get settingsSubtitle => 'Small details. A space that feels yours.';
-
-  @override
   String get language => 'Language';
 
   @override
@@ -281,17 +275,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get privacyBody =>
       'These settings work without an internet connection. Automatic cloud backup is switched off.';
-
-  @override
-  String get composeSubtitle =>
-      'Build an order and keep every detail safe as you work.';
-
-  @override
-  String get itemsSubtitle => 'Reusable items for faster ticket composition.';
-
-  @override
-  String get ticketsSubtitle =>
-      'Saved order snapshots, kept separately from printing.';
 
   @override
   String get newDraft => 'New draft';
@@ -430,7 +413,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get compactComposeBody =>
-      'Keep each selected item and its quantity controls together in one row.';
+      'Show every reusable item with a quantity starting at 0 in one order card.';
 
   @override
   String get preparationNotes => 'Preparation notes';
@@ -997,11 +980,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The app mode could not be saved. Nothing was switched.';
 
   @override
-  String get serverInboxTitle => 'Server orders';
-
-  @override
-  String get serverInboxSubtitle =>
-      'Receive immutable orders from paired LibreSlip clients and mark them Done.';
+  String get serverInboxTitle => 'Orders';
 
   @override
   String get serverStarting => 'Starting local receiver…';
@@ -1279,11 +1258,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverSettingsTab => 'Settings';
 
   @override
-  String get serverSettingsTitle => 'Server settings';
-
-  @override
-  String get serverSettingsSubtitle =>
-      'Manage this local receiver, pairing and app mode.';
+  String get serverSettingsTitle => 'Settings';
 
   @override
   String get outstandingItems => 'Still to prepare';

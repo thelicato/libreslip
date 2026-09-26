@@ -24,7 +24,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 ## Highlights
 
 - Create a reusable catalogue with categories, search and optional item images.
-- Compose tickets with quantities, preparation notes, order notes and an optional table or order reference. The print action stays on screen, and optional Compact Compose keeps item controls together in one row.
+- Compose tickets with quantities, preparation notes, order notes and an optional table or order reference. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP.
 - Reprint or share a ticket as a PDF without creating a second order.

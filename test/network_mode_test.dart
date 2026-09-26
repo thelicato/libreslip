@@ -203,12 +203,16 @@ void main() {
     );
     expect(find.text('Version $version'), findsOneWidget);
 
+    final modeSelector = find.byKey(const ValueKey('app-mode-selector'));
     await tester.scrollUntilVisible(
-      find.text('Client'),
+      modeSelector,
       500,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Client').last);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: modeSelector, matching: find.text('Client')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Switch to Client mode?'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('confirm-mode-switch')));
@@ -307,7 +311,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Ordini del Server'), findsOneWidget);
+    expect(find.text('Ordini'), findsWidgets);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('outstanding-items-card')),
       300,
@@ -317,7 +321,7 @@ void main() {
     expect(find.text('Ancora da preparare'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
     await tester.pumpAndSettle();
-    expect(find.text('Impostazioni Server'), findsOneWidget);
+    expect(find.text('Impostazioni'), findsWidgets);
     expect(find.text('Pronto a ricevere'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

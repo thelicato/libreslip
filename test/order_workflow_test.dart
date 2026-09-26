@@ -201,7 +201,6 @@ void main() {
       await printer.refresh();
       await output.load();
       await orders.saveItem(name: 'Mushroom toastie');
-      orders.addCatalogueItem(orders.items.single);
 
       await tester.pumpWidget(
         LibreSlipApp(
@@ -215,23 +214,48 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('nav-2')));
       await tester.pumpAndSettle();
 
-      final lineId = orders.activeDraft!.lines.single.id;
-      final lineFinder = find.byKey(ValueKey('order-line-$lineId'));
-      final stepperFinder = find.byKey(ValueKey('quantity-stepper-$lineId'));
-      final catalogueFinder = find.byKey(
-        ValueKey('compose-item-${orders.items.single.id}'),
-      );
+      final itemId = orders.items.single.id;
+      final quantityFinder = find.byKey(ValueKey('compact-quantity-$itemId'));
+      final plusFinder = find.byKey(ValueKey('compose-item-$itemId'));
+      final minusFinder = find.byKey(ValueKey('compact-minus-$itemId'));
       expect(
-        tester.getTopLeft(lineFinder).dy,
-        lessThan(tester.getTopLeft(catalogueFinder).dy),
+        find.byKey(const ValueKey('compact-compose-panel')),
+        findsOneWidget,
       );
-      expect(
-        tester.getSize(stepperFinder).width,
-        lessThan(tester.getSize(lineFinder).width - 60),
-      );
+      expect(find.text('Add items'), findsNothing);
+      expect(tester.widget<Text>(quantityFinder).data, '0');
+      expect(orders.activeDraft!.lines, isEmpty);
+
       final printFinder = find.byKey(const ValueKey('print-ticket'));
       expect(printFinder, findsOneWidget);
       expect(tester.getBottomRight(printFinder).dy, lessThan(740));
+      expect(tester.widget<FilledButton>(printFinder).onPressed, isNull);
+
+      await tester.ensureVisible(plusFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(plusFinder);
+      await tester.pump();
+      final lineId = orders.activeDraft!.lines.single.id;
+      orders.setPreparationNote(lineId, 'No onion');
+      await tester.pump();
+      await tester.tap(plusFinder);
+      await tester.pump();
+      expect(orders.activeDraft!.lines, hasLength(1));
+      expect(orders.activeDraft!.lines.single.quantity, 2);
+      expect(tester.widget<Text>(quantityFinder).data, '2');
+
+      await tester.tap(minusFinder);
+      await tester.pump();
+      await tester.tap(minusFinder);
+      await tester.pump();
+      expect(orders.activeDraft!.lines, isEmpty);
+      expect(tester.widget<Text>(quantityFinder).data, '0');
+
+      await tester.tap(plusFinder);
+      await tester.pump();
+      await tester.tap(plusFinder);
+      await tester.pump();
+      expect(orders.activeDraft!.lines.single.quantity, 2);
       await tester.tap(printFinder);
       await tester.pumpAndSettle();
       expect(orders.tickets, hasLength(1));

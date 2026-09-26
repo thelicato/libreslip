@@ -123,7 +123,6 @@ class _ServerModeShellState extends State<ServerModeShell>
                     children: [
                       _PageHeader(
                         title: l.serverInboxTitle,
-                        subtitle: l.serverInboxSubtitle,
                         trailing: IconButton(
                           tooltip: l.serverRefresh,
                           onPressed: controller.loading
@@ -278,10 +277,7 @@ class _ServerModeShellState extends State<ServerModeShell>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _PageHeader(
-                      title: l.serverSettingsTitle,
-                      subtitle: l.serverSettingsSubtitle,
-                    ),
+                    _PageHeader(title: l.serverSettingsTitle),
                     const SizedBox(height: 20),
                     _ListenerCard(controller: controller, onRetry: _start),
                     const SizedBox(height: 16),
@@ -350,14 +346,9 @@ class _ServerModeShellState extends State<ServerModeShell>
 }
 
 class _PageHeader extends StatelessWidget {
-  const _PageHeader({
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-  });
+  const _PageHeader({required this.title, this.trailing});
 
   final String title;
-  final String subtitle;
   final Widget? trailing;
 
   @override
@@ -373,13 +364,6 @@ class _PageHeader extends StatelessWidget {
             Expanded(child: Text(title, style: theme.textTheme.headlineMedium)),
             ?trailing,
           ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
         ),
       ],
     );
