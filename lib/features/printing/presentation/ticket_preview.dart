@@ -41,13 +41,27 @@ class TicketPreview extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (document.logoPath != null) ...[
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 92),
-                  child: Image.file(
-                    File(document.logoPath!),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final widthPercent = document.logoWidthPercent.clamp(
+                      1,
+                      100,
+                    );
+                    return Center(
+                      child: SizedBox(
+                        key: const ValueKey('ticket-logo-preview'),
+                        width: constraints.maxWidth * widthPercent / 100,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 92),
+                          child: Image.file(
+                            File(document.logoPath!),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
               ],

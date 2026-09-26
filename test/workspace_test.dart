@@ -156,6 +156,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('printed logo width can be selected from Client settings', (
+    tester,
+  ) async {
+    final controller = await openApp(tester);
+    await tester.tap(find.byKey(const ValueKey('nav-4')));
+    await tester.pumpAndSettle();
+    final sliderFinder = find.byKey(const ValueKey('ticket-logo-width'));
+    await tester.ensureVisible(sliderFinder);
+    final initial = tester.widget<Slider>(sliderFinder);
+    expect(initial.value, 100);
+    expect(initial.divisions, 3);
+
+    initial.onChanged!(50);
+    await tester.pump();
+    tester.widget<Slider>(sliderFinder).onChangeEnd!(50);
+    await tester.pumpAndSettle();
+
+    expect(controller.settings.logoWidthPercent, 50);
+    expect(tester.widget<Slider>(sliderFinder).value, 50);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('optional order fields can be hidden before saving a ticket', (
     tester,
   ) async {

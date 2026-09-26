@@ -257,6 +257,8 @@
   "footerTooLong": "Use 120 characters or fewer.",
   "ticketLogo": "Ticket logo",
   "ticketLogoBody": "Stored privately on this phone and printed in monochrome.",
+  "ticketLogoWidth": "Printed logo width",
+  "ticketLogoWidthBody": "Choose how much of the 58 mm printable width the logo may use.",
   "chooseLogo": "Choose logo",
   "changeLogo": "Change logo",
   "removeLogo": "Remove logo",

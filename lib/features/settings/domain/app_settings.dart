@@ -9,6 +9,7 @@ class AppSettings {
     this.heading = '',
     this.footer = '',
     this.logoPath,
+    this.logoWidthPercent = defaultLogoWidthPercent,
     this.typography = const TicketTypography(),
     this.language = 'en',
     this.themeMode = ThemeMode.system,
@@ -20,6 +21,9 @@ class AppSettings {
   final String heading;
   final String footer;
   final String? logoPath;
+  static const logoWidthOptions = [25, 50, 75, 100];
+  static const defaultLogoWidthPercent = 100;
+  final int logoWidthPercent;
   final TicketTypography typography;
   static const minAppTextScale = 1.0;
   static const defaultAppTextScale = 1.0;
@@ -39,6 +43,7 @@ class AppSettings {
     String? footer,
     String? logoPath,
     bool clearLogo = false,
+    int? logoWidthPercent,
     TicketTypography? typography,
     String? language,
     ThemeMode? themeMode,
@@ -50,6 +55,7 @@ class AppSettings {
     heading: heading ?? this.heading,
     footer: footer ?? this.footer,
     logoPath: clearLogo ? null : logoPath ?? this.logoPath,
+    logoWidthPercent: logoWidthPercent ?? this.logoWidthPercent,
     typography: typography ?? this.typography,
     language: language ?? this.language,
     themeMode: themeMode ?? this.themeMode,
@@ -61,10 +67,11 @@ class AppSettings {
   );
 
   Map<String, Object?> toJson() => {
-    'version': 6,
+    'version': 7,
     'heading': heading,
     'footer': footer,
     'logoPath': logoPath,
+    'logoWidthPercent': logoWidthPercent,
     'typography': typography.toJson(),
     'language': language,
     'theme': themeMode.name,
@@ -78,19 +85,24 @@ class AppSettings {
     final footer = version == 1 ? '' : json['footer'];
     final logoPath = version == 1 ? null : json['logoPath'];
     final typographyJson = json['typography'];
-    final typography = ![3, 4, 5, 6].contains(version)
+    final typography = ![3, 4, 5, 6, 7].contains(version)
         ? const TicketTypography()
         : typographyJson is Map<String, dynamic>
         ? TicketTypography.fromJson(typographyJson)
         : throw const FormatException('Invalid ticket typography');
-    final appTextScale = [4, 5, 6].contains(version)
+    final appTextScale = [4, 5, 6, 7].contains(version)
         ? json['appTextScale']
         : defaultAppTextScale;
-    final preferredPrinterAddress = [5, 6].contains(version)
+    final preferredPrinterAddress = [5, 6, 7].contains(version)
         ? json['preferredPrinterAddress']
         : null;
-    final compactCompose = version == 6 ? json['compactCompose'] : false;
-    if (![1, 2, 3, 4, 5, 6].contains(version) ||
+    final compactCompose = [6, 7].contains(version)
+        ? json['compactCompose']
+        : false;
+    final logoWidthPercent = version == 7
+        ? json['logoWidthPercent']
+        : defaultLogoWidthPercent;
+    if (![1, 2, 3, 4, 5, 6, 7].contains(version) ||
         json['heading'] is! String ||
         (json['heading'] as String).characters.length > 60 ||
         footer is! String ||
@@ -103,6 +115,8 @@ class AppSettings {
         appTextScale < minAppTextScale ||
         appTextScale > maxAppTextScale ||
         compactCompose is! bool ||
+        logoWidthPercent is! int ||
+        !logoWidthOptions.contains(logoWidthPercent) ||
         (preferredPrinterAddress != null &&
             (preferredPrinterAddress is! String ||
                 preferredPrinterAddress.isEmpty ||
@@ -113,6 +127,7 @@ class AppSettings {
       heading: json['heading'] as String,
       footer: footer,
       logoPath: logoPath as String?,
+      logoWidthPercent: logoWidthPercent,
       typography: typography,
       language: json['language'] as String,
       themeMode: ThemeMode.values.byName(json['theme'] as String),

@@ -15,6 +15,7 @@ void main() {
       heading: 'Caffè Libertà',
       footer: 'Preparato con cura',
       logoPath: '/private/ticket-logo.png',
+      logoWidthPercent: 75,
       typography: TicketTypography(
         heading: 20,
         details: 10,
@@ -36,6 +37,7 @@ void main() {
     expect(decoded.copyWith(language: 'en').heading, 'Caffè Libertà');
     expect(decoded.footer, 'Preparato con cura');
     expect(decoded.logoPath, '/private/ticket-logo.png');
+    expect(decoded.logoWidthPercent, 75);
     expect(decoded.typography.heading, 20);
     expect(decoded.typography.details, 10);
     expect(decoded.typography.items, 12);
@@ -102,6 +104,14 @@ void main() {
     expect(legacy.compactCompose, isFalse);
   });
 
+  test('version 6 preferences migrate with full-width ticket logos', () {
+    final legacy = AppSettings.fromJson(
+      {...const AppSettings().toJson(), 'version': 6}
+        ..remove('logoWidthPercent'),
+    );
+    expect(legacy.logoWidthPercent, AppSettings.defaultLogoWidthPercent);
+  });
+
   test('app text scaling enforces hard minimum and maximum sizes', () {
     for (final scale in [0.99, 1.31, double.nan]) {
       expect(
@@ -133,12 +143,14 @@ void main() {
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 7},
+      {...const AppSettings().toJson(), 'version': 8},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
       {...const AppSettings().toJson(), 'heading': List.filled(61, 'x').join()},
       {...const AppSettings().toJson(), 'preferredPrinterAddress': ''},
+      {...const AppSettings().toJson(), 'logoWidthPercent': 40},
+      {...const AppSettings().toJson(), 'logoWidthPercent': 50.0},
       <String, dynamic>{},
     ]) {
       expect(() => AppSettings.fromJson(invalid), throwsFormatException);
@@ -171,6 +183,7 @@ void main() {
         language: 'it',
         themeMode: ThemeMode.dark,
         appTextScale: 1.15,
+        logoWidthPercent: 50,
         compactCompose: true,
       ),
     );
@@ -182,6 +195,7 @@ void main() {
     expect(next.settings.language, 'it');
     expect(next.settings.themeMode, ThemeMode.dark);
     expect(next.settings.appTextScale, 1.15);
+    expect(next.settings.logoWidthPercent, 50);
     expect(next.settings.compactCompose, isTrue);
   });
 

@@ -26,7 +26,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Create a reusable catalogue with categories, search and optional item images.
 - Compose tickets with quantities, preparation notes, order notes and an optional table or order reference. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
-- Print to the NETUM NT-1809DD through Bluetooth Classic SPP.
+- Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
 - Browse immutable ticket history and delete individual tickets or clear the history when needed.
 - Review ticket counts, total quantities and per-item totals for any date range.
@@ -50,7 +50,7 @@ Server mode only receives orders, moves them between Received and Completed, and
 
 ## Printing
 
-Pair the NETUM NT-1809DD in Android, then open LibreSlip Settings to select and connect it. LibreSlip remembers the selected printer, reconnects it when possible on a later launch and checks the connection every 15 seconds while running. The current state is visible throughout Client mode. Manual Disconnect forgets the selection.
+Pair the NETUM NT-1809DD in Android, then open LibreSlip Settings to select and connect it. Client Settings also lets you choose whether the ticket logo uses 25%, 50%, 75% or 100% of the 58 mm printable width. LibreSlip remembers the selected printer, reconnects it when possible on a later launch and checks the connection every 15 seconds while running. The current state is visible throughout Client mode. Manual Disconnect forgets the selection.
 
 A Transmitted result means Android finished writing the ticket bytes. Check the paper before continuing because the printer does not confirm physical output. LibreSlip never automatically repeats a print whose outcome might be uncertain.
 

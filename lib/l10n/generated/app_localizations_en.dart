@@ -695,6 +695,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stored privately on this phone and printed in monochrome.';
 
   @override
+  String get ticketLogoWidth => 'Printed logo width';
+
+  @override
+  String get ticketLogoWidthBody =>
+      'Choose how much of the 58 mm printable width the logo may use.';
+
+  @override
   String get chooseLogo => 'Choose logo';
 
   @override

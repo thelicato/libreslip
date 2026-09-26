@@ -9,7 +9,7 @@ LibreSlip targets the NETUM NT-1809DD portable thermal printer with 58 mm paper,
 - Pair the printer through Android before opening LibreSlip printer setup.
 - LibreSlip lists bonded Bluetooth devices and requests `BLUETOOTH_CONNECT`. It does not scan and does not need location permission.
 - Ticket layout, ESC/POS encoding and Bluetooth transport are separate components. The current profile uses a 384-dot printable width and 256-byte output chunks.
-- Supported text uses the PC858 code page. Unsupported characters and configured logos are rasterised with bundled fonts.
+- Supported text uses the PC858 code page. Unsupported characters and configured logos are rasterised with bundled fonts. A configured logo uses 25%, 50%, 75% or 100% of the 384-dot printable width.
 - Test tickets and order tickets contain no cash-drawer or cutter commands.
 - Print jobs are durable. Interrupted transmission becomes Uncertain and is never resent automatically.
 - A completed socket write means Transmitted, not confirmed paper output. Check the physical ticket.

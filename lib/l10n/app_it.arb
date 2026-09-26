@@ -257,6 +257,8 @@
   "footerTooLong": "Usa al massimo 120 caratteri.",
   "ticketLogo": "Logo della comanda",
   "ticketLogoBody": "Salvato in modo privato sul telefono e stampato in bianco e nero.",
+  "ticketLogoWidth": "Larghezza del logo stampato",
+  "ticketLogoWidthBody": "Scegli quanta parte della larghezza stampabile di 58 mm può usare il logo.",
   "chooseLogo": "Scegli logo",
   "changeLogo": "Cambia logo",
   "removeLogo": "Rimuovi logo",

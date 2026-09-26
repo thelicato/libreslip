@@ -16,6 +16,7 @@ class TicketDocument {
     this.reference = '',
     this.orderNote = '',
     this.logoPath,
+    this.logoWidthPercent = 100,
   });
 
   final String heading;
@@ -29,6 +30,7 @@ class TicketDocument {
   final String lineNotePrefix;
   final String footer;
   final String? logoPath;
+  final int logoWidthPercent;
   final TicketTypography typography;
   final List<TicketDocumentLine> lines;
 
@@ -42,6 +44,7 @@ class TicketDocument {
     required String lineNotePrefix,
     required String footer,
     String? logoPath,
+    int logoWidthPercent = 100,
     TicketTypography typography = const TicketTypography(),
   }) => TicketDocument(
     heading: ticket.heading.isEmpty ? fallbackHeading : ticket.heading,
@@ -55,6 +58,7 @@ class TicketDocument {
     lineNotePrefix: lineNotePrefix,
     footer: footer,
     logoPath: logoPath,
+    logoWidthPercent: logoWidthPercent,
     typography: typography,
     lines: [
       for (final line in ticket.lines)

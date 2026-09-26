@@ -81,6 +81,8 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
       font: _regular,
       fontSize: typography.footer.toDouble(),
     );
+    final logoWidth =
+        50 * PdfPageFormat.mm * document.logoWidthPercent.clamp(1, 100) / 100;
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat(
@@ -91,7 +93,13 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
         theme: pw.ThemeData.withFont(base: _regular!, bold: _bold!),
         build: (_) => [
           if (logo != null)
-            pw.Center(child: pw.Image(logo, height: 22 * PdfPageFormat.mm)),
+            pw.Center(
+              child: pw.SizedBox(
+                width: logoWidth,
+                height: 22 * PdfPageFormat.mm,
+                child: pw.Image(logo, fit: pw.BoxFit.contain),
+              ),
+            ),
           pw.Center(
             child: pw.Text(
               document.heading,

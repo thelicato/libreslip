@@ -7,7 +7,7 @@ LibreSlip ZIP archives use format identifier `libreslip-portability` and format 
 | Path | Required | Content |
 | --- | --- | --- |
 | `manifest.json` | Always | Archive identity, kind, versions, UTC creation time, counts and payload inventory. |
-| `configuration.json` | Always | Settings format version 6, ticket typography, locale, theme, heading, footer, logo reference, order-field switches, Compact Compose preference, remembered printer address and a non-secret printer transport description. |
+| `configuration.json` | Always | Settings format version 7, ticket typography, locale, theme, heading, footer, logo reference and printed width, order-field switches, Compact Compose preference, remembered printer address and a non-secret printer transport description. |
 | `database.json` | Full backup only | Portable database schema version 10, or accepted legacy version 5 through 9, with categories, items, composition, lines, tickets, ticket lines, counters, print jobs and order-field settings. Binary print payloads use Base64. |
 | `assets/logo.<ext>` | When configured | App-private ticket logo. |
 | `assets/items/<item-id>.<ext>` | When referenced | App-private reusable-item image. |

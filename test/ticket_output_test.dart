@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/printing/application/esc_pos_ticket_encoder.dart';
 import 'package:libreslip/features/printing/application/printer_controller.dart';
@@ -42,6 +44,34 @@ void main() {
       expect(custom.length, greaterThan(italian.length));
     },
   );
+
+  test('logo raster uses the selected share of the printable width', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'libreslip-logo-width-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final image = img.Image(width: 400, height: 100);
+    img.fill(image, color: img.ColorRgb8(0, 0, 0));
+    final logo = File('${directory.path}/logo.png');
+    await logo.writeAsBytes(img.encodePng(image));
+    const encoder = EscPosTicketEncoder();
+
+    for (final (percent, expectedWidth) in [
+      (25, 96),
+      (50, 192),
+      (75, 288),
+      (100, 384),
+    ]) {
+      final bytes = await encoder.encode(
+        _document(logoPath: logo.path, logoWidthPercent: percent),
+      );
+      final rasterOffset = _indexOf(bytes, [0x1D, 0x76, 0x30, 0x00]);
+      expect(rasterOffset, greaterThanOrEqualTo(0));
+      final widthBytes =
+          bytes[rasterOffset + 4] + (bytes[rasterOffset + 5] << 8);
+      expect(widthBytes * 8, expectedWidth, reason: '$percent% logo');
+    }
+  });
 
   testWidgets(
     'offline PDF builder creates a 58 mm document with bundled fonts',
@@ -326,6 +356,8 @@ final _ticket = SavedTicket(
 
 TicketDocument _document({
   String name = 'Toastie',
+  String? logoPath,
+  int logoWidthPercent = 100,
   TicketTypography typography = const TicketTypography(),
 }) => TicketDocument(
   heading: 'Bottega',
@@ -338,9 +370,22 @@ TicketDocument _document({
   orderNote: 'Together',
   lineNotePrefix: 'Note',
   footer: 'Prepared with care',
+  logoPath: logoPath,
+  logoWidthPercent: logoWidthPercent,
   typography: typography,
   lines: [TicketDocumentLine(quantity: 2, name: name, note: 'No onion')],
 );
+
+int _indexOf(Uint8List bytes, List<int> pattern) {
+  for (var index = 0; index <= bytes.length - pattern.length; index++) {
+    var matches = true;
+    for (var offset = 0; offset < pattern.length; offset++) {
+      if (bytes[index + offset] != pattern[offset]) matches = false;
+    }
+    if (matches) return index;
+  }
+  return -1;
+}
 
 bool _contains(Uint8List bytes, List<int> pattern) {
   for (var index = 0; index <= bytes.length - pattern.length; index++) {

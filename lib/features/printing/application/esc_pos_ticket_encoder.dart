@@ -37,7 +37,7 @@ class EscPosTicketEncoder {
     final typography = document.typography;
     final logoPath = document.logoPath;
     if (logoPath != null) {
-      final raster = await _logoRaster(logoPath);
+      final raster = await _logoRaster(logoPath, document.logoWidthPercent);
       if (raster.isNotEmpty) {
         command([0x1B, 0x61, 0x01]);
         command(raster);
@@ -173,13 +173,13 @@ class EscPosTicketEncoder {
       ..addByte(0x0A);
   }
 
-  Future<List<int>> _logoRaster(String path) async {
+  Future<List<int>> _logoRaster(String path, int widthPercent) async {
     try {
       final decoded = img.decodeImage(await File(path).readAsBytes());
       if (decoded == null) return const [];
-      final targetWidth = decoded.width > profile.widthDots
-          ? profile.widthDots
-          : decoded.width;
+      final targetWidth = (profile.widthDots * widthPercent / 100)
+          .round()
+          .clamp(1, profile.widthDots);
       final resized = img.copyResize(
         decoded,
         width: targetWidth,

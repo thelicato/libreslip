@@ -15,6 +15,7 @@ import '../../printing/application/printer_controller.dart';
 import '../../printing/domain/ticket_typography.dart';
 import '../../printing/presentation/printer_setup_card.dart';
 import '../application/settings_controller.dart';
+import '../domain/app_settings.dart';
 import 'personalisation_settings.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -306,81 +307,137 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-class _LogoEditor extends StatelessWidget {
+class _LogoEditor extends StatefulWidget {
   const _LogoEditor({required this.controller});
 
   final SettingsController controller;
 
   @override
+  State<_LogoEditor> createState() => _LogoEditorState();
+}
+
+class _LogoEditorState extends State<_LogoEditor> {
+  int? _pendingWidth;
+
+  Future<void> _saveWidth(double value) async {
+    final percent = value.round();
+    await widget.controller.update(
+      widget.controller.settings.copyWith(logoWidthPercent: percent),
+    );
+    if (mounted) setState(() => _pendingWidth = null);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final controller = widget.controller;
     final path = controller.settings.logoPath;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final width = _pendingWidth ?? controller.settings.logoWidthPercent;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          width: 76,
-          height: 76,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: path == null
-              ? const Icon(Icons.image_outlined)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(
-                    File(path),
-                    width: 76,
-                    height: 76,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.broken_image_outlined),
-                  ),
-                ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l.ticketLogo, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text(l.ticketLogoBody),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton.icon(
-                    key: const ValueKey('choose-ticket-logo'),
-                    onPressed: controller.saving ? null : controller.chooseLogo,
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: Text(path == null ? l.chooseLogo : l.changeLogo),
-                  ),
-                  if (controller.logoFailed)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        l.logoPickerError,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: path == null
+                  ? const Icon(Icons.image_outlined)
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.file(
+                        File(path),
+                        width: 76,
+                        height: 76,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.broken_image_outlined),
                       ),
                     ),
-                  if (path != null)
-                    TextButton.icon(
-                      onPressed: controller.saving
-                          ? null
-                          : controller.removeLogo,
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      label: Text(l.removeLogo),
-                    ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l.ticketLogo,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(l.ticketLogoBody),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        key: const ValueKey('choose-ticket-logo'),
+                        onPressed: controller.saving
+                            ? null
+                            : controller.chooseLogo,
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: Text(path == null ? l.chooseLogo : l.changeLogo),
+                      ),
+                      if (controller.logoFailed)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l.logoPickerError,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      if (path != null)
+                        TextButton.icon(
+                          onPressed: controller.saving
+                              ? null
+                              : controller.removeLogo,
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: Text(l.removeLogo),
+                        ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Text(l.ticketLogoWidth, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(l.ticketLogoWidthBody),
+        Slider(
+          key: const ValueKey('ticket-logo-width'),
+          value: width.toDouble(),
+          min: AppSettings.logoWidthOptions.first.toDouble(),
+          max: AppSettings.logoWidthOptions.last.toDouble(),
+          divisions: AppSettings.logoWidthOptions.length - 1,
+          label: '$width%',
+          semanticFormatterCallback: (value) => '${value.round()}%',
+          onChanged: controller.saving
+              ? null
+              : (value) => setState(() => _pendingWidth = value.round()),
+          onChangeEnd: controller.saving ? null : _saveWidth,
+        ),
+        Row(
+          children: [
+            for (final percent in AppSettings.logoWidthOptions)
+              Expanded(
+                child: Text(
+                  '$percent%',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+          ],
         ),
       ],
     );

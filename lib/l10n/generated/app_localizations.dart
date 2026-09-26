@@ -1348,6 +1348,18 @@ abstract class AppLocalizations {
   /// **'Stored privately on this phone and printed in monochrome.'**
   String get ticketLogoBody;
 
+  /// No description provided for @ticketLogoWidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed logo width'**
+  String get ticketLogoWidth;
+
+  /// No description provided for @ticketLogoWidthBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how much of the 58 mm printable width the logo may use.'**
+  String get ticketLogoWidthBody;
+
   /// No description provided for @chooseLogo.
   ///
   /// In en, this message translates to:

@@ -56,6 +56,7 @@ void main() {
         heading: 'Caffè Libertà',
         footer: 'Preparato con cura',
         logoPath: logo.path,
+        logoWidthPercent: 50,
         language: 'it',
         themeMode: ThemeMode.dark,
         preferredPrinterAddress: '00:11:22:33:44:55',
@@ -118,6 +119,7 @@ void main() {
       expect(settings.stored!.heading, 'Caffè Libertà');
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
+      expect(settings.stored!.logoWidthPercent, 50);
       expect(settings.stored!.preferredPrinterAddress, '00:11:22:33:44:55');
       expect(settings.stored!.logoPath, isNot(logo.path));
       expect(File(settings.stored!.logoPath!).readAsBytesSync(), _tinyPng);

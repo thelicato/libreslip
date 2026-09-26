@@ -338,6 +338,7 @@ class ComposePageState extends State<ComposePage> {
       lineNotePrefix: l.lineNoteLabel,
       footer: widget.settings.footer,
       logoPath: widget.settings.logoPath,
+      logoWidthPercent: widget.settings.logoWidthPercent,
       typography: widget.settings.typography,
     );
   }

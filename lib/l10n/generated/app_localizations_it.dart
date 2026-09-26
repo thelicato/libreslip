@@ -702,6 +702,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Salvato in modo privato sul telefono e stampato in bianco e nero.';
 
   @override
+  String get ticketLogoWidth => 'Larghezza del logo stampato';
+
+  @override
+  String get ticketLogoWidthBody =>
+      'Scegli quanta parte della larghezza stampabile di 58 mm può usare il logo.';
+
+  @override
   String get chooseLogo => 'Scegli logo';
 
   @override
