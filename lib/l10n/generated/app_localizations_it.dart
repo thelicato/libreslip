@@ -430,6 +430,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Scegli quali campi facoltativi mostrare durante la composizione.';
 
   @override
+  String get compactCompose => 'Composizione compatta';
+
+  @override
+  String get compactComposeBody =>
+      'Mantiene ogni articolo selezionato e i controlli della quantità insieme su una sola riga.';
+
+  @override
   String get preparationNotes => 'Note di preparazione';
 
   @override

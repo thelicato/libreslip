@@ -151,6 +151,8 @@
   "orderNotes": "Order notes",
   "orderFields": "Order fields",
   "orderFieldsBody": "Choose which optional fields appear while composing a ticket.",
+  "compactCompose": "Compact Compose",
+  "compactComposeBody": "Keep each selected item and its quantity controls together in one row.",
   "preparationNotes": "Preparation notes",
   "orderNotesHint": "Optional notes for the whole order",
   "draftEmptyTitle": "Start with an item.",

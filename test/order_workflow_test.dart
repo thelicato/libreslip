@@ -8,6 +8,7 @@ import 'package:libreslip/features/printing/application/ticket_output_controller
 import 'package:libreslip/features/printing/domain/print_job.dart';
 import 'package:libreslip/features/printing/domain/printer_transport.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
+import 'package:libreslip/features/settings/domain/app_settings.dart';
 
 import 'test_support.dart';
 
@@ -170,6 +171,74 @@ void main() {
     expect(output.jobs, isEmpty);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'Compact Compose keeps order controls together and print always reachable',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 740);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      final settings = SettingsController(
+        MemorySettingsRepository()
+          ..stored = const AppSettings(compactCompose: true),
+      );
+      final environment = await createMemoryOrderEnvironment();
+      final orders = environment.controller;
+      final printer = PrinterController(_ConnectedTransport());
+      final output = TicketOutputController(
+        store: environment.repository,
+        printer: printer,
+      );
+      addTearDown(settings.dispose);
+      addTearDown(orders.dispose);
+      addTearDown(printer.dispose);
+      addTearDown(output.dispose);
+      await settings.load();
+      await printer.refresh();
+      await output.load();
+      await orders.saveItem(name: 'Mushroom toastie');
+      orders.addCatalogueItem(orders.items.single);
+
+      await tester.pumpWidget(
+        LibreSlipApp(
+          settings: settings,
+          orders: orders,
+          printer: printer,
+          ticketOutput: output,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('nav-2')));
+      await tester.pumpAndSettle();
+
+      final lineId = orders.activeDraft!.lines.single.id;
+      final lineFinder = find.byKey(ValueKey('order-line-$lineId'));
+      final stepperFinder = find.byKey(ValueKey('quantity-stepper-$lineId'));
+      final catalogueFinder = find.byKey(
+        ValueKey('compose-item-${orders.items.single.id}'),
+      );
+      expect(
+        tester.getTopLeft(lineFinder).dy,
+        lessThan(tester.getTopLeft(catalogueFinder).dy),
+      );
+      expect(
+        tester.getSize(stepperFinder).width,
+        lessThan(tester.getSize(lineFinder).width - 60),
+      );
+      final printFinder = find.byKey(const ValueKey('print-ticket'));
+      expect(printFinder, findsOneWidget);
+      expect(tester.getBottomRight(printFinder).dy, lessThan(740));
+      await tester.tap(printFinder);
+      await tester.pumpAndSettle();
+      expect(orders.tickets, hasLength(1));
+      expect(output.jobs, hasLength(1));
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'ticket deletion confirmations preserve the current order number',

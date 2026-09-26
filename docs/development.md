@@ -65,7 +65,7 @@ The generated keystore and properties are ignored by Git. Keep secure offline ba
 - `features/networking`: mode selection, pairing, protocol, encrypted secrets, durable Client outbox, Android foreground HTTPS Server service and received or completed board.
 - `features/workspace`: responsive navigation, Overview and non-financial statistics.
 
-Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 5 stores locale, appearance, bounded app text scaling, ticket heading, footer, logo, bounded printed-ticket typography and the last selected printer address. Versions 1 through 4 migrate without a remembered printer.
+Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 6 stores locale, appearance, bounded app text scaling, ticket heading, footer, logo, bounded printed-ticket typography, the last selected printer address and the Compact Compose preference. Versions 1 through 4 migrate without a remembered printer; version 5 migrates with the standard Compose layout.
 
 Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 10. Migrations are transactional. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
 
@@ -83,7 +83,7 @@ Optional Client delivery remains durably gated until a local print is recorded a
 
 Edit `lib/l10n/app_en.arb` and `app_it.arb`, then run `flutter gen-l10n`. Regional ARB files select `en_GB` and `it_IT`. Stored item names, references and notes are never translated.
 
-The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination. Tests cover phone, landscape, tablet, both languages and doubled text.
+The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination, with a print action pinned outside the scrolling content. Compact Compose places the active order before the catalogue on phones and combines each item with its quantity controls. Tests cover phone, landscape, tablet, both languages and doubled text.
 
 Generate review images with installed Flutter SDK fonts:
 

@@ -41,9 +41,20 @@ class WorkspaceShell extends StatefulWidget {
 }
 
 class _WorkspaceShellState extends State<WorkspaceShell> {
+  final _composeKey = GlobalKey<ComposePageState>();
+  final _composePrinting = ValueNotifier<bool>(false);
   int _selected = 0;
 
-  void _select(int index) => setState(() => _selected = index);
+  void _select(int index) {
+    if (_composePrinting.value) return;
+    setState(() => _selected = index);
+  }
+
+  @override
+  void dispose() {
+    _composePrinting.dispose();
+    super.dispose();
+  }
 
   double _navLabelFontSize(
     BuildContext context,
@@ -96,8 +107,10 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
       ),
       1 => ItemsPage(controller: widget.orders),
       2 => ComposePage(
+        key: _composeKey,
         controller: widget.orders,
         settings: widget.settings.settings,
+        printing: _composePrinting,
         output: widget.ticketOutput,
         delivery: widget.clientDelivery,
       ),
@@ -273,6 +286,15 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                             ),
                           ),
                         ),
+                        if (_selected == 2)
+                          _ComposeActionBar(
+                            controller: widget.orders,
+                            output: widget.ticketOutput,
+                            printing: _composePrinting,
+                            horizontalPadding: wide ? 36 : 22,
+                            onPrint: () =>
+                                _composeKey.currentState?.printTicket(),
+                          ),
                       ],
                     ),
                   ),
@@ -284,6 +306,109 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
       },
     );
   }
+}
+
+class _ComposeActionBar extends StatelessWidget {
+  const _ComposeActionBar({
+    required this.controller,
+    required this.output,
+    required this.printing,
+    required this.horizontalPadding,
+    required this.onPrint,
+  });
+
+  final OrderWorkspaceController controller;
+  final TicketOutputController? output;
+  final ValueNotifier<bool> printing;
+  final double horizontalPadding;
+  final VoidCallback onPrint;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([
+      controller,
+      printing,
+      ?output,
+      ?output?.printer,
+    ]),
+    builder: (context, _) {
+      final l = AppLocalizations.of(context);
+      final connected = output?.printer.connected ?? false;
+      final busy = controller.saving || printing.value;
+      final hasItems = controller.activeDraft?.lines.isNotEmpty ?? false;
+      return Material(
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 3,
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              10,
+              horizontalPadding,
+              10,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final status = Text(
+                      l.connectBeforePrinting,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    );
+                    final button = FilledButton.icon(
+                      key: const ValueKey('print-ticket'),
+                      onPressed: !hasItems || busy || !connected
+                          ? null
+                          : onPrint,
+                      icon: printing.value
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.print_rounded),
+                      label: Text(l.printTicket),
+                    );
+                    if (constraints.maxWidth < 520) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (!connected) ...[
+                            status,
+                            const SizedBox(height: 6),
+                          ],
+                          button,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        if (!connected) ...[
+                          Expanded(child: status),
+                          const SizedBox(width: 12),
+                        ] else
+                          const Spacer(),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 190),
+                          child: button,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _PrinterConnectionIndicator extends StatelessWidget {

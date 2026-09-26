@@ -84,6 +84,13 @@ void main() {
       ('item-totals-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 0),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
       ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 2),
+      (
+        'compose-compact-phone-it',
+        const Size(412, 915),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
@@ -159,6 +166,7 @@ void main() {
                   footer: 11,
                 )
               : const TicketTypography(),
+          compactCompose: name == 'compose-compact-phone-it',
         );
       final controller = SettingsController(settingsStore);
       await controller.load();

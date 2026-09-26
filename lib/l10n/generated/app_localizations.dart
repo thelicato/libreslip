@@ -880,6 +880,18 @@ abstract class AppLocalizations {
   /// **'Choose which optional fields appear while composing a ticket.'**
   String get orderFieldsBody;
 
+  /// No description provided for @compactCompose.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact Compose'**
+  String get compactCompose;
+
+  /// No description provided for @compactComposeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep each selected item and its quantity controls together in one row.'**
+  String get compactComposeBody;
+
   /// No description provided for @preparationNotes.
   ///
   /// In en, this message translates to:

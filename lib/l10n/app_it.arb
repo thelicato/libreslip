@@ -151,6 +151,8 @@
   "orderNotes": "Note dell’ordine",
   "orderFields": "Campi dell’ordine",
   "orderFieldsBody": "Scegli quali campi facoltativi mostrare durante la composizione.",
+  "compactCompose": "Composizione compatta",
+  "compactComposeBody": "Mantiene ogni articolo selezionato e i controlli della quantità insieme su una sola riga.",
   "preparationNotes": "Note di preparazione",
   "orderNotesHint": "Note facoltative per l’intero ordine",
   "draftEmptyTitle": "Inizia con un articolo.",

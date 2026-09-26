@@ -24,7 +24,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 ## Highlights
 
 - Create a reusable catalogue with categories, search and optional item images.
-- Compose tickets with quantities, preparation notes, order notes and an optional table or order reference.
+- Compose tickets with quantities, preparation notes, order notes and an optional table or order reference. The print action stays on screen, and optional Compact Compose keeps item controls together in one row.
 - Recover the current order after closing or restarting LibreSlip.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP.
 - Reprint or share a ticket as a PDF without creating a second order.
@@ -43,7 +43,7 @@ A paired LibreSlip Server is optional. If it becomes unavailable, local composit
 
 Server mode turns another Android device into a focused preparation board:
 
-- **Orders** shows Received and Completed orders, immutable order details and compact item totals still waiting to be prepared. Completed orders can be restored to Received or deleted individually or together.
+- **Orders** puts the item totals still waiting to be prepared above the Received and Completed lists, followed by immutable order details. Completed orders can be restored to Received or deleted individually or together.
 - **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
 
 Server mode only receives orders, moves them between Received and Completed, and removes Completed history when requested. It does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.

@@ -15,23 +15,24 @@ class ComposePage extends StatefulWidget {
     super.key,
     required this.controller,
     required this.settings,
+    required this.printing,
     this.output,
     this.delivery,
   });
 
   final OrderWorkspaceController controller;
   final AppSettings settings;
+  final ValueNotifier<bool> printing;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
 
   @override
-  State<ComposePage> createState() => _ComposePageState();
+  State<ComposePage> createState() => ComposePageState();
 }
 
-class _ComposePageState extends State<ComposePage> {
+class ComposePageState extends State<ComposePage> {
   String _query = '';
   String? _categoryId;
-  bool _printing = false;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -39,6 +40,7 @@ class _ComposePageState extends State<ComposePage> {
       widget.controller,
       if (widget.output != null) widget.output!,
       if (widget.output != null) widget.output!.printer,
+      widget.printing,
       if (widget.delivery != null) widget.delivery!,
     ]),
     builder: (context, _) {
@@ -54,15 +56,17 @@ class _ComposePageState extends State<ComposePage> {
               message: l.draftSaveError,
               error: true,
             )
-          else if (widget.controller.saving || _printing)
+          else if (widget.controller.saving || widget.printing.value)
             _StatusBanner(
               icon: Icons.sync_rounded,
-              message: _printing ? l.preparingTicket : l.savingOrders,
+              message: widget.printing.value
+                  ? l.preparingTicket
+                  : l.savingOrders,
               error: false,
             ),
           if (widget.controller.saveFailed ||
               widget.controller.saving ||
-              _printing)
+              widget.printing.value)
             const SizedBox(height: 18),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -82,8 +86,8 @@ class _ComposePageState extends State<ComposePage> {
                 draft: draft,
                 orderNumber: widget.controller.nextOrderNumber,
                 features: widget.controller.featureSettings,
-                busy: widget.controller.saving || _printing,
-                printerConnected: widget.output?.printer.connected ?? false,
+                busy: widget.controller.saving || widget.printing.value,
+                compact: widget.settings.compactCompose,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
@@ -91,7 +95,6 @@ class _ComposePageState extends State<ComposePage> {
                 onEditNote: _editPreparationNote,
                 onRemoveLine: widget.controller.removeLine,
                 onResetOrderNumber: _resetOrderNumber,
-                onPrint: _printTicket,
               );
               if (split) {
                 return Row(
@@ -105,7 +108,9 @@ class _ComposePageState extends State<ComposePage> {
               }
               return Card(
                 child: Column(
-                  children: [catalogue, const Divider(height: 1), order],
+                  children: widget.settings.compactCompose
+                      ? [order, const Divider(height: 1), catalogue]
+                      : [catalogue, const Divider(height: 1), order],
                 ),
               );
             },
@@ -180,9 +185,9 @@ class _ComposePageState extends State<ComposePage> {
     );
   }
 
-  Future<void> _printTicket() async {
+  Future<void> printTicket() async {
     final l = AppLocalizations.of(context);
-    if (_printing || widget.controller.saving) return;
+    if (widget.printing.value || widget.controller.saving) return;
     final output = widget.output;
     if (output == null || !output.printer.connected) {
       ScaffoldMessenger.of(context)
@@ -194,13 +199,13 @@ class _ComposePageState extends State<ComposePage> {
           .showSnackBar(SnackBar(content: Text(l.ticketNeedsItem)));
       return;
     }
-    setState(() => _printing = true);
+    widget.printing.value = true;
     final ticket = await widget.controller.saveActiveTicket(
       heading: widget.settings.heading,
     );
     if (!mounted) return;
     if (ticket == null) {
-      setState(() => _printing = false);
+      widget.printing.value = false;
       return;
     }
     final result = await output.printTicket(
@@ -211,7 +216,7 @@ class _ComposePageState extends State<ComposePage> {
       unawaited(widget.delivery!.ticketPrinted(ticket.id));
     }
     if (!mounted) return;
-    setState(() => _printing = false);
+    widget.printing.value = false;
     final message = switch (result) {
       TicketPrintResult.notConnected => l.connectBeforePrinting,
       TicketPrintResult.transmitted => l.printTransmitted,
@@ -371,7 +376,7 @@ class _OrderPanel extends StatelessWidget {
     required this.orderNumber,
     required this.features,
     required this.busy,
-    required this.printerConnected,
+    required this.compact,
     required this.standalone,
     required this.onReferenceChanged,
     required this.onOrderNoteChanged,
@@ -379,14 +384,13 @@ class _OrderPanel extends StatelessWidget {
     required this.onEditNote,
     required this.onRemoveLine,
     required this.onResetOrderNumber,
-    required this.onPrint,
   });
 
   final OrderDraft draft;
   final int orderNumber;
   final OrderFeatureSettings features;
   final bool busy;
-  final bool printerConnected;
+  final bool compact;
   final bool standalone;
   final ValueChanged<String> onReferenceChanged;
   final ValueChanged<String> onOrderNoteChanged;
@@ -394,7 +398,6 @@ class _OrderPanel extends StatelessWidget {
   final ValueChanged<TicketLine> onEditNote;
   final ValueChanged<String> onRemoveLine;
   final VoidCallback onResetOrderNumber;
-  final VoidCallback onPrint;
 
   @override
   Widget build(BuildContext context) {
@@ -467,6 +470,7 @@ class _OrderPanel extends StatelessWidget {
               _OrderLineCard(
                 line: line,
                 preparationNotesEnabled: features.preparationNotesEnabled,
+                compact: compact,
                 onQuantityChanged: (value) => onQuantityChanged(line.id, value),
                 onEditNote: () => onEditNote(line),
                 onRemove: () => onRemoveLine(line.id),
@@ -477,8 +481,8 @@ class _OrderPanel extends StatelessWidget {
               key: ValueKey('order-note-${draft.id}'),
               initialValue: draft.orderNote,
               maxLength: 500,
-              minLines: 2,
-              maxLines: 5,
+              minLines: compact ? 1 : 2,
+              maxLines: compact ? 3 : 5,
               decoration: InputDecoration(
                 labelText: l.orderNotes,
                 hintText: l.orderNotesHint,
@@ -486,25 +490,7 @@ class _OrderPanel extends StatelessWidget {
               onChanged: onOrderNoteChanged,
             ),
           ],
-          const SizedBox(height: 14),
-          if (!printerConnected) ...[
-            Text(
-              l.connectBeforePrinting,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-          ],
-          FilledButton.icon(
-            key: const ValueKey('print-ticket'),
-            onPressed: draft.lines.isEmpty || busy || !printerConnected
-                ? null
-                : onPrint,
-            icon: const Icon(Icons.print_rounded),
-            label: Text(l.printTicket),
-          ),
+          if (!compact) const SizedBox(height: 4),
         ],
       ),
     );
@@ -516,6 +502,7 @@ class _OrderLineCard extends StatelessWidget {
   const _OrderLineCard({
     required this.line,
     required this.preparationNotesEnabled,
+    required this.compact,
     required this.onQuantityChanged,
     required this.onEditNote,
     required this.onRemove,
@@ -523,6 +510,7 @@ class _OrderLineCard extends StatelessWidget {
 
   final TicketLine line;
   final bool preparationNotesEnabled;
+  final bool compact;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback onEditNote;
   final VoidCallback onRemove;
@@ -530,78 +518,110 @@ class _OrderLineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final stepper = Material(
+      key: ValueKey('quantity-stepper-${line.id}'),
+      color: theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(14),
+      child: Row(
+        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+        children: [
+          IconButton(
+            onPressed: line.quantity > 1
+                ? () => onQuantityChanged(line.quantity - 1)
+                : null,
+            tooltip: l.decreaseQuantity,
+            icon: const Icon(Icons.remove_rounded),
+          ),
+          if (compact)
+            SizedBox(
+              width: 28,
+              child: Text(
+                '${line.quantity}',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+            )
+          else
+            Expanded(
+              child: Text(
+                '${line.quantity}',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium,
+              ),
+            ),
+          IconButton(
+            onPressed: line.quantity < 999
+                ? () => onQuantityChanged(line.quantity + 1)
+                : null,
+            tooltip: l.increaseQuantity,
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
+    );
     return Container(
       key: ValueKey('order-line-${line.id}'),
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(compact ? 8 : 14),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(17),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  line.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              IconButton(
-                onPressed: onRemove,
-                tooltip: l.removeLine,
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ],
-          ),
-          Material(
-            key: ValueKey('quantity-stepper-${line.id}'),
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
-            child: Row(
+          if (compact)
+            Row(
               children: [
-                IconButton(
-                  onPressed: line.quantity > 1
-                      ? () => onQuantityChanged(line.quantity - 1)
-                      : null,
-                  tooltip: l.decreaseQuantity,
-                  icon: const Icon(Icons.remove_rounded),
-                ),
                 Expanded(
-                  child: Text(
-                    '${line.quantity}',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
+                  child: Text(line.name, style: theme.textTheme.titleMedium),
+                ),
+                stepper,
+                if (preparationNotesEnabled)
+                  IconButton(
+                    onPressed: onEditNote,
+                    tooltip: l.preparationNote,
+                    icon: const Icon(Icons.sticky_note_2_outlined),
                   ),
+                IconButton(
+                  onPressed: onRemove,
+                  tooltip: l.removeLine,
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(line.name, style: theme.textTheme.titleMedium),
                 ),
                 IconButton(
-                  onPressed: line.quantity < 999
-                      ? () => onQuantityChanged(line.quantity + 1)
-                      : null,
-                  tooltip: l.increaseQuantity,
-                  icon: const Icon(Icons.add_rounded),
+                  onPressed: onRemove,
+                  tooltip: l.removeLine,
+                  icon: const Icon(Icons.close_rounded),
                 ),
               ],
             ),
-          ),
-          if (preparationNotesEnabled) ...[
-            const SizedBox(height: 6),
-            TextButton.icon(
-              onPressed: onEditNote,
-              icon: const Icon(Icons.sticky_note_2_outlined),
-              label: Text(l.preparationNote),
-            ),
-            if (line.preparationNote.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                line.preparationNote,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+            stepper,
+            if (preparationNotesEnabled) ...[
+              const SizedBox(height: 6),
+              TextButton.icon(
+                onPressed: onEditNote,
+                icon: const Icon(Icons.sticky_note_2_outlined),
+                label: Text(l.preparationNote),
               ),
             ],
+          ],
+          if (preparationNotesEnabled && line.preparationNote.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              line.preparationNote,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ],
       ),

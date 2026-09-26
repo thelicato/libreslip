@@ -426,6 +426,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose which optional fields appear while composing a ticket.';
 
   @override
+  String get compactCompose => 'Compact Compose';
+
+  @override
+  String get compactComposeBody =>
+      'Keep each selected item and its quantity controls together in one row.';
+
+  @override
   String get preparationNotes => 'Preparation notes';
 
   @override

@@ -14,6 +14,7 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.appTextScale = defaultAppTextScale,
     this.preferredPrinterAddress,
+    this.compactCompose = false,
   });
 
   final String heading;
@@ -28,6 +29,7 @@ class AppSettings {
   final ThemeMode themeMode;
   final double appTextScale;
   final String? preferredPrinterAddress;
+  final bool compactCompose;
 
   Locale get locale =>
       language == 'it' ? const Locale('it', 'IT') : const Locale('en', 'GB');
@@ -43,6 +45,7 @@ class AppSettings {
     double? appTextScale,
     String? preferredPrinterAddress,
     bool clearPreferredPrinter = false,
+    bool? compactCompose,
   }) => AppSettings(
     heading: heading ?? this.heading,
     footer: footer ?? this.footer,
@@ -54,10 +57,11 @@ class AppSettings {
     preferredPrinterAddress: clearPreferredPrinter
         ? null
         : preferredPrinterAddress ?? this.preferredPrinterAddress,
+    compactCompose: compactCompose ?? this.compactCompose,
   );
 
   Map<String, Object?> toJson() => {
-    'version': 5,
+    'version': 6,
     'heading': heading,
     'footer': footer,
     'logoPath': logoPath,
@@ -66,6 +70,7 @@ class AppSettings {
     'theme': themeMode.name,
     'appTextScale': appTextScale,
     'preferredPrinterAddress': preferredPrinterAddress,
+    'compactCompose': compactCompose,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -73,18 +78,19 @@ class AppSettings {
     final footer = version == 1 ? '' : json['footer'];
     final logoPath = version == 1 ? null : json['logoPath'];
     final typographyJson = json['typography'];
-    final typography = ![3, 4, 5].contains(version)
+    final typography = ![3, 4, 5, 6].contains(version)
         ? const TicketTypography()
         : typographyJson is Map<String, dynamic>
         ? TicketTypography.fromJson(typographyJson)
         : throw const FormatException('Invalid ticket typography');
-    final appTextScale = [4, 5].contains(version)
+    final appTextScale = [4, 5, 6].contains(version)
         ? json['appTextScale']
         : defaultAppTextScale;
-    final preferredPrinterAddress = version == 5
+    final preferredPrinterAddress = [5, 6].contains(version)
         ? json['preferredPrinterAddress']
         : null;
-    if (![1, 2, 3, 4, 5].contains(version) ||
+    final compactCompose = version == 6 ? json['compactCompose'] : false;
+    if (![1, 2, 3, 4, 5, 6].contains(version) ||
         json['heading'] is! String ||
         (json['heading'] as String).characters.length > 60 ||
         footer is! String ||
@@ -96,6 +102,7 @@ class AppSettings {
         !appTextScale.isFinite ||
         appTextScale < minAppTextScale ||
         appTextScale > maxAppTextScale ||
+        compactCompose is! bool ||
         (preferredPrinterAddress != null &&
             (preferredPrinterAddress is! String ||
                 preferredPrinterAddress.isEmpty ||
@@ -111,6 +118,7 @@ class AppSettings {
       themeMode: ThemeMode.values.byName(json['theme'] as String),
       appTextScale: appTextScale.toDouble(),
       preferredPrinterAddress: preferredPrinterAddress as String?,
+      compactCompose: compactCompose,
     );
   }
 }

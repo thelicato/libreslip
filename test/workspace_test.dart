@@ -142,6 +142,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Compact Compose can be enabled from Client settings', (
+    tester,
+  ) async {
+    final controller = await openApp(tester);
+    await tester.tap(find.byKey(const ValueKey('nav-4')));
+    await tester.pumpAndSettle();
+    final toggle = find.byKey(const ValueKey('toggle-compact-compose'));
+    await tester.ensureVisible(toggle);
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(controller.settings.compactCompose, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('optional order fields can be hidden before saving a ticket', (
     tester,
   ) async {

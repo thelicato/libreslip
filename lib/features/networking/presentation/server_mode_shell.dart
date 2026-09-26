@@ -184,6 +184,19 @@ class _ServerModeShellState extends State<ServerModeShell>
               ),
             ),
           ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            sliver: SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: _OutstandingItemsCard(
+                    totals: summariseOutstandingItems(controller.orders),
+                  ),
+                ),
+              ),
+            ),
+          ),
           if (orders.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
@@ -244,19 +257,6 @@ class _ServerModeShellState extends State<ServerModeShell>
                 },
               ),
             ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
-            sliver: SliverToBoxAdapter(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: _OutstandingItemsCard(
-                    totals: summariseOutstandingItems(controller.orders),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );

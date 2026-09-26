@@ -183,6 +183,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Still to prepare'), findsOneWidget);
+    final summaryFinder = find.byKey(const ValueKey('outstanding-items-card'));
+    final firstVisibleOrder = find.byKey(
+      ValueKey('server-order-${inbox.receivedOrders.first.id}'),
+    );
+    expect(
+      tester.getTopLeft(summaryFinder).dy,
+      lessThan(tester.getTopLeft(firstVisibleOrder).dy),
+    );
     expect(find.text('Soup'), findsWidgets);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('Ready to receive'), findsNothing);

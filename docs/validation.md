@@ -1,24 +1,24 @@
 # Validation evidence
 
-Validated on 25 September 2026 for LibreSlip 1.2.0, Android application identifier `io.thelicato.libreslip`.
+Validated on 26 September 2026 for LibreSlip 1.3.0, Android application identifier `io.thelicato.libreslip`.
 
 | Check | Result |
 | --- | --- |
 | Dart formatting | Passed across application, test and integration-test Dart sources. |
 | Static analysis | Passed with no issues. |
-| Unit and widget tests | All 100 active tests passed; the normal run skipped only opt-in preview capture. |
+| Unit and widget tests | All 103 active tests passed; the normal run skipped only opt-in preview capture. |
 | Version display | Client and Server Settings both load the unchanged bundled `VERSION` value and show it at the end of the screen. |
 | Port 5119 and migrations | Passed address normalisation, listener defaults, schema 9 port migration and schema 10 print-gated outbox migration. Unprinted rows remain blocked after restart. |
 | Ticket and item persistence | Passed transactional composition recovery, immutable snapshots, visible-number reset, deletion, migration and duplicate-ticket protection. |
 | Printing | Passed encoding, durable print states, disconnected printing gate, interruption recovery, remembered startup reconnect, 15-second connection monitoring, manual reconnect opt-out and reprint without creating another ticket. Physical Bluetooth printing completed previously on a NETUM NT-1809DD. A socket write still cannot prove paper output. |
 | Client and Server HTTPS | Passed address-only loopback TLS pairing, explicit Server approval and rejection, first-contact certificate capture, retained SHA-256 pinning, mismatched-certificate rejection, authentication, item filtering, failed-print delivery blocking, automatic lost-acknowledgement resend and idempotent Server receipt. Server Done and move-back-to-Received states survive restart; Received orders reject deletion, while specific and bulk Completed deletion preserve unrelated orders. Lifecycle tests confirm that pausing the activity does not stop the listener service boundary. |
 | Statistics | Passed all-history, empty and inclusive local date ranges. Totals use immutable saved-ticket snapshots and keep renamed item labels distinct. |
-| Backup compatibility | Passed configuration and full-backup round trips, fresh-install restore, rollback and malicious archive checks for portable schema 10. Legacy portable schemas 5 through 9 remain accepted. Networking tables and pairing secrets are excluded. |
-| Accessibility and localisation | Passed British English and Italian phone, landscape, tablet and doubled-text tests. The persisted 100%, 115% and 130% app text sizes compose with Android accessibility scaling. The live printer indicator remains usable in compact and wide Client headers. |
-| Representative renders | Seventeen previews completed without framework errors. Client pairing, the shared printer badge, paired Client, two-column Server orders, compact outstanding-item tiles, Received and Completed tablet dialogs, Overview, Compose, item, ticket, Settings, portability and item-total screens were visually inspected. Actions, quantities and content widths remain aligned and readable. |
+| Backup compatibility | Passed configuration and full-backup round trips, fresh-install restore, rollback and malicious archive checks for portable schema 10. Legacy portable schemas 5 through 9 remain accepted. Settings format 6 round-trips Compact Compose, while version 5 migrates to the standard layout. Networking tables and pairing secrets are excluded. |
+| Accessibility and localisation | Passed British English and Italian phone, landscape, tablet and doubled-text tests. The persisted 100%, 115% and 130% app text sizes compose with Android accessibility scaling. The live printer indicator remains usable in compact and wide Client headers. Compact Compose passes a 320 logical-pixel phone test with doubled text, and its pinned print action remains in the viewport. |
+| Representative renders | Eighteen previews completed without framework errors. Client pairing, the shared printer badge, paired Client, standard and Compact Compose, Server orders with the outstanding summary first, Received and Completed tablet dialogs, Overview, item, ticket, Settings, portability and item-total screens were inspected. Actions, quantities and content widths remain aligned and readable. |
 | Android platform integration | The latest connected-device run passed real DataStore, SQLite, secure identity and token storage, pinned loopback delivery, listener shutdown, restart recovery and archive exclusion. It was not repeated after the emulator was stopped. |
 | Offline cold launch | A development-signed release passed clean offline cold launch on Android 14. This was not repeated after the emulator was stopped. |
-| Release APK | Passed with a temporary development validation certificate. Verified version 1.2.0, application identifier `io.thelicato.libreslip`, minimum API 34, target API 36 and APK Signature Scheme v2. Flutter and Gradle outputs matched byte for byte. |
+| Release APK | Passed with a temporary development validation certificate. Verified version 1.3.0, application identifier `io.thelicato.libreslip`, minimum API 34, target API 36 and APK Signature Scheme v2. Flutter and Gradle outputs matched byte for byte. |
 | Permissions and backup | The release requests `BLUETOOTH_CONNECT`, `INTERNET`, notification, foreground connected-device service, wake-lock, Wi-Fi-state and Android's app-local dynamic-receiver signature permissions. It requests no location or broad storage permission. Automatic cloud backup and device transfer are disabled. |
 
 ## Current limitations

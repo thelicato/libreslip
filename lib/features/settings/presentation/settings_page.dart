@@ -200,6 +200,19 @@ class SettingsPage extends StatelessWidget {
           child: Column(
             children: [
               SwitchListTile(
+                key: const ValueKey('toggle-compact-compose'),
+                contentPadding: EdgeInsets.zero,
+                value: settings.compactCompose,
+                title: Text(l.compactCompose),
+                subtitle: Text(l.compactComposeBody),
+                onChanged: controller.saving
+                    ? null
+                    : (value) => controller.update(
+                        controller.settings.copyWith(compactCompose: value),
+                      ),
+              ),
+              const Divider(height: 20),
+              SwitchListTile(
                 key: const ValueKey('toggle-order-reference'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.orderReferenceEnabled,
