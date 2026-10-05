@@ -126,6 +126,27 @@ void main() {
         2,
       ),
       (
+        'managed-spaced-active-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-spaced-active-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'dividers-compact-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
         'dividers-compose-tablet-en',
         const Size(1440, 1300),
         'en',
@@ -547,7 +568,8 @@ void main() {
               name == 'compose-compact-phone-it' ||
               name == 'courses-compact-phone-it' ||
               name == 'managed-compact-phone-it' ||
-              name == 'dividers-compact-phone-it',
+              name == 'dividers-compact-phone-it' ||
+              name == 'dividers-compact-phone-it-large-text',
         );
       final controller = SettingsController(settingsStore);
       await controller.load();
@@ -818,6 +840,7 @@ void main() {
       if (managedPreview && (page == 2 || page == 3)) {
         await orders.saveActiveTicket(heading: 'Corner & Co.');
         if (name != 'managed-active-phone-it-large-text' &&
+            !name.contains('spaced-active') &&
             !name.contains('delivery-active') &&
             !name.contains('progress-sync')) {
           await orders.beginAddition(orders.managedOrders.single.id);
@@ -834,6 +857,15 @@ void main() {
           );
           orders.setQuantity(orders.activeDraft!.lines.single.id, 2);
           await orders.flushWrites();
+        }
+      }
+      if (name.contains('spaced-active')) {
+        for (final table in [5, 6]) {
+          orders.setReference(
+            language == 'it' ? 'Tavolo $table' : 'Table $table',
+          );
+          orders.addCatalogueItem(orders.items.first);
+          await orders.saveActiveTicket(heading: 'Corner & Co.');
         }
       }
       if (page == 3) {
@@ -945,6 +977,7 @@ void main() {
       }
       if (managedPreview && page == 2) {
         if (name == 'managed-active-phone-it-large-text' ||
+            name.contains('spaced-active') ||
             name.contains('delivery-active') ||
             name.contains('progress-sync')) {
           final active = find.byKey(const ValueKey('active-orders'));
@@ -987,6 +1020,7 @@ void main() {
               await tester.pumpAndSettle();
             }
             if (!name.contains('progress-sync') &&
+                !name.contains('spaced-active') &&
                 (size.width < 760 || size.height < 600)) {
               await tester.ensureVisible(
                 find.byKey(

@@ -422,6 +422,31 @@ void main() {
             '1',
           );
         }
+        final line = orders.activeDraft!.lines.last;
+        orders.setQuantity(line.id, 999);
+        await tester.pumpAndSettle();
+        for (final (key, quantity) in [
+          ('line-minus-${line.id}', 998),
+          ('line-plus-${line.id}', 999),
+        ]) {
+          final control = find.byKey(ValueKey(key));
+          await tester.ensureVisible(control);
+          await tester.pumpAndSettle();
+          await tester.tap(control);
+          await tester.pumpAndSettle();
+          expect(orders.activeDraft!.lines.last.quantity, quantity);
+        }
+        for (final (key, courseId) in [
+          ('line-above-divider-${line.id}', null),
+          ('line-below-divider-${line.id}', divider.id),
+        ]) {
+          final control = find.byKey(ValueKey(key));
+          await tester.ensureVisible(control);
+          await tester.pumpAndSettle();
+          await tester.tap(control);
+          await tester.pumpAndSettle();
+          expect(orders.activeDraft!.lines.last.courseId, courseId);
+        }
         expect(find.byKey(const ValueKey('print-ticket')), findsOneWidget);
         expect(tester.takeException(), isNull);
       },

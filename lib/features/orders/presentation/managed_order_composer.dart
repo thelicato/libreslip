@@ -74,6 +74,7 @@ class ManagedOrderComposer extends StatelessWidget {
                 key: const ValueKey('previously-ordered'),
                 tilePadding: EdgeInsets.zero,
                 title: Text(l.previouslyOrdered),
+                childrenPadding: const EdgeInsets.symmetric(vertical: 12),
                 children: [
                   _OrderContents(
                     order: order,
@@ -130,130 +131,166 @@ class _ActiveOrdersDialog extends StatelessWidget {
     listenable: Listenable.merge([controller, ?sharedOrders, ?delivery]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
+      final narrow = MediaQuery.sizeOf(context).width < 600;
+      final horizontalInset = narrow ? 20.0 : 24.0;
       return AlertDialog(
+        titlePadding: EdgeInsets.zero,
+        contentPadding: EdgeInsets.zero,
         insetPadding: EdgeInsets.symmetric(
           horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
           vertical: 24,
         ),
-        title: Text(l.activeOrders),
-        content: SizedBox(
-          width: 560,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (sharedOrders != null)
-                  SharedOrderControls(controller: sharedOrders!),
-                if (controller.managedOrders.isEmpty) Text(l.activeOrdersEmpty),
-                if (!controller.canBeginAddition) ...[
-                  Text(l.finishCompositionFirst),
-                  const SizedBox(height: 12),
-                ],
-                for (final order in controller.managedOrders)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          OrderIdentity(
-                            reference: order.reference,
-                            numberLabel: l.ticketNumber(order.number),
-                          ),
-                          if (order.destinationId != null &&
-                              delivery != null &&
-                              (delivery!.servers.length > 1 ||
-                                  order.destinationId !=
-                                      delivery!.activeServer?.id))
-                            Text(
-                              delivery!
-                                      .serverFor(order.destinationId)
-                                      ?.displayName ??
-                                  l.serverDisconnected,
-                              style: Theme.of(context).textTheme.labelLarge,
+        title: Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalInset,
+            24,
+            horizontalInset,
+            16,
+          ),
+          child: Text(l.activeOrders),
+        ),
+        content: Padding(
+          padding: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 16),
+          child: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sharedOrders != null)
+                    SharedOrderControls(controller: sharedOrders!),
+                  if (controller.managedOrders.isEmpty)
+                    Text(l.activeOrdersEmpty),
+                  if (!controller.canBeginAddition) ...[
+                    Text(l.finishCompositionFirst),
+                    const SizedBox(height: 12),
+                  ],
+                  for (final order in controller.managedOrders)
+                    Card(
+                      key: ValueKey('active-order-card-${order.id}'),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: EdgeInsets.all(narrow ? 12 : 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OrderIdentity(
+                              reference: order.reference,
+                              numberLabel: l.ticketNumber(order.number),
                             ),
-                          Text(l.orderRevision(order.revision)),
-                          Text(l.itemCount(order.itemCount)),
-                          if (controller.featureSettings.pricesEnabled)
-                            OrderEstimate(lines: order.lines),
-                          if (order.destinationId == null)
-                            Text(l.activeOrderLocal),
-                          ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            title: Text(l.deliveryProgress),
-                            children: [
-                              _OrderContents(
-                                order: order,
-                                controller: controller,
-                                delivery: delivery,
-                                sharedOrders: sharedOrders,
+                            const SizedBox(height: 6),
+                            if (order.destinationId != null &&
+                                delivery != null &&
+                                (delivery!.servers.length > 1 ||
+                                    order.destinationId !=
+                                        delivery!.activeServer?.id))
+                              Text(
+                                delivery!
+                                        .serverFor(order.destinationId)
+                                        ?.displayName ??
+                                    l.serverDisconnected,
+                                style: Theme.of(context).textTheme.labelLarge,
                               ),
-                            ],
-                          ),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.icon(
-                                key: ValueKey('add-to-order-${order.id}'),
-                                onPressed:
-                                    !controller.canBeginAddition ||
-                                        (sharedOrders?.unavailableIds.contains(
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              children: [
+                                Text(l.orderRevision(order.revision)),
+                                Text(l.itemCount(order.itemCount)),
+                              ],
+                            ),
+                            if (controller.featureSettings.pricesEnabled)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: OrderEstimate(lines: order.lines),
+                              ),
+                            if (order.destinationId == null)
+                              Text(l.activeOrderLocal),
+                            const SizedBox(height: 8),
+                            ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              childrenPadding: const EdgeInsets.only(
+                                top: 8,
+                                bottom: 12,
+                              ),
+                              title: Text(l.deliveryProgress),
+                              children: [
+                                _OrderContents(
+                                  order: order,
+                                  controller: controller,
+                                  delivery: delivery,
+                                  sharedOrders: sharedOrders,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                FilledButton.icon(
+                                  key: ValueKey('add-to-order-${order.id}'),
+                                  onPressed:
+                                      !controller.canBeginAddition ||
+                                          (sharedOrders?.unavailableIds
+                                                  .contains(order.id) ??
+                                              false)
+                                      ? null
+                                      : () async {
+                                          final opened = await controller
+                                              .beginAddition(order.id);
+                                          if (opened && context.mounted) {
+                                            Navigator.pop(context);
+                                          }
+                                        },
+                                  icon: const Icon(Icons.add_rounded),
+                                  label: Text(l.addToOrder),
+                                ),
+                                TextButton(
+                                  key: ValueKey('close-order-${order.id}'),
+                                  onPressed:
+                                      controller.saving ||
+                                          controller
+                                                  .activeDraft
+                                                  ?.managedOrderId ==
+                                              order.id
+                                      ? null
+                                      : () async {
+                                          if (await _confirm(
+                                                context,
+                                                l.closeActiveOrder,
+                                                sharedOrders?.sharedIds
+                                                            .contains(
+                                                              order.id,
+                                                            ) ==
+                                                        true
+                                                    ? l.sharedOrdersLocalCloseBody
+                                                    : l.closeActiveOrderBody,
+                                              ) ==
+                                              true) {
+                                            await controller.closeOrder(
                                               order.id,
-                                            ) ??
-                                            false)
-                                    ? null
-                                    : () async {
-                                        final opened = await controller
-                                            .beginAddition(order.id);
-                                        if (opened && context.mounted) {
-                                          Navigator.pop(context);
-                                        }
-                                      },
-                                icon: const Icon(Icons.add_rounded),
-                                label: Text(l.addToOrder),
-                              ),
-                              TextButton(
-                                key: ValueKey('close-order-${order.id}'),
-                                onPressed:
-                                    controller.saving ||
-                                        controller
-                                                .activeDraft
-                                                ?.managedOrderId ==
-                                            order.id
-                                    ? null
-                                    : () async {
-                                        if (await _confirm(
-                                              context,
-                                              l.closeActiveOrder,
-                                              sharedOrders?.sharedIds.contains(
-                                                        order.id,
-                                                      ) ==
-                                                      true
-                                                  ? l.sharedOrdersLocalCloseBody
-                                                  : l.closeActiveOrderBody,
-                                            ) ==
-                                            true) {
-                                          await controller.closeOrder(order.id);
-                                        }
-                                      },
-                                child: Text(l.closeActiveOrder),
-                              ),
-                            ],
-                          ),
-                        ],
+                                            );
+                                          }
+                                        },
+                                  child: Text(l.closeActiveOrder),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                if (controller.saveFailed)
-                  Text(
-                    l.saveError,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                  if (controller.saveFailed)
+                    Text(
+                      l.saveError,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -340,6 +377,7 @@ Future<bool?> _confirm(BuildContext context, String title, String body) =>
       builder: (context) {
         final l = AppLocalizations.of(context);
         return AlertDialog(
+          scrollable: true,
           title: Text(title),
           content: Text(body),
           actions: [

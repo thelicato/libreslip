@@ -1,5 +1,19 @@
 # Validation evidence
 
+## Order card density and spacing, 5 October 2026
+
+Validated step 10 with `VERSION` unchanged at 1.8.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 109 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 227 active tests passed; normal execution skipped only opt-in workspace capture. Existing composing, printing, persistence, migration, shared delivery and restore tests passed. |
+| Item controls and widths | Updated the existing divider workflows to use the real minus, plus and divider-arrow controls with quantities of 998 and 999. English tablet, Italian doubled-text 320-pixel phone, English landscape Compact Compose and Italian phone Compact Compose retained quantities and course relationships without framework errors. Accessible controls share one row when the counter fits, with a stacked fallback for large text and three-digit values. Compact catalogue counters grow with their text and narrow layouts preserve name width. |
+| Summary and open orders | Added space after the Compact Compose summary heading and explicit gaps between open-order cards. Dialog content and title padding remain consistent under text scaling. Order metadata wraps, progress expansion retains inner spacing and actions remain reachable. Existing active-order delivery, undo, addition and shared conflict workflows passed in both languages and on narrow or landscape displays. |
+| Render inspection | Eighty-two captures passed framework and missed-tap checks, including three new layouts with multiple open orders and doubled-text Compact Compose. Inspected Italian order summary, English multi-order dialog, Italian 320-pixel doubled-text composition and dialog, and shared-order details. Review images: [order summary](previews/order-layout-compose-it.png) and [open-order spacing](previews/order-layout-active-en.png). |
+| Android preview APK | Fresh 1.8.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial, multi-phone LAN or physical printer verification was performed. Automated host and render checks do not establish physical-device behaviour or paper output. |
+
 ## Multiple simultaneous Servers, 5 October 2026
 
 Validated step 9 with `VERSION` unchanged at 1.8.0.

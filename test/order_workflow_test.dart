@@ -81,7 +81,7 @@ void main() {
       final stepperWidth = tester
           .getSize(find.byKey(ValueKey('quantity-stepper-$lineId')))
           .width;
-      expect(stepperWidth, lineWidth - 30);
+      expect(stepperWidth, lineWidth - 26);
       final draftId = orders.activeDraft!.id;
       await tester.enterText(
         find.byKey(ValueKey('reference-$draftId')),

@@ -544,7 +544,9 @@ class _CompactComposePanel extends StatelessWidget {
     return Card(
       key: const ValueKey('compact-compose-panel'),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < 400 ? 12 : 14,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -685,8 +687,10 @@ class _CompactComposePanel extends StatelessWidget {
               const Divider(height: 28),
               Text(
                 l.groupedOrderSummary,
+                key: const ValueKey('grouped-order-summary'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
+              const SizedBox(height: 12),
               _OrderLines(
                 busy: busy,
                 draft: draft,
@@ -748,66 +752,106 @@ class _CompactCatalogueRow extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.name, style: theme.textTheme.titleSmall),
-                      if (item.category != null)
-                        Text(
-                          item.category!.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall,
-                        ),
-                    ],
-                  ),
-                ),
-                if (preparationNotesEnabled && quantity > 0)
-                  IconButton(
-                    key: ValueKey('compact-note-${item.id}'),
-                    onPressed: noteLine == null
-                        ? null
-                        : () => onEditNote(noteLine!),
-                    tooltip: l.preparationNote,
-                    icon: const Icon(Icons.sticky_note_2_outlined),
-                  ),
-                Material(
-                  key: ValueKey('quantity-stepper-${item.id}'),
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final title = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: theme.textTheme.titleSmall),
+                    if (item.category != null)
+                      Text(
+                        item.category!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                  ],
+                );
+                final controls = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (preparationNotesEnabled && quantity > 0)
                       IconButton(
-                        key: ValueKey('compact-minus-${item.id}'),
-                        onPressed: decrementLine == null
+                        key: ValueKey('compact-note-${item.id}'),
+                        onPressed: noteLine == null
                             ? null
-                            : () => onDecrement(decrementLine),
-                        tooltip: l.decreaseQuantity,
-                        icon: const Icon(Icons.remove_rounded),
-                      ),
-                      SizedBox(
-                        width: 30,
-                        child: Text(
-                          '$quantity',
-                          key: ValueKey('compact-quantity-${item.id}'),
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleMedium,
+                            : () => onEditNote(noteLine!),
+                        tooltip: l.preparationNote,
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
                         ),
+                        icon: const Icon(Icons.sticky_note_2_outlined),
                       ),
-                      IconButton(
-                        key: ValueKey('compose-item-${item.id}'),
-                        onPressed: quantity >= 999 ? null : onIncrement,
-                        tooltip: l.increaseQuantity,
-                        icon: const Icon(Icons.add_rounded),
+                    Material(
+                      key: ValueKey('quantity-stepper-${item.id}'),
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            key: ValueKey('compact-minus-${item.id}'),
+                            onPressed: decrementLine == null
+                                ? null
+                                : () => onDecrement(decrementLine),
+                            tooltip: l.decreaseQuantity,
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            icon: const Icon(Icons.remove_rounded),
+                          ),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 32),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: Text(
+                                '$quantity',
+                                key: ValueKey('compact-quantity-${item.id}'),
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            key: ValueKey('compose-item-${item.id}'),
+                            onPressed: quantity >= 999 ? null : onIncrement,
+                            tooltip: l.increaseQuantity,
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            icon: const Icon(Icons.add_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+                if (constraints.maxWidth < 320) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      title,
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: controls,
                       ),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: title),
+                    const SizedBox(width: 8),
+                    controls,
+                  ],
+                );
+              },
             ),
             if (noteLine?.preparationNote.isNotEmpty ?? false)
               Padding(
@@ -866,7 +910,7 @@ class _CataloguePanel extends StatelessWidget {
         )
         .toList();
     final content = Padding(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 400 ? 12 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -990,7 +1034,7 @@ class _OrderPanel extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final content = Padding(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 400 ? 12 : 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1163,8 +1207,8 @@ class _LineDividerMoves extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final ids = <String?>[null, ...draft.courses.map((course) => course.id)];
     final index = ids.indexOf(line.courseId);
-    return Wrap(
-      alignment: WrapAlignment.end,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           key: ValueKey('line-above-divider-${line.id}'),
@@ -1213,7 +1257,7 @@ class _OrderLineCard extends StatelessWidget {
     return Container(
       key: ValueKey('order-line-${line.id}'),
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(17),
@@ -1233,39 +1277,78 @@ class _OrderLineCard extends StatelessWidget {
               ),
             ],
           ),
-          if (coursePicker != null) ...[
-            coursePicker!,
-            const SizedBox(height: 12),
-          ],
-          Material(
-            key: ValueKey('quantity-stepper-${line.id}'),
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: line.quantity > 1
-                      ? () => onQuantityChanged(line.quantity - 1)
-                      : null,
-                  tooltip: l.decreaseQuantity,
-                  icon: const Icon(Icons.remove_rounded),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final style = theme.textTheme.titleMedium!;
+              final counter = TextPainter(
+                text: TextSpan(text: '${line.quantity}', style: style),
+                textDirection: Directionality.of(context),
+                textScaler: MediaQuery.textScalerOf(context),
+              )..layout();
+              final counterWidth = counter.width + 8;
+              counter.dispose();
+              final stepper = Material(
+                key: ValueKey('quantity-stepper-${line.id}'),
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      key: ValueKey('line-minus-${line.id}'),
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      onPressed: line.quantity > 1
+                          ? () => onQuantityChanged(line.quantity - 1)
+                          : null,
+                      tooltip: l.decreaseQuantity,
+                      icon: const Icon(Icons.remove_rounded),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${line.quantity}',
+                        textAlign: TextAlign.center,
+                        style: style,
+                      ),
+                    ),
+                    IconButton(
+                      key: ValueKey('line-plus-${line.id}'),
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      onPressed: line.quantity < 999
+                          ? () => onQuantityChanged(line.quantity + 1)
+                          : null,
+                      tooltip: l.increaseQuantity,
+                      icon: const Icon(Icons.add_rounded),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: Text(
-                    '${line.quantity}',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleMedium,
+              );
+              if (coursePicker == null) return stepper;
+              if (constraints.maxWidth >= 192 + 4 + counterWidth) {
+                return Row(
+                  children: [
+                    SizedBox(width: 96, child: coursePicker),
+                    const SizedBox(width: 4),
+                    Expanded(child: stepper),
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: coursePicker,
                   ),
-                ),
-                IconButton(
-                  onPressed: line.quantity < 999
-                      ? () => onQuantityChanged(line.quantity + 1)
-                      : null,
-                  tooltip: l.increaseQuantity,
-                  icon: const Icon(Icons.add_rounded),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 4),
+                  stepper,
+                ],
+              );
+            },
           ),
           if (preparationNotesEnabled) ...[
             const SizedBox(height: 6),
