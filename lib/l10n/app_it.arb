@@ -532,7 +532,7 @@
   "managedOrders": "Mantieni aperti gli ordini",
   "managedOrdersBody": "Mantieni disponibili i nuovi ordini per aggiunte successive. Gli ordini esistenti restano disponibili quando disattivi questa opzione.",
   "activeOrders": "Ordini aperti",
-  "activeOrdersEmpty": "Stampa un ordine con Mantieni aperti gli ordini attivo per iniziare.",
+  "activeOrdersEmpty": "Per iniziare, salva un ordine con Mantieni ordini aperti attivo.",
   "newOrderKeptOpen": "Questo ordine resterà aperto per aggiunte successive.",
   "addToOrder": "Aggiungi articoli",
   "additionEditing": "Aggiunta a un ordine aperto",
@@ -661,5 +661,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "printerConnectionRequired": "Richiedi connessione alla stampante",
+  "printerConnectionRequiredBody": "Attiva all’inizio. Disattiva per salvare gli ordini e inviarli al Server senza stampare quando la stampante non è connessa. Una stampante connessa continua a stampare. Gli ordini già in attesa di stampa mantengono questo requisito.",
+  "printerOptionalStatus": "Stampante facoltativa. Puoi salvare questo ordine senza stamparlo.",
+  "saveOrder": "Salva ordine",
+  "saveAdditions": "Salva aggiunte",
+  "orderSavedWithoutPrinting": "Ordine salvato senza stampa."
 }

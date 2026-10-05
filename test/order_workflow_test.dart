@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
+import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/printing/application/printer_controller.dart';
 import 'package:libreslip/features/printing/application/ticket_output_controller.dart';
 import 'package:libreslip/features/printing/domain/print_job.dart';
@@ -184,6 +185,174 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  for (final language in ['en', 'it']) {
+    testWidgets(
+      'printer toggle enables offline orders and additions in $language',
+      (tester) async {
+        tester.view.physicalSize = const Size(520, 1000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final settings = SettingsController(
+          MemorySettingsRepository()..stored = AppSettings(language: language),
+        );
+        final environment = await createMemoryOrderEnvironment();
+        final orders = environment.controller;
+        final printer = PrinterController(_NotConnectedTransport());
+        final output = TicketOutputController(
+          store: environment.repository,
+          printer: printer,
+        );
+        addTearDown(settings.dispose);
+        addTearDown(orders.dispose);
+        addTearDown(printer.dispose);
+        addTearDown(output.dispose);
+        await settings.load();
+        await output.load();
+        await orders.updateFeatureSettings(
+          const OrderFeatureSettings(managedOrdersEnabled: true),
+        );
+        await orders.saveItem(name: 'Tea');
+        orders.addCatalogueItem(orders.items.single);
+        await tester.pumpWidget(
+          LibreSlipApp(
+            settings: settings,
+            orders: orders,
+            printer: printer,
+            ticketOutput: output,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('nav-4')));
+        await tester.pumpAndSettle();
+        final toggle = find.byKey(const ValueKey('toggle-printer-required'));
+        await tester.ensureVisible(toggle);
+        await tester.pumpAndSettle();
+        expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(settings.settings.printerConnectionRequired, isFalse);
+        await tester.tap(find.byKey(const ValueKey('nav-2')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(language == 'it' ? 'Salva ordine' : 'Save order'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('print-ticket')));
+        await tester.pumpAndSettle();
+        expect(orders.tickets.single.lines.single.name, 'Tea');
+        expect(orders.managedOrders, hasLength(1));
+        expect(output.jobs, isEmpty);
+        expect(await environment.repository.loadPrintJobs(), isEmpty);
+        expect(
+          find.text(
+            language == 'it'
+                ? 'Ordine salvato senza stampa.'
+                : 'Order saved without printing.',
+          ),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(
+          await orders.beginAddition(orders.managedOrders.single.id),
+          isTrue,
+        );
+        orders.addCatalogueItem(orders.items.single);
+        await tester.pumpAndSettle();
+        expect(
+          find.text(language == 'it' ? 'Salva aggiunte' : 'Save additions'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(const ValueKey('print-ticket')));
+        await tester.pumpAndSettle();
+        expect(orders.tickets, hasLength(2));
+        expect(orders.managedOrders.single.revision, 2);
+        expect(orders.managedOrders.single.lines, hasLength(2));
+        expect(output.jobs, isEmpty);
+        await tester.tap(find.byKey(const ValueKey('nav-4')));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(toggle);
+        await tester.pumpAndSettle();
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        orders.addCatalogueItem(orders.items.single);
+        await tester.tap(find.byKey(const ValueKey('nav-2')));
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<FilledButton>(find.byKey(const ValueKey('print-ticket')))
+              .onPressed,
+          isNull,
+        );
+        expect(orders.tickets, hasLength(2));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('printer switch is reachable on a narrow phone at doubled text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final settings = SettingsController(
+      MemorySettingsRepository()..stored = const AppSettings(language: 'it'),
+    );
+    final environment = await createMemoryOrderEnvironment();
+    addTearDown(settings.dispose);
+    addTearDown(environment.controller.dispose);
+    await settings.load();
+    await tester.pumpWidget(
+      LibreSlipApp(settings: settings, orders: environment.controller),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nav-4')));
+    await tester.pumpAndSettle();
+    final toggle = find.byKey(const ValueKey('toggle-printer-required'));
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    final control = find.descendant(of: toggle, matching: find.byType(Switch));
+    expect(tester.getRect(control).top, greaterThan(0));
+    expect(tester.getRect(control).bottom, lessThan(660));
+    await tester.tap(control);
+    await tester.pumpAndSettle();
+    expect(settings.settings.printerConnectionRequired, isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('optional printer saves on a device without a printer adapter', (
+    tester,
+  ) async {
+    final settings = SettingsController(
+      MemorySettingsRepository()
+        ..stored = const AppSettings(printerConnectionRequired: false),
+    );
+    final environment = await createMemoryOrderEnvironment();
+    addTearDown(settings.dispose);
+    addTearDown(environment.controller.dispose);
+    await settings.load();
+    await environment.controller.saveItem(name: 'Water');
+    environment.controller.addCatalogueItem(
+      environment.controller.items.single,
+    );
+    await tester.pumpWidget(
+      LibreSlipApp(settings: settings, orders: environment.controller),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nav-2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('print-ticket')));
+    await tester.pumpAndSettle();
+    expect(environment.controller.tickets, hasLength(1));
+    expect(await environment.repository.loadPrintJobs(), isEmpty);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'Compact Compose keeps order controls together and print always reachable',
     (tester) async {
@@ -196,7 +365,10 @@ void main() {
 
       final settings = SettingsController(
         MemorySettingsRepository()
-          ..stored = const AppSettings(compactCompose: true),
+          ..stored = const AppSettings(
+            compactCompose: true,
+            printerConnectionRequired: false,
+          ),
       );
       final environment = await createMemoryOrderEnvironment();
       final orders = environment.controller;

@@ -2491,7 +2491,7 @@ abstract class AppLocalizations {
   /// No description provided for @activeOrdersEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Print an order with Keep orders open enabled to start.'**
+  /// **'Save an order with Keep orders open enabled to start.'**
   String get activeOrdersEmpty;
 
   /// No description provided for @newOrderKeptOpen.
@@ -2859,6 +2859,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{unit} each · {total}'**
   String priceLineEstimate(String unit, String total);
+
+  /// No description provided for @printerConnectionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Require printer connection'**
+  String get printerConnectionRequired;
+
+  /// No description provided for @printerConnectionRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'On by default. Turn off to save orders and send them to the Server without printing when no printer is connected. A connected printer still prints. Existing orders waiting for printing keep that requirement.'**
+  String get printerConnectionRequiredBody;
+
+  /// No description provided for @printerOptionalStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Printer optional. You can save this order without printing.'**
+  String get printerOptionalStatus;
+
+  /// No description provided for @saveOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Save order'**
+  String get saveOrder;
+
+  /// No description provided for @saveAdditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Save additions'**
+  String get saveAdditions;
+
+  /// No description provided for @orderSavedWithoutPrinting.
+  ///
+  /// In en, this message translates to:
+  /// **'Order saved without printing.'**
+  String get orderSavedWithoutPrinting;
 }
 
 class _AppLocalizationsDelegate

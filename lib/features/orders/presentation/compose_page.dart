@@ -330,7 +330,9 @@ class ComposePageState extends State<ComposePage> {
     final l = AppLocalizations.of(context);
     if (widget.printing.value || widget.controller.saving) return;
     final output = widget.output;
-    if (output == null || !output.printer.connected) {
+    final connected = output?.printer.connected ?? false;
+    final required = widget.settings.printerConnectionRequired;
+    if (required && !connected) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.connectBeforePrinting)));
       return;
@@ -343,13 +345,23 @@ class ComposePageState extends State<ComposePage> {
     widget.printing.value = true;
     final ticket = await widget.controller.saveActiveTicket(
       heading: widget.settings.heading,
+      requirePrintForDelivery: required,
     );
     if (!mounted) return;
     if (ticket == null) {
       widget.printing.value = false;
       return;
     }
-    final result = await output.printTicket(
+    if (!required && widget.delivery != null) {
+      unawaited(widget.delivery!.ticketReady(ticket.id));
+    }
+    if (!connected) {
+      widget.printing.value = false;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.orderSavedWithoutPrinting)));
+      return;
+    }
+    final result = await output!.printTicket(
       ticket: ticket,
       document: _document(ticket),
     );
@@ -359,7 +371,8 @@ class ComposePageState extends State<ComposePage> {
     if (!mounted) return;
     widget.printing.value = false;
     final message = switch (result) {
-      TicketPrintResult.notConnected => l.connectBeforePrinting,
+      TicketPrintResult.notConnected =>
+        required ? l.connectBeforePrinting : l.orderSavedWithoutPrinting,
       TicketPrintResult.transmitted => l.printTransmitted,
       TicketPrintResult.failed => l.printFailed,
       TicketPrintResult.uncertain => l.printUncertain,

@@ -1367,7 +1367,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get activeOrdersEmpty =>
-      'Stampa un ordine con Mantieni aperti gli ordini attivo per iniziare.';
+      'Per iniziare, salva un ordine con Mantieni ordini aperti attivo.';
 
   @override
   String get newOrderKeptOpen =>
@@ -1599,6 +1599,26 @@ class AppLocalizationsIt extends AppLocalizations {
   String priceLineEstimate(String unit, String total) {
     return '$unit ciascuno · $total';
   }
+
+  @override
+  String get printerConnectionRequired => 'Richiedi connessione alla stampante';
+
+  @override
+  String get printerConnectionRequiredBody =>
+      'Attiva all’inizio. Disattiva per salvare gli ordini e inviarli al Server senza stampare quando la stampante non è connessa. Una stampante connessa continua a stampare. Gli ordini già in attesa di stampa mantengono questo requisito.';
+
+  @override
+  String get printerOptionalStatus =>
+      'Stampante facoltativa. Puoi salvare questo ordine senza stamparlo.';
+
+  @override
+  String get saveOrder => 'Salva ordine';
+
+  @override
+  String get saveAdditions => 'Salva aggiunte';
+
+  @override
+  String get orderSavedWithoutPrinting => 'Ordine salvato senza stampa.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

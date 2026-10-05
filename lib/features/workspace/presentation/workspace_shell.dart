@@ -271,6 +271,10 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                           _ComposeActionBar(
                             controller: widget.orders,
                             output: widget.ticketOutput,
+                            printerRequired: widget
+                                .settings
+                                .settings
+                                .printerConnectionRequired,
                             printing: _composePrinting,
                             horizontalPadding: wide ? 36 : 22,
                             onPrint: () =>
@@ -296,6 +300,7 @@ class _ComposeActionBar extends StatelessWidget {
     required this.printing,
     required this.horizontalPadding,
     required this.onPrint,
+    required this.printerRequired,
   });
 
   final OrderWorkspaceController controller;
@@ -303,6 +308,7 @@ class _ComposeActionBar extends StatelessWidget {
   final ValueNotifier<bool> printing;
   final double horizontalPadding;
   final VoidCallback onPrint;
+  final bool printerRequired;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -336,7 +342,9 @@ class _ComposeActionBar extends StatelessWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final status = Text(
-                      l.connectBeforePrinting,
+                      printerRequired
+                          ? l.connectBeforePrinting
+                          : l.printerOptionalStatus,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -345,7 +353,8 @@ class _ComposeActionBar extends StatelessWidget {
                     );
                     final button = FilledButton.icon(
                       key: const ValueKey('print-ticket'),
-                      onPressed: !hasItems || busy || !connected
+                      onPressed:
+                          !hasItems || busy || (printerRequired && !connected)
                           ? null
                           : onPrint,
                       icon: printing.value
@@ -353,11 +362,19 @@ class _ComposeActionBar extends StatelessWidget {
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.print_rounded),
+                          : Icon(
+                              connected || printerRequired
+                                  ? Icons.print_rounded
+                                  : Icons.save_outlined,
+                            ),
                       label: Text(
-                        controller.activeDraft?.managedOrderId != null
-                            ? l.printAdditions
-                            : l.printTicket,
+                        connected || printerRequired
+                            ? controller.activeDraft?.managedOrderId != null
+                                  ? l.printAdditions
+                                  : l.printTicket
+                            : controller.activeDraft?.managedOrderId != null
+                            ? l.saveAdditions
+                            : l.saveOrder,
                       ),
                     );
                     if (constraints.maxWidth < 520) {

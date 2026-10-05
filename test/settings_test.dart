@@ -28,6 +28,7 @@ void main() {
       appTextScale: 1.3,
       preferredPrinterAddress: '00:11:22:33:44:55',
       compactCompose: true,
+      printerConnectionRequired: false,
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -46,6 +47,8 @@ void main() {
     expect(decoded.appTextScale, 1.3);
     expect(decoded.preferredPrinterAddress, '00:11:22:33:44:55');
     expect(decoded.compactCompose, isTrue);
+    expect(decoded.printerConnectionRequired, isFalse);
+    expect(decoded.copyWith(language: 'en').printerConnectionRequired, isFalse);
     expect(
       decoded.copyWith(clearPreferredPrinter: true).preferredPrinterAddress,
       isNull,
@@ -112,6 +115,33 @@ void main() {
     expect(legacy.logoWidthPercent, AppSettings.defaultLogoWidthPercent);
   });
 
+  test('first launch and all legacy preferences require a printer', () {
+    expect(const AppSettings().printerConnectionRequired, isTrue);
+    for (final version in [1, 2, 3, 4, 5, 6, 7]) {
+      final legacy = {...const AppSettings().toJson(), 'version': version}
+        ..remove('printerConnectionRequired');
+      expect(AppSettings.fromJson(legacy).printerConnectionRequired, isTrue);
+    }
+  });
+
+  test('modern printer requirement rejects absent and malformed values', () {
+    for (final value in [null, 0, 'false']) {
+      expect(
+        () => AppSettings.fromJson({
+          ...const AppSettings().toJson(),
+          'printerConnectionRequired': value,
+        }),
+        throwsFormatException,
+      );
+    }
+    expect(
+      () => AppSettings.fromJson(
+        const AppSettings().toJson()..remove('printerConnectionRequired'),
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('app text scaling enforces hard minimum and maximum sizes', () {
     for (final scale in [0.99, 1.31, double.nan]) {
       expect(
@@ -143,7 +173,7 @@ void main() {
 
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 8},
+      {...const AppSettings().toJson(), 'version': 9},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
@@ -185,6 +215,7 @@ void main() {
         appTextScale: 1.15,
         logoWidthPercent: 50,
         compactCompose: true,
+        printerConnectionRequired: false,
       ),
     );
     first.dispose();
@@ -197,6 +228,7 @@ void main() {
     expect(next.settings.appTextScale, 1.15);
     expect(next.settings.logoWidthPercent, 50);
     expect(next.settings.compactCompose, isTrue);
+    expect(next.settings.printerConnectionRequired, isFalse);
   });
 
   test('a failed read neither overwrites data nor enables editing, and can recover', () async {

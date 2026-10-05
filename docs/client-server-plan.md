@@ -11,13 +11,13 @@ Switching modes requires confirmation and does not delete Client data or the Ser
 
 ## Client operation
 
-Print ticket first requires a connected local printer. Ticket finalisation stores one immutable local snapshot and one durable print attempt. If a Server is paired, the same SQLite transaction also creates one stable delivery envelope containing only items enabled for Server orders. An order containing only Local only items creates no delivery.
+Require printer connection is on by default, so Print ticket first requires a connected local printer. Turn it off in Client Settings to Save order or Save additions while disconnected, creating no print job and allowing eligible Server delivery immediately. A connected printer still prints. Older print-gated orders retain their recovery requirement after changing the setting. Ticket finalisation stores one immutable local snapshot and one durable print attempt. If a Server is paired, the same SQLite transaction also creates one stable delivery envelope containing only items enabled for Server orders. An order containing only Local only items creates no delivery.
 
 Local printing runs independently from Server delivery. A Server outage cannot delay, roll back or duplicate the local ticket or print attempt. Delivery states are Waiting for print, Pending, Sending, Delivered and Needs attention. A disconnected, failed or uncertain print leaves the delivery at Waiting for print; a successful explicit reprint can release it. Transient network or Server failures retry automatically every ten seconds while the Client process is available and again after restart. Automatic and explicit retries reuse the same delivery identifier and cannot create another local ticket or print attempt.
 
 Deleting one or all local tickets does not remotely delete an order already accepted by the Server. The durable delivery record remains locally, but its per-ticket status is no longer available from history after the ticket is deleted. Server Received or Done status is not synchronised back to the Client. Marking a Server order Done does not edit or delete the Client snapshot.
 
-The optional Keep orders open workflow creates immutable Client revision snapshots and updates the same Server order through validated additions. Select an active order from Compose after finishing the current composition. Print additions uses the original number and a revision label, with explicit reprint recovery from history. Each Server-bound revision requires its own Transmitted print and delivery of every earlier revision before sending. History tickets with unfinished managed delivery cannot be deleted. Active orders keep their original Server destination; orders started unpaired stay local, including after pairing later. Existing paired ordinary tickets continue using their original protocol format.
+The optional Keep orders open workflow creates immutable Client revision snapshots and updates the same Server order through validated additions. Select an active order from Compose after finishing the current composition. Print additions uses the original number and a revision label, with explicit reprint recovery from history. Each Server-bound revision requires delivery of every earlier revision before sending. Revisions created while Require printer connection is on also require their own Transmitted print. History tickets with unfinished managed delivery cannot be deleted. Active orders keep their original Server destination; orders started unpaired stay local, including after pairing later. Existing paired ordinary tickets continue using their original protocol format.
 
 ## Pairing
 
@@ -37,7 +37,7 @@ Managed additions require a Server advertising envelope version 3. They preserve
 
 ## Reliability and persistence
 
-Ticket finalisation and eligible print-gated outbox creation are transactional. Recording a Transmitted print releases the delivery in the same transaction as the print outcome. The Server stores receipt and acknowledgement atomically and enforces uniqueness on the Client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement rather than inserting another order.
+Ticket finalisation and eligible outbox creation are transactional. Recording a Transmitted print releases the delivery in the same transaction as the print outcome. The Server stores receipt and acknowledgement atomically and enforces uniqueness on the Client installation and delivery identifiers. Repeating an accepted request returns the original acknowledgement rather than inserting another order.
 
 An interrupted Client Sending row returns to Pending when the database opens because Server idempotency makes the same delivery safe to resend. This differs from printer transmission: an interrupted printer write remains Uncertain and is never sent again automatically.
 

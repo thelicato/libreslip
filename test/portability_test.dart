@@ -65,6 +65,7 @@ void main() {
         language: 'it',
         themeMode: ThemeMode.dark,
         preferredPrinterAddress: '00:11:22:33:44:55',
+        printerConnectionRequired: false,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -139,6 +140,7 @@ void main() {
       await service.restore(preview);
 
       expect(settings.stored!.heading, 'Caffè Libertà');
+      expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
       expect(settings.stored!.logoWidthPercent, 50);
@@ -191,6 +193,7 @@ void main() {
       settings.stored = const AppSettings(
         heading: 'Exported heading',
         language: 'it',
+        printerConnectionRequired: false,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -222,6 +225,7 @@ void main() {
       await service.restore(preview);
 
       expect(settings.stored!.heading, 'Exported heading');
+      expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.language, 'it');
       expect(await orders.loadItems(), hasLength(1));
       expect((await orders.loadTickets()).single.id, ticket.id);
@@ -236,7 +240,10 @@ void main() {
   );
 
   test('full backup restores onto a fresh installation', () async {
-    settings.stored = const AppSettings(heading: 'Fresh destination');
+    settings.stored = const AppSettings(
+      heading: 'Fresh destination',
+      printerConnectionRequired: false,
+    );
     final pairedAt = DateTime.now().toUtc();
     await orders.savePairedServer(
       PairedServer(
@@ -315,6 +322,7 @@ void main() {
     await destinationService.restore(preview);
 
     expect(destinationSettings.stored!.heading, 'Fresh destination');
+    expect(destinationSettings.stored!.printerConnectionRequired, isFalse);
     expect((await destination.loadItems()).single.id, item.id);
     expect((await destination.loadTickets()).single.id, ticket.id);
     expect(
@@ -643,6 +651,32 @@ void main() {
       }
     },
   );
+
+  test('legacy printer settings restore required and invalid modern values leave data intact', () async {
+    settings.stored = const AppSettings(printerConnectionRequired: false);
+    final bytes = await service.createArchive(
+      PortableArchiveKind.configuration,
+    );
+    final legacy = _rewriteEntry(bytes, 'configuration.json', (configuration) {
+      final preferences = configuration['settings'] as Map;
+      preferences['version'] = 7;
+      preferences.remove('printerConnectionRequired');
+    });
+    await service.restore(await service.inspectArchive(legacy));
+    expect(settings.stored!.printerConnectionRequired, isTrue);
+    for (final value in [null, 'false', 0]) {
+      final invalid = _rewriteEntry(bytes, 'configuration.json', (
+        configuration,
+      ) {
+        (configuration['settings'] as Map)['printerConnectionRequired'] = value;
+      });
+      await expectLater(
+        service.inspectArchive(invalid),
+        throwsA(isA<PortabilityException>()),
+      );
+      expect(settings.stored!.printerConnectionRequired, isTrue);
+    }
+  });
 
   test('legacy configurations default to hidden prices and invalid price switches are rejected', () async {
     await orders.saveFeatureSettings(

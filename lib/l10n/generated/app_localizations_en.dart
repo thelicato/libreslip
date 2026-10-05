@@ -1354,7 +1354,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeOrdersEmpty =>
-      'Print an order with Keep orders open enabled to start.';
+      'Save an order with Keep orders open enabled to start.';
 
   @override
   String get newOrderKeptOpen =>
@@ -1585,6 +1585,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String priceLineEstimate(String unit, String total) {
     return '$unit each · $total';
   }
+
+  @override
+  String get printerConnectionRequired => 'Require printer connection';
+
+  @override
+  String get printerConnectionRequiredBody =>
+      'On by default. Turn off to save orders and send them to the Server without printing when no printer is connected. A connected printer still prints. Existing orders waiting for printing keep that requirement.';
+
+  @override
+  String get printerOptionalStatus =>
+      'Printer optional. You can save this order without printing.';
+
+  @override
+  String get saveOrder => 'Save order';
+
+  @override
+  String get saveAdditions => 'Save additions';
+
+  @override
+  String get orderSavedWithoutPrinting => 'Order saved without printing.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

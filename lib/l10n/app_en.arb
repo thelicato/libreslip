@@ -532,7 +532,7 @@
   "managedOrders": "Keep orders open",
   "managedOrdersBody": "Keep new orders available for later additions. Existing orders remain available when this option is disabled.",
   "activeOrders": "Active orders",
-  "activeOrdersEmpty": "Print an order with Keep orders open enabled to start.",
+  "activeOrdersEmpty": "Save an order with Keep orders open enabled to start.",
   "newOrderKeptOpen": "This order will stay open for later additions.",
   "addToOrder": "Add items",
   "additionEditing": "Adding to an active order",
@@ -661,5 +661,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "printerConnectionRequired": "Require printer connection",
+  "printerConnectionRequiredBody": "On by default. Turn off to save orders and send them to the Server without printing when no printer is connected. A connected printer still prints. Existing orders waiting for printing keep that requirement.",
+  "printerOptionalStatus": "Printer optional. You can save this order without printing.",
+  "saveOrder": "Save order",
+  "saveAdditions": "Save additions",
+  "orderSavedWithoutPrinting": "Order saved without printing."
 }

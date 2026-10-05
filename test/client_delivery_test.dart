@@ -113,6 +113,15 @@ void main() {
       var delivery = (await repository.loadClientDeliveries()).single;
       expect(delivery.ticketId, ticket.id);
       expect(delivery.status, ClientDeliveryStatus.awaitingPrint);
+      await repository.convertDraftToTicket(
+        completedDraft,
+        heading: 'Kitchen',
+        requirePrintForDelivery: false,
+      );
+      expect(
+        (await repository.loadClientDeliveries()).single.status,
+        ClientDeliveryStatus.awaitingPrint,
+      );
       expect(delivery.envelope.reference, 'Table 4');
       expect(delivery.envelope.lines.single.name, 'Soup');
       expect(delivery.envelope.version, 3);
@@ -271,7 +280,7 @@ void main() {
     },
   );
 
-  test('later revisions wait for uncertain earlier printing and lost acknowledgements, then drain in order', () async {
+  test('optional orders recover after restart and lost acknowledgement without any print job', () async {
     final configuration = await repository.loadNetworkConfiguration();
     final secrets = _MemoryServerSecrets();
     final identity = await ServerIdentityService(secrets).loadOrCreate();
@@ -286,30 +295,60 @@ void main() {
     final transport = _LoseFirstAcknowledgementTransport(
       const PinnedHttpsClient(),
     );
-    final controller = ClientDeliveryController(
+    final clientSecrets = _MemoryClientSecrets();
+    final firstController = ClientDeliveryController(
       repository,
-      _MemoryClientSecrets(),
+      clientSecrets,
       transport,
-      retryDelay: const Duration(days: 1),
     );
-    addTearDown(controller.dispose);
-    await controller.load();
+    await firstController.load();
     expect(
-      await controller.pair(
+      await firstController.pair(
         configuration: configuration,
         address: '127.0.0.1:${running.port}',
         clientName: 'Client',
       ),
       isTrue,
     );
-    final draft = await repository.createDraft();
+    firstController.dispose();
+    final draft = (await repository.createDraft()).copyWith(
+      reference: 'Table 4',
+      lines: const [TicketLine(id: 'soup', name: 'Soup', quantity: 1)],
+    );
     final first = await repository.convertDraftToTicket(
-      draft.copyWith(
-        lines: const [TicketLine(id: 'soup', name: 'Soup', quantity: 1)],
-      ),
+      draft,
       heading: 'Kitchen',
       keepOpen: true,
+      requirePrintForDelivery: false,
     );
+    expect(
+      (await repository.loadClientDeliveries()).single.status,
+      ClientDeliveryStatus.pending,
+    );
+    // Repeating creation with the default policy keeps the original readiness.
+    final repeat = await repository.convertDraftToTicket(
+      draft,
+      heading: 'Kitchen',
+    );
+    expect(repeat.id, first.id);
+    expect(await repository.loadClientDeliveries(), hasLength(1));
+    await repository.close();
+    await repository.open();
+    final restarted = ClientDeliveryController(
+      repository,
+      clientSecrets,
+      transport,
+      retryDelay: const Duration(milliseconds: 20),
+    );
+    addTearDown(restarted.dispose);
+    await restarted.load();
+    await _waitUntil(
+      () =>
+          restarted.deliveryForTicket(first.id)?.status ==
+          ClientDeliveryStatus.delivered,
+    );
+    expect(transport.attemptedRevisions, [1, 1]);
+    expect(await repository.loadServerOrders(), hasLength(1));
     final blank = await repository.createDraft();
     final addition = await repository.beginOrderAddition(
       (await repository.loadManagedOrders()).single.id,
@@ -320,57 +359,143 @@ void main() {
         lines: const [TicketLine(id: 'water', name: 'Water', quantity: 2)],
       ),
       heading: 'Kitchen',
+      requirePrintForDelivery: false,
     );
-    Future<void> finishPrint(
-      SavedTicket ticket,
-      String requestId,
-      PrintJobStatus status,
-    ) async {
-      final job = await repository.createPrintJob(
-        requestId: requestId,
-        ticketId: ticket.id,
-        payload: Uint8List.fromList([27, 64]),
-      );
-      await repository.markPrintJobSending(
-        job.id,
-        printerAddress: '00:11',
-        printerName: 'NETUM',
-      );
-      await repository.markPrintJobOutcome(job.id, status: status);
-      await controller.ticketPrinted(ticket.id);
-    }
-
-    await finishPrint(second, 'print-second', PrintJobStatus.transmitted);
-    expect(transport.attemptedRevisions, isEmpty);
-    await finishPrint(first, 'print-first-uncertain', PrintJobStatus.uncertain);
-    expect(transport.attemptedRevisions, isEmpty);
-    await finishPrint(
-      first,
-      'explicit-reprint-first',
-      PrintJobStatus.transmitted,
-    );
-    expect(transport.attemptedRevisions, [1]);
-    expect(controller.deliveryForTicket(first.id)!.errorCode, 'unreachable');
-    expect(
-      await controller.retry(controller.deliveryForTicket(second.id)!.id),
-      isFalse,
-    );
-    expect(transport.attemptedRevisions, [1]);
-    expect(
-      await controller.retry(controller.deliveryForTicket(first.id)!.id),
-      isTrue,
-    );
+    await restarted.ticketReady(second.id);
     expect(transport.attemptedRevisions, [1, 1, 2]);
     expect(
-      controller.deliveryForTicket(second.id)!.status,
+      restarted.deliveryForTicket(second.id)!.status,
       ClientDeliveryStatus.delivered,
     );
-    expect((await repository.loadServerOrders()).single.revision, 2);
-    expect(
-      controller.deliveryForTicket(second.id)!.serverOrderId,
-      controller.deliveryForTicket(first.id)!.serverOrderId,
-    );
+    final received = (await repository.loadServerOrders()).single;
+    expect(received.revision, 2);
+    expect(received.lines.map((line) => line.name), ['Soup', 'Water']);
+    expect(await repository.loadPrintJobs(), isEmpty);
+    expect(await repository.loadTickets(), hasLength(2));
   });
+
+  for (final optionalAddition in [false, true]) {
+    test(
+      'later revisions (optional printer: $optionalAddition) wait for uncertain earlier printing and lost acknowledgements, then drain in order',
+      () async {
+        final configuration = await repository.loadNetworkConfiguration();
+        final secrets = _MemoryServerSecrets();
+        final identity = await ServerIdentityService(secrets).loadOrCreate();
+        final host = LocalHttpsServer(repository, secrets, port: 0);
+        addTearDown(host.stop);
+        final running = await host.start(
+          identity: identity,
+          configuration: configuration,
+          requestPairingApproval: (_) async => true,
+          onOrderReceived: () {},
+        );
+        final transport = _LoseFirstAcknowledgementTransport(
+          const PinnedHttpsClient(),
+        );
+        final controller = ClientDeliveryController(
+          repository,
+          _MemoryClientSecrets(),
+          transport,
+          retryDelay: const Duration(days: 1),
+        );
+        addTearDown(controller.dispose);
+        await controller.load();
+        expect(
+          await controller.pair(
+            configuration: configuration,
+            address: '127.0.0.1:${running.port}',
+            clientName: 'Client',
+          ),
+          isTrue,
+        );
+        final draft = await repository.createDraft();
+        final first = await repository.convertDraftToTicket(
+          draft.copyWith(
+            lines: const [TicketLine(id: 'soup', name: 'Soup', quantity: 1)],
+          ),
+          heading: 'Kitchen',
+          keepOpen: true,
+        );
+        final blank = await repository.createDraft();
+        final addition = await repository.beginOrderAddition(
+          (await repository.loadManagedOrders()).single.id,
+          blank.id,
+        );
+        final second = await repository.convertDraftToTicket(
+          addition.copyWith(
+            lines: const [TicketLine(id: 'water', name: 'Water', quantity: 2)],
+          ),
+          heading: 'Kitchen',
+          requirePrintForDelivery: !optionalAddition,
+        );
+        Future<void> finishPrint(
+          SavedTicket ticket,
+          String requestId,
+          PrintJobStatus status,
+        ) async {
+          final job = await repository.createPrintJob(
+            requestId: requestId,
+            ticketId: ticket.id,
+            payload: Uint8List.fromList([27, 64]),
+          );
+          await repository.markPrintJobSending(
+            job.id,
+            printerAddress: '00:11',
+            printerName: 'NETUM',
+          );
+          await repository.markPrintJobOutcome(job.id, status: status);
+          await controller.ticketPrinted(ticket.id);
+        }
+
+        if (optionalAddition) {
+          await controller.ticketReady(second.id);
+          expect(await repository.loadPrintJobs(), isEmpty);
+          expect(
+            controller.deliveryForTicket(second.id)!.status,
+            ClientDeliveryStatus.pending,
+          );
+        } else {
+          await finishPrint(second, 'print-second', PrintJobStatus.transmitted);
+        }
+        expect(transport.attemptedRevisions, isEmpty);
+        await finishPrint(
+          first,
+          'print-first-uncertain',
+          PrintJobStatus.uncertain,
+        );
+        expect(transport.attemptedRevisions, isEmpty);
+        await finishPrint(
+          first,
+          'explicit-reprint-first',
+          PrintJobStatus.transmitted,
+        );
+        expect(transport.attemptedRevisions, [1]);
+        expect(
+          controller.deliveryForTicket(first.id)!.errorCode,
+          'unreachable',
+        );
+        expect(
+          await controller.retry(controller.deliveryForTicket(second.id)!.id),
+          isFalse,
+        );
+        expect(transport.attemptedRevisions, [1]);
+        expect(
+          await controller.retry(controller.deliveryForTicket(first.id)!.id),
+          isTrue,
+        );
+        expect(transport.attemptedRevisions, [1, 1, 2]);
+        expect(
+          controller.deliveryForTicket(second.id)!.status,
+          ClientDeliveryStatus.delivered,
+        );
+        expect((await repository.loadServerOrders()).single.revision, 2);
+        expect(
+          controller.deliveryForTicket(second.id)!.serverOrderId,
+          controller.deliveryForTicket(first.id)!.serverOrderId,
+        );
+      },
+    );
+  }
 
   for (final managed in [false, true]) {
     test(

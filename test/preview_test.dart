@@ -83,6 +83,48 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
+      (
+        'printer-optional-compose-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'printer-optional-compose-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'printer-optional-compose-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'printer-optional-settings-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        4,
+      ),
+      (
+        'printer-required-settings-tablet-en',
+        const Size(1100, 1300),
+        'en',
+        ThemeMode.light,
+        4,
+      ),
+      (
+        'managed-printer-optional-compose-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
       (
         'overview-dashboard-phone-it',
@@ -438,6 +480,7 @@ void main() {
       final settingsStore = MemorySettingsRepository()
         ..stored = AppSettings(
           language: language,
+          printerConnectionRequired: !name.contains('printer-optional'),
           themeMode: mode,
           typography: name == 'ticket-preview-phone-it'
               ? const TicketTypography(
@@ -800,6 +843,12 @@ void main() {
       await tester.pumpAndSettle();
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (name.startsWith('printer-') && page == 4) {
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('toggle-printer-required')),
+        );
         await tester.pumpAndSettle();
       }
       if (pricePreview && page == 1) {

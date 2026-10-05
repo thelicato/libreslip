@@ -2050,6 +2050,7 @@ class SqliteOrderRepository
     OrderDraft draft, {
     required String heading,
     bool keepOpen = false,
+    bool requirePrintForDelivery = true,
   }) async {
     _validateDraft(draft, requireLines: true);
     final database = await _db;
@@ -2254,7 +2255,9 @@ class SqliteOrderRepository
             'ticket_id': id,
             'payload_json': envelope.toJsonString(),
             'payload_checksum': envelope.payloadChecksum,
-            'status': ClientDeliveryStatus.awaitingPrint.value,
+            'status': requirePrintForDelivery
+                ? ClientDeliveryStatus.awaitingPrint.value
+                : ClientDeliveryStatus.pending.value,
             'attempt_count': 0,
             'created_at': now,
             'updated_at': now,

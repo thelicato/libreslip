@@ -313,6 +313,33 @@ class SettingsPage extends StatelessWidget {
         AppearanceSettingsCard(controller: controller),
         const SizedBox(height: 20),
         TextSizeSettingsCard(controller: controller),
+        const SizedBox(height: 20),
+        Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SwitchListTile(
+                key: const ValueKey('toggle-printer-required'),
+                value: settings.printerConnectionRequired,
+                title: Text(l.printerConnectionRequired),
+                onChanged: controller.saving
+                    ? null
+                    : (value) => controller.update(
+                        settings.copyWith(printerConnectionRequired: value),
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Text(
+                  l.printerConnectionRequiredBody,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         if (printer != null) ...[
           const SizedBox(height: 20),
           PrinterSetupCard(controller: printer!),

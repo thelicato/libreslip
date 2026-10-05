@@ -284,6 +284,7 @@ abstract interface class OrderRepository {
     OrderDraft draft, {
     required String heading,
     bool keepOpen = false,
+    bool requirePrintForDelivery = true,
   });
 
   Future<void> close();

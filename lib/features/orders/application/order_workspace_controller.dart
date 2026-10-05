@@ -481,7 +481,10 @@ class OrderWorkspaceController extends ChangeNotifier {
     }
   }
 
-  Future<SavedTicket?> saveActiveTicket({required String heading}) async {
+  Future<SavedTicket?> saveActiveTicket({
+    required String heading,
+    bool requirePrintForDelivery = true,
+  }) async {
     final draft = activeDraft;
     if (saving || draft == null || draft.lines.isEmpty) return null;
     SavedTicket? ticket;
@@ -511,6 +514,7 @@ class OrderWorkspaceController extends ChangeNotifier {
         ticketDraft,
         heading: heading,
         keepOpen: features.managedOrdersEnabled,
+        requirePrintForDelivery: requirePrintForDelivery,
       );
       drafts = await _repository.loadDrafts();
       tickets = await _repository.loadTickets();

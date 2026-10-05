@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Optional printer connection, 5 October 2026
+
+Validated step 6 with `VERSION` unchanged at 1.7.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 99 Dart files passed formatting checks and final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 189 active tests passed; the normal run skipped only opt-in render capture. Existing migrations, interrupted printing, progress exchange, archive rollback and restore recovery checks passed. |
+| Printer requirement | First launch and preferences versions 1 through 7 require a printer. English and Italian widget workflows switched the setting off, saved managed orders and additions without print jobs, then restored the disconnected guard by switching it on. A device with no printer adapter also saved locally. Connected optional printing retained a transmitted attempt. The real switch remained reachable at 320 pixels with doubled Italian text. |
+| Durable Server readiness | Real pinned loopback HTTPS accepted a printer-optional order after database reopen. A lost acknowledgement retried the original envelope and retained one Server order; optional additions updated that order without any print job. Repeated finalisation retained the original readiness policy in both directions. An optional later revision remained blocked behind an uncertain earlier print, then drained in order after explicit print and acknowledgement recovery. |
+| Settings and archives | Settings format 8 round-tripped the disabled requirement and restored it across controller recreation, configuration replacement, full backup and fresh-install restore. Legacy archives restored the enabled default; malformed modern values failed preview without replacing current settings. Database schema 15, configuration document version 4 and network protocol formats are unchanged. Exported backups continue to exclude outbox rows and pairing secrets. |
+| Responsive and localised rendering | Sixty-three captures passed framework and missed-tap checks. Inspected the English default-on Settings control, English tablet and landscape Save order actions, Italian Save additions and both 320-pixel doubled-text screens. The Settings explanation flows beneath the control so its length does not hide the switch; the composition action remains pinned. |
+| Android preview APK | Fresh debug APK built as 1.7.0, build 1, `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle APK outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial or physical printer verification was performed. Host persistence, TLS, widget and encoded checks do not establish physical-device behaviour or paper output. |
+| Compatibility | Require printer connection is on by default. Disabling it affects new submissions; older Waiting for print rows retain their requirement and managed revisions retain acknowledgement ordering. Actual printing, reprinting and recovery require a connected printer. Optional connected printing is independent of Server delivery, so an optional order can reach the Server even if that print fails. |
+
 ## Optional product prices and estimates, 5 October 2026
 
 Validated step 5 of optional order management with `VERSION` unchanged at 1.6.0.

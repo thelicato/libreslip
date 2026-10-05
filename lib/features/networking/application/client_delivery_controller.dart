@@ -177,8 +177,17 @@ class ClientDeliveryController extends ChangeNotifier {
     ).synchronise(order, conflict: conflict, resolution: resolution);
   }
 
-  Future<void> ticketPrinted(String ticketId) async {
-    await _refresh();
+  Future<void> ticketPrinted(String ticketId) => ticketReady(ticketId);
+
+  /// The database decides readiness: transmitted print or explicit optional print.
+  Future<void> ticketReady(String ticketId) async {
+    try {
+      await _refresh();
+    } catch (_) {
+      loadFailed = true;
+      notifyListeners();
+      return;
+    }
     final delivery = deliveryForTicket(ticketId);
     if (delivery?.status == ClientDeliveryStatus.pending &&
         !waitingForEarlierRevision(delivery!)) {
