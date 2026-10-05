@@ -196,6 +196,7 @@ class _TicketsPageState extends State<TicketsPage> {
     context: context,
     builder: (context) => TicketDetailDialog(
       ticket: ticket,
+      pricesEnabled: widget.controller.featureSettings.pricesEnabled,
       settings: widget.settings,
       output: widget.output,
       delivery: widget.delivery,

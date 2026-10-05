@@ -7,6 +7,7 @@ import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'delivery_progress.dart';
 import 'order_identity.dart';
+import 'order_estimate.dart';
 
 class ManagedOrderComposer extends StatelessWidget {
   const ManagedOrderComposer({
@@ -149,6 +150,8 @@ class _ActiveOrdersDialog extends StatelessWidget {
                           ),
                           Text(l.orderRevision(order.revision)),
                           Text(l.itemCount(order.itemCount)),
+                          if (controller.featureSettings.pricesEnabled)
+                            OrderEstimate(lines: order.lines),
                           if (order.destinationId == null)
                             Text(l.activeOrderLocal),
                           ExpansionTile(

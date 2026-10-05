@@ -5,6 +5,7 @@ import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/presentation/client_delivery_status.dart';
 import '../../orders/domain/order_models.dart';
 import '../../orders/presentation/order_identity.dart';
+import '../../orders/presentation/order_estimate.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/ticket_output_controller.dart';
 import '../domain/print_job.dart';
@@ -18,9 +19,11 @@ class TicketDetailDialog extends StatelessWidget {
     required this.settings,
     this.output,
     this.delivery,
+    this.pricesEnabled = false,
   });
 
   final SavedTicket ticket;
+  final bool pricesEnabled;
   final AppSettings settings;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
@@ -60,6 +63,7 @@ class TicketDetailDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(child: TicketPreview(document: document)),
+              if (pricesEnabled) OrderEstimate(lines: ticket.lines),
               if (ticket.revision > 1)
                 ExpansionTile(
                   title: Text(l.fullOrderSnapshot),

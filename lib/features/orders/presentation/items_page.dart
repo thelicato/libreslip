@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
+import 'order_estimate.dart';
 
 class ItemsPage extends StatefulWidget {
   const ItemsPage({super.key, required this.controller});
@@ -112,6 +114,8 @@ class _ItemsPageState extends State<ItemsPage> {
                         width: width,
                         child: _ItemCard(
                           item: item,
+                          showPrice:
+                              widget.controller.featureSettings.pricesEnabled,
                           onEdit: () => _openEditor(item),
                           onRemove: () => _confirmRemove(item),
                         ),
@@ -133,6 +137,16 @@ class _ItemsPageState extends State<ItemsPage> {
     final l = AppLocalizations.of(context);
     final name = TextEditingController(text: item?.name);
     final category = TextEditingController(text: item?.category?.name);
+    final pricesEnabled = widget.controller.featureSettings.pricesEnabled;
+    final price = TextEditingController(
+      text: item?.price == null
+          ? ''
+          : NumberFormat(
+              '0.00',
+              Localizations.localeOf(context).toLanguageTag(),
+            ).format(item!.price!.minorUnits / 100),
+    );
+    var currency = item?.price?.currency ?? ProductPrice.currencies.first;
     var imagePath = item?.imagePath;
     var sendToServer = item?.sendToServer ?? true;
     var chosenImage = false;
@@ -253,6 +267,47 @@ class _ItemsPageState extends State<ItemsPage> {
                           ? l.categoryTooLong
                           : null,
                     ),
+                    if (pricesEnabled) ...[
+                      const SizedBox(height: 12),
+                      Text(l.unitPrice),
+                      const SizedBox(height: 8),
+                      Semantics(
+                        label: l.unitPrice,
+                        child: TextFormField(
+                          key: const ValueKey('item-price'),
+                          controller: price,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            helperText: l.unitPriceHelp,
+                            helperMaxLines: 12,
+                            errorMaxLines: 12,
+                          ),
+                          validator: (value) {
+                            try {
+                              ProductPrice.parse(value ?? '', currency);
+                              return null;
+                            } on FormatException {
+                              return l.invalidPrice;
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        key: const ValueKey('item-price-currency'),
+                        initialValue: currency,
+                        isExpanded: true,
+                        decoration: InputDecoration(labelText: l.priceCurrency),
+                        items: [
+                          for (final value in ProductPrice.currencies)
+                            DropdownMenuItem(value: value, child: Text(value)),
+                        ],
+                        onChanged: (value) =>
+                            setDialogState(() => currency = value!),
+                      ),
+                    ],
                     SwitchListTile(
                       key: const ValueKey('item-send-to-server'),
                       contentPadding: EdgeInsets.zero,
@@ -281,6 +336,9 @@ class _ItemsPageState extends State<ItemsPage> {
                   categoryName: category.text,
                   imagePath: imagePath,
                   sendToServer: sendToServer,
+                  price: pricesEnabled
+                      ? ProductPrice.parse(price.text, currency)
+                      : item?.price,
                 );
                 if (succeeded && dialogContext.mounted) {
                   Navigator.pop(dialogContext, true);
@@ -299,6 +357,7 @@ class _ItemsPageState extends State<ItemsPage> {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     name.dispose();
     category.dispose();
+    price.dispose();
     if (saved != true && chosenImage) {
       await widget.controller.discardChosenImage(imagePath);
     }
@@ -332,11 +391,13 @@ class _ItemCard extends StatelessWidget {
     required this.item,
     required this.onEdit,
     required this.onRemove,
+    required this.showPrice,
   });
 
   final CatalogueItem item;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
+  final bool showPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -359,6 +420,12 @@ class _ItemCard extends StatelessWidget {
                       item.name,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
+                    if (showPrice)
+                      Text(
+                        item.price == null
+                            ? l.noPrice
+                            : formatPrice(context, item.price!),
+                      ),
                     if (item.category != null) ...[
                       const SizedBox(height: 5),
                       Text(

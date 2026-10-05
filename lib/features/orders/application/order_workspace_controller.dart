@@ -188,6 +188,7 @@ class OrderWorkspaceController extends ChangeNotifier {
     String? categoryName,
     String? imagePath,
     bool sendToServer = true,
+    ProductPrice? price,
   }) async {
     final previousImage = existing?.imagePath;
     final success = await _perform(() async {
@@ -197,6 +198,7 @@ class OrderWorkspaceController extends ChangeNotifier {
         categoryName: categoryName,
         imagePath: imagePath,
         sendToServer: sendToServer,
+        price: price,
       );
       items = await _repository.loadItems();
       categories = await _repository.loadCategories();
@@ -249,6 +251,7 @@ class OrderWorkspaceController extends ChangeNotifier {
           name: item.name,
           quantity: 1,
           courseId: draft.activeCourseId,
+          price: featureSettings.pricesEnabled ? item.price : null,
         ),
       );
     }
@@ -496,9 +499,12 @@ class OrderWorkspaceController extends ChangeNotifier {
             : '',
         lines: [
           for (final line in draft.lines)
-            features.preparationNotesEnabled
-                ? line
-                : line.copyWith(preparationNote: ''),
+            line.copyWith(
+              preparationNote: features.preparationNotesEnabled
+                  ? line.preparationNote
+                  : '',
+              clearPrice: !features.pricesEnabled,
+            ),
         ],
       );
       ticket = await _repository.convertDraftToTicket(

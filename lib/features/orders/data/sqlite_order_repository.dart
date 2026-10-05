@@ -25,7 +25,7 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 14;
+  static const databaseVersion = 15;
   static const portableSchemaVersions = {
     5,
     6,
@@ -36,6 +36,7 @@ class SqliteOrderRepository
     11,
     12,
     13,
+    14,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -584,6 +585,29 @@ class SqliteOrderRepository
         PRIMARY KEY (client_id, operation_id),
         FOREIGN KEY (order_id) REFERENCES server_orders(id) ON DELETE CASCADE
       )''');
+    }
+    if (oldVersion < 15 && newVersion >= 15) {
+      for (final table in ['items', 'draft_lines', 'ticket_lines']) {
+        await database.execute(
+          "ALTER TABLE $table ADD COLUMN price_minor_units INTEGER CHECK (price_minor_units IS NULL OR (typeof(price_minor_units) = 'integer' AND price_minor_units BETWEEN 0 AND 99999999))",
+        );
+        await database.execute(
+          "ALTER TABLE $table ADD COLUMN price_currency TEXT CHECK ((price_minor_units IS NULL AND price_currency IS NULL) OR (price_minor_units IS NOT NULL AND price_currency IS NOT NULL AND price_currency IN ('EUR', 'GBP', 'USD')))",
+        );
+      }
+      await database.execute(
+        'ALTER TABLE order_feature_settings ADD COLUMN prices_enabled INTEGER NOT NULL DEFAULT 0 CHECK (prices_enabled IN (0, 1))',
+      );
+      // Preserve existing content while giving current managed snapshots an
+      // explicit absent price. No catalogue lookup rewrites historical data.
+      for (final row in await database.query('managed_orders')) {
+        await database.update(
+          'managed_orders',
+          {'lines_json': encodeOrderLines(decodeOrderLines(row['lines_json']))},
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
+      }
     }
   }
 
@@ -1740,6 +1764,7 @@ class SqliteOrderRepository
         orderNotesEnabled: row['order_notes_enabled'] == 1,
         courseGroupsEnabled: row['course_groups_enabled'] == 1,
         managedOrdersEnabled: row['managed_orders_enabled'] == 1,
+        pricesEnabled: row['prices_enabled'] == 1,
       );
     } catch (error) {
       if (error is OrderStorageException) rethrow;
@@ -1759,6 +1784,7 @@ class SqliteOrderRepository
         'order_notes_enabled': settings.orderNotesEnabled ? 1 : 0,
         'course_groups_enabled': settings.courseGroupsEnabled ? 1 : 0,
         'managed_orders_enabled': settings.managedOrdersEnabled ? 1 : 0,
+        'prices_enabled': settings.pricesEnabled ? 1 : 0,
       }, where: 'id = 1');
       if (changed != 1) {
         throw const OrderStorageException(
@@ -1841,7 +1867,11 @@ class SqliteOrderRepository
     String? categoryName,
     String? imagePath,
     bool sendToServer = true,
+    ProductPrice? price,
   }) async {
+    if (price != null && !price.isValid) {
+      throw const OrderStorageException('The price is invalid.');
+    }
     final cleanName = name.trim();
     final cleanCategory = categoryName?.trim();
     if (cleanName.isEmpty || cleanName.length > 80) {
@@ -1883,6 +1913,8 @@ class SqliteOrderRepository
           'is_favourite': 0,
           'image_path': imagePath,
           'send_to_server': sendToServer ? 1 : 0,
+          'price_minor_units': price?.minorUnits,
+          'price_currency': price?.currency,
           'updated_at': now,
         };
         if (id == null) {
@@ -1997,6 +2029,8 @@ class SqliteOrderRepository
         'quantity': line.quantity,
         'preparation_note': line.preparationNote.trim(),
         'course_id': line.courseId,
+        'price_minor_units': line.price?.minorUnits,
+        'price_currency': line.price?.currency,
         'position': index,
       });
     }
@@ -2083,6 +2117,7 @@ class SqliteOrderRepository
               preparationNote: line.preparationNote.trim(),
               courseId: line.courseId,
               sendToServer: send,
+              price: line.price,
             ),
           );
         }
@@ -2154,6 +2189,8 @@ class SqliteOrderRepository
             'quantity': line.quantity,
             'preparation_note': line.preparationNote.trim(),
             'course_id': line.courseId,
+            'price_minor_units': line.price?.minorUnits,
+            'price_currency': line.price?.currency,
             'position': index,
           });
         }
@@ -2449,6 +2486,56 @@ class SqliteOrderRepository
     });
   }
 
+  static void validatePortablePrices(Map<String, Object?> snapshot) {
+    final tables = snapshot['tables'] as Map;
+    final modern = (snapshot['schemaVersion'] as int) >= 15;
+    for (final table in ['items', 'draft_lines', 'ticket_lines']) {
+      for (final value in tables[table] as List) {
+        final row = value as Map;
+        if (modern &&
+            (!row.containsKey('price_minor_units') ||
+                !row.containsKey('price_currency'))) {
+          throw const FormatException('Missing price fields');
+        }
+        final price = ProductPrice.fromColumns(
+          row['price_minor_units'],
+          row['price_currency'],
+        );
+        if (!modern && price != null) {
+          throw const FormatException('Unsupported legacy price');
+        }
+      }
+    }
+    for (final value in (tables['managed_orders'] as List? ?? [])) {
+      final rows = jsonDecode((value as Map)['lines_json'] as String) as List;
+      for (final row in rows) {
+        if (modern &&
+            (row is! Map ||
+                row.length != 9 ||
+                !row.containsKey('priceMinorUnits') ||
+                !row.containsKey('priceCurrency'))) {
+          throw const FormatException('Missing managed price fields');
+        }
+        if (row is Map) {
+          final price = ProductPrice.fromColumns(
+            row['priceMinorUnits'],
+            row['priceCurrency'],
+          );
+          if (!modern && price != null) {
+            throw const FormatException('Unsupported legacy price');
+          }
+        }
+      }
+    }
+    final row = (tables['order_feature_settings'] as List).single as Map;
+    final enabled = row['prices_enabled'] ?? (modern ? null : 0);
+    if (enabled is! int ||
+        (enabled != 0 && enabled != 1) ||
+        (!modern && enabled != 0)) {
+      throw const FormatException('Invalid price option');
+    }
+  }
+
   static void validatePortableManagedOrders(Map<String, Object?> snapshot) {
     final tables = snapshot['tables'] as Map;
     final modern = (snapshot['schemaVersion'] as int) >= 12;
@@ -2614,7 +2701,12 @@ class SqliteOrderRepository
             matching.single.name != line['name_snapshot'] ||
             matching.single.quantity != line['quantity'] ||
             matching.single.preparationNote != line['preparation_note'] ||
-            matching.single.courseId != line['course_id']) {
+            matching.single.courseId != line['course_id'] ||
+            matching.single.price !=
+                ProductPrice.fromColumns(
+                  line['price_minor_units'],
+                  line['price_currency'],
+                )) {
           throw const FormatException('Invalid immutable line');
         }
       }
@@ -2867,6 +2959,7 @@ class SqliteOrderRepository
           snapshot['tables'] is! Map<String, dynamic>) {
         throw const FormatException('Unsupported database snapshot');
       }
+      validatePortablePrices(snapshot);
       validatePortableCourses(snapshot);
       validatePortableManagedOrders(snapshot);
       final tables = Map<String, dynamic>.from(snapshot['tables']! as Map);
@@ -2914,6 +3007,12 @@ class SqliteOrderRepository
               throw const FormatException('Invalid database row');
             }
             final row = Map<String, Object?>.from(value);
+            if (table == 'managed_orders' &&
+                (snapshot['schemaVersion'] as int) < 15) {
+              row['lines_json'] = encodeOrderLines(
+                decodeOrderLines(row['lines_json']),
+              );
+            }
             if (table == 'print_jobs') {
               final payload = row['payload'];
               if (payload is! String) {
@@ -3384,6 +3483,10 @@ class SqliteOrderRepository
     quantity: row['quantity']! as int,
     preparationNote: row['preparation_note']! as String,
     courseId: row['course_id'] as String?,
+    price: ProductPrice.fromColumns(
+      row['price_minor_units'],
+      row['price_currency'],
+    ),
   );
 
   static TicketLine _lineFromTicketRow(Map<String, Object?> row) => TicketLine(
@@ -3393,6 +3496,10 @@ class SqliteOrderRepository
     quantity: row['quantity']! as int,
     preparationNote: row['preparation_note']! as String,
     courseId: row['course_id'] as String?,
+    price: ProductPrice.fromColumns(
+      row['price_minor_units'],
+      row['price_currency'],
+    ),
   );
 
   static ItemCategory _categoryFromRow(Map<String, Object?> row) =>
@@ -3409,6 +3516,10 @@ class SqliteOrderRepository
           ),
     imagePath: row['image_path'] as String?,
     sendToServer: row['send_to_server']! as int == 1,
+    price: ProductPrice.fromColumns(
+      row['price_minor_units'],
+      row['price_currency'],
+    ),
   );
 
   static void _validateDraft(OrderDraft draft, {bool requireLines = false}) {
@@ -3432,7 +3543,8 @@ class SqliteOrderRepository
           line.name.trim().length > 80 ||
           line.quantity < 1 ||
           line.quantity > 999 ||
-          line.preparationNote.trim().length > 300) {
+          line.preparationNote.trim().length > 300 ||
+          (line.price != null && !line.price!.isValid)) {
         throw const OrderStorageException(
           'The draft contains an invalid item.',
         );

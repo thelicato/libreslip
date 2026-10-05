@@ -228,6 +228,18 @@ class SettingsPage extends StatelessWidget {
                       ),
               ),
               SwitchListTile(
+                key: const ValueKey('toggle-prices'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.pricesEnabled,
+                title: Text(l.productPrices),
+                subtitle: Text(l.productPricesBody),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(pricesEnabled: value),
+                      ),
+              ),
+              SwitchListTile(
                 key: const ValueKey('toggle-managed-orders'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.managedOrdersEnabled,

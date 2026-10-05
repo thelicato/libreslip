@@ -2781,6 +2781,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.'**
   String get progressServerNewer;
+
+  /// No description provided for @productPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'Product prices and estimates'**
+  String get productPrices;
+
+  /// No description provided for @productPricesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional and off by default. Prices are captured when items are added. Estimates stay on this device; preparation tickets contain no prices.'**
+  String get productPricesBody;
+
+  /// No description provided for @unitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price (optional)'**
+  String get unitPrice;
+
+  /// No description provided for @unitPriceHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank for no price. Zero is a price. Up to 999999.99, with two decimal places.'**
+  String get unitPriceHelp;
+
+  /// No description provided for @priceCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get priceCurrency;
+
+  /// No description provided for @invalidPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a price from 0 to 999999.99, with at most two decimal places and no thousands separator.'**
+  String get invalidPrice;
+
+  /// No description provided for @noPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'No price'**
+  String get noPrice;
+
+  /// No description provided for @itemPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'Item prices'**
+  String get itemPrices;
+
+  /// No description provided for @estimatedOrderTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated order total'**
+  String get estimatedOrderTotal;
+
+  /// No description provided for @pricedItemsSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal of priced items'**
+  String get pricedItemsSubtotal;
+
+  /// No description provided for @priceMissingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item has no price. The estimate is incomplete.} other{{count} items have no price. The estimate is incomplete.}}'**
+  String priceMissingCount(int count);
+
+  /// No description provided for @priceCurrenciesSeparate.
+  ///
+  /// In en, this message translates to:
+  /// **'Currencies are shown separately and are not converted or combined.'**
+  String get priceCurrenciesSeparate;
+
+  /// No description provided for @priceLineEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'{unit} each · {total}'**
+  String priceLineEstimate(String unit, String total);
 }
 
 class _AppLocalizationsDelegate

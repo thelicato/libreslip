@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 
 import 'package:libreslip/features/orders/application/order_workspace_controller.dart';
@@ -96,6 +97,7 @@ Future<void> removeDeliveryColumnsForLegacyFixture(Database database) async {
 Future<void> removeProgressSyncColumnsForLegacyFixture(
   Database database,
 ) async {
+  await removePriceColumnsForLegacyFixture(database);
   await database.execute('DROP TABLE client_progress_sync');
   await database.execute('DROP TABLE server_progress_receipts');
   await database.execute(
@@ -107,4 +109,27 @@ Future<void> removeProgressSyncColumnsForLegacyFixture(
   await database.execute(
     'ALTER TABLE server_orders DROP COLUMN progress_revision',
   );
+}
+
+Future<void> removePriceColumnsForLegacyFixture(Database database) async {
+  for (final table in ['items', 'draft_lines', 'ticket_lines']) {
+    await database.execute('ALTER TABLE $table DROP COLUMN price_currency');
+    await database.execute('ALTER TABLE $table DROP COLUMN price_minor_units');
+  }
+  await database.execute(
+    'ALTER TABLE order_feature_settings DROP COLUMN prices_enabled',
+  );
+  for (final row in await database.query('managed_orders')) {
+    final lines = jsonDecode(row['lines_json'] as String) as List;
+    for (final line in lines) {
+      (line as Map).remove('priceMinorUnits');
+      line.remove('priceCurrency');
+    }
+    await database.update(
+      'managed_orders',
+      {'lines_json': jsonEncode(lines)},
+      where: 'id = ?',
+      whereArgs: [row['id']],
+    );
+  }
 }

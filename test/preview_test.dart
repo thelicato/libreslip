@@ -305,6 +305,69 @@ void main() {
         ThemeMode.light,
         2,
       ),
+      (
+        'prices-compose-tablet-en',
+        const Size(1100, 1300),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-compose-phone-it',
+        const Size(520, 1500),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-compose-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-compose-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-compact-phone-it',
+        const Size(520, 1500),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-editor-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        1,
+      ),
+      (
+        'prices-history-tablet-en',
+        const Size(1100, 1500),
+        'en',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'prices-compose-complete-tablet-en',
+        const Size(1100, 1300),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'prices-editor-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        1,
+      ),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
@@ -367,6 +430,7 @@ void main() {
       ),
     ]) {
       final managedPreview = name.startsWith('managed-');
+      final pricePreview = name.startsWith('prices-');
       final groupedPreview = name.startsWith('courses-') || managedPreview;
       tester.view.physicalSize = size;
       tester.platformDispatcher.textScaleFactorTestValue =
@@ -385,6 +449,7 @@ void main() {
                 )
               : const TicketTypography(),
           compactCompose:
+              name == 'prices-compact-phone-it' ||
               name == 'compose-compact-phone-it' ||
               name == 'courses-compact-phone-it' ||
               name == 'managed-compact-phone-it',
@@ -545,11 +610,19 @@ void main() {
         orders,
       );
       final printer = PrinterController(_PreviewPrinterTransport());
+      if (pricePreview) {
+        await orders.updateFeatureSettings(
+          const OrderFeatureSettings(pricesEnabled: true),
+        );
+      }
       if (page >= 1 && page <= 3) {
         await orders.saveItem(
           name: groupedPreview ? 'Tomato soup' : 'Mushroom toastie',
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
           sendToServer: name != 'items-tablet-it',
+          price: pricePreview
+              ? const ProductPrice(minorUnits: 850, currency: 'EUR')
+              : null,
         );
       }
       if (name == 'item-totals-phone-en') {
@@ -587,6 +660,27 @@ void main() {
           orders.saveCourse(language == 'it' ? 'Primo' : 'First course');
         }
         orders.addCatalogueItem(orders.items.single);
+        if (pricePreview) {
+          orders.setQuantity(orders.activeDraft!.lines.single.id, 2);
+          await orders.saveItem(
+            name: language == 'it' ? 'Acqua naturale' : 'Still water',
+            price: const ProductPrice(minorUnits: 0, currency: 'EUR'),
+          );
+          orders.addCatalogueItem(
+            orders.items.singleWhere((item) => item.price?.minorUnits == 0),
+          );
+          await orders.saveItem(
+            name: language == 'it' ? 'Pane' : 'Bread',
+            price: name.contains('complete')
+                ? const ProductPrice(minorUnits: 300, currency: 'GBP')
+                : null,
+          );
+          orders.addCatalogueItem(
+            orders.items.singleWhere(
+              (item) => item.name == (language == 'it' ? 'Pane' : 'Bread'),
+            ),
+          );
+        }
         orders.setReference(
           name == 'compose-title-phone-it-large-text'
               ? 'Tavolo 4, giardino vicino alla terrazza'
@@ -706,6 +800,27 @@ void main() {
       await tester.pumpAndSettle();
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (pricePreview && page == 1) {
+        await tester.tap(find.text('Mushroom toastie'));
+        await tester.pumpAndSettle();
+        final field = find.byKey(const ValueKey('item-price'));
+        await tester.ensureVisible(field);
+        await tester.pumpAndSettle();
+      }
+      if (pricePreview && page == 2) {
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('order-estimate')),
+        );
+        await tester.pumpAndSettle();
+      }
+      if (pricePreview && page == 3) {
+        await tester.tap(find.text('View ticket'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('order-estimate')),
+        );
         await tester.pumpAndSettle();
       }
       if (name == 'compose-title-phone-it-large-text' ||

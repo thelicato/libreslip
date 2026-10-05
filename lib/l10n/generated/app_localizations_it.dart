@@ -1546,6 +1546,59 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get progressServerNewer =>
       'Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine.';
+
+  @override
+  String get productPrices => 'Prezzi e stime';
+
+  @override
+  String get productPricesBody =>
+      'Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. Le stime restano su questo dispositivo; le comande di preparazione non contengono prezzi.';
+
+  @override
+  String get unitPrice => 'Prezzo unitario (facoltativo)';
+
+  @override
+  String get unitPriceHelp =>
+      'Lascia vuoto per nessun prezzo. Zero è un prezzo. Fino a 999999,99, con due cifre decimali.';
+
+  @override
+  String get priceCurrency => 'Valuta';
+
+  @override
+  String get invalidPrice =>
+      'Inserisci un prezzo da 0 a 999999,99, con al massimo due cifre decimali e senza separatore delle migliaia.';
+
+  @override
+  String get noPrice => 'Nessun prezzo';
+
+  @override
+  String get itemPrices => 'Prezzi degli articoli';
+
+  @override
+  String get estimatedOrderTotal => 'Totale stimato dell’ordine';
+
+  @override
+  String get pricedItemsSubtotal => 'Subtotale degli articoli con prezzo';
+
+  @override
+  String priceMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articoli non hanno un prezzo. La stima è incompleta.',
+      one: '1 articolo non ha un prezzo. La stima è incompleta.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get priceCurrenciesSeparate =>
+      'Le valute sono mostrate separatamente e non vengono convertite o sommate.';
+
+  @override
+  String priceLineEstimate(String unit, String total) {
+    return '$unit ciascuno · $total';
+  }
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

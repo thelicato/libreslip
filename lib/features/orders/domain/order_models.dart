@@ -2,6 +2,8 @@ import 'dart:math';
 import 'dart:convert';
 
 import 'course_groups.dart';
+import 'product_price.dart';
+export 'product_price.dart';
 export 'course_groups.dart';
 
 String createLocalId() {
@@ -28,6 +30,7 @@ class CatalogueItem {
     this.category,
     this.imagePath,
     this.sendToServer = true,
+    this.price,
   });
 
   final String id;
@@ -35,6 +38,7 @@ class CatalogueItem {
   final ItemCategory? category;
   final String? imagePath;
   final bool sendToServer;
+  final ProductPrice? price;
 
   CatalogueItem copyWith({
     String? name,
@@ -43,12 +47,15 @@ class CatalogueItem {
     String? imagePath,
     bool clearImage = false,
     bool? sendToServer,
+    ProductPrice? price,
+    bool clearPrice = false,
   }) => CatalogueItem(
     id: id,
     name: name ?? this.name,
     category: clearCategory ? null : category ?? this.category,
     imagePath: clearImage ? null : imagePath ?? this.imagePath,
     sendToServer: sendToServer ?? this.sendToServer,
+    price: clearPrice ? null : price ?? this.price,
   );
 }
 
@@ -59,6 +66,7 @@ class OrderFeatureSettings {
     this.orderNotesEnabled = true,
     this.courseGroupsEnabled = false,
     this.managedOrdersEnabled = false,
+    this.pricesEnabled = false,
   });
 
   final bool orderReferenceEnabled;
@@ -66,6 +74,7 @@ class OrderFeatureSettings {
   final bool orderNotesEnabled;
   final bool courseGroupsEnabled;
   final bool managedOrdersEnabled;
+  final bool pricesEnabled;
 
   OrderFeatureSettings copyWith({
     bool? orderReferenceEnabled,
@@ -73,6 +82,7 @@ class OrderFeatureSettings {
     bool? orderNotesEnabled,
     bool? courseGroupsEnabled,
     bool? managedOrdersEnabled,
+    bool? pricesEnabled,
   }) => OrderFeatureSettings(
     orderReferenceEnabled: orderReferenceEnabled ?? this.orderReferenceEnabled,
     preparationNotesEnabled:
@@ -80,6 +90,7 @@ class OrderFeatureSettings {
     orderNotesEnabled: orderNotesEnabled ?? this.orderNotesEnabled,
     courseGroupsEnabled: courseGroupsEnabled ?? this.courseGroupsEnabled,
     managedOrdersEnabled: managedOrdersEnabled ?? this.managedOrdersEnabled,
+    pricesEnabled: pricesEnabled ?? this.pricesEnabled,
   );
 }
 
@@ -92,6 +103,7 @@ class TicketLine {
     this.preparationNote = '',
     this.courseId,
     this.sendToServer = true,
+    this.price,
   });
 
   final String id;
@@ -101,12 +113,14 @@ class TicketLine {
   final String preparationNote;
   final String? courseId;
   final bool sendToServer;
+  final ProductPrice? price;
 
   TicketLine copyWith({
     int? quantity,
     String? preparationNote,
     String? courseId,
     bool clearCourse = false,
+    bool clearPrice = false,
   }) => TicketLine(
     id: id,
     catalogueItemId: catalogueItemId,
@@ -115,6 +129,7 @@ class TicketLine {
     preparationNote: preparationNote ?? this.preparationNote,
     courseId: clearCourse ? null : courseId ?? this.courseId,
     sendToServer: sendToServer,
+    price: clearPrice ? null : price,
   );
 }
 
@@ -252,6 +267,7 @@ abstract interface class OrderRepository {
     String? categoryName,
     String? imagePath,
     bool sendToServer = true,
+    ProductPrice? price,
   });
 
   Future<void> archiveItem(String id);
@@ -337,6 +353,8 @@ String encodeOrderLines(List<TicketLine> lines) => jsonEncode([
       'preparationNote': line.preparationNote,
       'courseId': line.courseId,
       'sendToServer': line.sendToServer,
+      'priceMinorUnits': line.price?.minorUnits,
+      'priceCurrency': line.price?.currency,
     },
 ]);
 
@@ -352,7 +370,10 @@ List<TicketLine> decodeOrderLines(Object? source) {
   return List.unmodifiable(
     rows.map((row) {
       if (row is! Map ||
-          row.length != 7 ||
+          (row.length != 7 && row.length != 9) ||
+          (row.length == 9 &&
+              (!row.containsKey('priceMinorUnits') ||
+                  !row.containsKey('priceCurrency'))) ||
           row['id'] is! String ||
           !validOrderId(row['id'] as String) ||
           !ids.add(row['id'] as String) ||
@@ -380,6 +401,10 @@ List<TicketLine> decodeOrderLines(Object? source) {
         preparationNote: row['preparationNote'] as String,
         courseId: row['courseId'] as String?,
         sendToServer: row['sendToServer'] as bool,
+        price: ProductPrice.fromColumns(
+          row['priceMinorUnits'],
+          row['priceCurrency'],
+        ),
       );
     }),
   );
@@ -429,4 +454,29 @@ Set<String> decodeChangedDeliveryIds(Object? source, List<TicketLine> lines) {
     throw const FormatException('Invalid changed delivery inventory');
   }
   return Set.unmodifiable(values.cast<String>());
+}
+
+/// Separate currency subtotals never imply a conversion or a complete estimate
+/// when some selected quantities have no price.
+class OrderPriceEstimate {
+  OrderPriceEstimate.fromLines(Iterable<TicketLine> lines) {
+    final amounts = <String, int>{};
+    var missing = 0;
+    for (final line in lines) {
+      final price = line.price;
+      if (price == null) {
+        missing += line.quantity;
+      } else {
+        amounts.update(
+          price.currency,
+          (amount) => amount + price.minorUnits * line.quantity,
+          ifAbsent: () => price.minorUnits * line.quantity,
+        );
+      }
+    }
+    totals = Map.unmodifiable(amounts);
+    unpricedQuantity = missing;
+  }
+  late final Map<String, int> totals;
+  late final int unpricedQuantity;
 }

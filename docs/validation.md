@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Optional product prices and estimates, 5 October 2026
+
+Validated step 5 of optional order management with `VERSION` unchanged at 1.6.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | Formatting passed for all 99 Dart files and final `flutter analyze --no-pub` reported no issues. `pubspec.lock` and `VERSION` are unchanged. |
+| Automated regression | All 180 active tests passed; only opt-in render capture was skipped in the normal run. All 13 archive tests passed again after adding explicit priced-composition round-trip and priced interrupted-restore assertions. |
+| Exact prices and immutable content | Covered absent versus zero, decimal input, malformed values, precision and currency bounds. Integer estimates kept currencies separate, counted unpriced quantities and calculated the maximum 200-line quantity inventory exactly. Catalogue edits left the persistent composition and saved revisions unchanged; additions captured new prices. Disabled defaults and disabling during composition preserved data and omitted new price snapshots. |
+| Migration and printing recovery | Schema 14 migration retained immutable history, active orders and interrupted print bytes, recovering Sending as Uncertain while prices defaulted to absent. Legacy restore modernised managed inventories with absent prices. Priced and unpriced snapshots produced identical preparation-ticket ESC/POS bytes; Server envelopes contained no price fields or currency data. |
+| Archives and rollback | Configuration and full-backup round trips preserved the price option, zero and maximum prices, priced composition and immutable order lines, including fresh-install restore. Legacy configurations defaulted to disabled prices. Invalid switches, currencies, mismatched nullable pairs, fractional or excessive minor units and inconsistent revision prices failed preview with current data intact. Failed and interrupted replacement retained priced snapshots; existing pending progress-operation recovery checks passed. |
+| Responsive and localised rendering | Fifty-seven captures passed framework and missed-tap checks. Inspected English tablet and landscape estimates, a complete estimate with separate EUR and GBP totals, Italian phone and Compact Compose, both 320-pixel doubled-text price screens, the standard Italian editor and English ticket details. Price-editor and composition widget tests passed in English and Italian at tablet, landscape and doubled-text phone sizes. Helper and error text wrap and dialogs remain scrollable. |
+| Android preview APK | Fresh debug APK built as 1.6.0, build 1, `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Packaged Flutter and Gradle APK outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial or physical printer validation was performed. Host persistence and rendered checks do not establish device behaviour or paper output. |
+| Compatibility and scope | Product prices and estimates is disabled by default and independent of courses and managed orders. Schema 15 accepts portable schemas 5 through 14; configuration document version 4 accepts versions 1, 2 and 3. Supported prices use EUR, GBP and USD with two fractional digits. Preparation printing, ticket PDFs and network protocol content retain their existing behaviour. No payments or financial recording were added. |
+
 ## Explicit paired delivery progress, 5 October 2026
 
 Validated step 4b of optional order management with `VERSION` unchanged at 1.6.0.

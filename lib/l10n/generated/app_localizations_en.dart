@@ -1532,6 +1532,59 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get progressServerNewer =>
       'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.';
+
+  @override
+  String get productPrices => 'Product prices and estimates';
+
+  @override
+  String get productPricesBody =>
+      'Optional and off by default. Prices are captured when items are added. Estimates stay on this device; preparation tickets contain no prices.';
+
+  @override
+  String get unitPrice => 'Unit price (optional)';
+
+  @override
+  String get unitPriceHelp =>
+      'Leave blank for no price. Zero is a price. Up to 999999.99, with two decimal places.';
+
+  @override
+  String get priceCurrency => 'Currency';
+
+  @override
+  String get invalidPrice =>
+      'Enter a price from 0 to 999999.99, with at most two decimal places and no thousands separator.';
+
+  @override
+  String get noPrice => 'No price';
+
+  @override
+  String get itemPrices => 'Item prices';
+
+  @override
+  String get estimatedOrderTotal => 'Estimated order total';
+
+  @override
+  String get pricedItemsSubtotal => 'Subtotal of priced items';
+
+  @override
+  String priceMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items have no price. The estimate is incomplete.',
+      one: '1 item has no price. The estimate is incomplete.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get priceCurrenciesSeparate =>
+      'Currencies are shown separately and are not converted or combined.';
+
+  @override
+  String priceLineEstimate(String unit, String total) {
+    return '$unit each · $total';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -12,6 +12,7 @@ import '../domain/order_models.dart';
 import 'order_identity.dart';
 import 'course_composer.dart';
 import 'managed_order_composer.dart';
+import 'order_estimate.dart';
 
 class ComposePage extends StatefulWidget {
   const ComposePage({
@@ -78,6 +79,15 @@ class ComposePageState extends State<ComposePage> {
               controller: widget.controller,
               delivery: widget.delivery,
               busy: widget.printing.value || widget.controller.saving,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (widget.controller.featureSettings.pricesEnabled) ...[
+            OrderEstimate(
+              lines: [
+                ...?widget.controller.editingOrder?.lines,
+                ...draft.lines,
+              ],
             ),
             const SizedBox(height: 12),
           ],

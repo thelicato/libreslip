@@ -71,6 +71,7 @@ void main() {
           orderNotesEnabled: false,
           courseGroupsEnabled: true,
           managedOrdersEnabled: true,
+          pricesEnabled: true,
         ),
       );
       final item = await orders.saveItem(
@@ -78,6 +79,7 @@ void main() {
         categoryName: 'Kitchen',
         imagePath: image.path,
         sendToServer: false,
+        price: const ProductPrice(minorUnits: 0, currency: 'EUR'),
       );
       final blank = await orders.createDraft();
       final ticket = await orders.convertDraftToTicket(
@@ -92,6 +94,7 @@ void main() {
               name: item.name,
               quantity: 2,
               courseId: 'drinks',
+              price: item.price,
             ),
           ],
         ),
@@ -107,7 +110,14 @@ void main() {
       await orders.saveDraft(
         draft.copyWith(
           updatedAt: DateTime.now().toUtc(),
-          lines: [TicketLine(id: createLocalId(), name: 'Tea', quantity: 1)],
+          lines: [
+            TicketLine(
+              id: createLocalId(),
+              name: 'Tea',
+              quantity: 1,
+              price: const ProductPrice(minorUnits: 375, currency: 'USD'),
+            ),
+          ],
         ),
       );
 
@@ -138,6 +148,15 @@ void main() {
       final restoredItems = await orders.loadItems();
       expect(restoredItems.single.name, 'Toast');
       expect(restoredItems.single.sendToServer, isFalse);
+      expect(
+        restoredItems.single.price,
+        const ProductPrice(minorUnits: 0, currency: 'EUR'),
+      );
+      expect((await orders.loadFeatureSettings()).pricesEnabled, isTrue);
+      expect(
+        (await orders.loadTickets()).single.lines.single.price,
+        restoredItems.single.price,
+      );
       expect(restoredItems.single.imagePath, isNot(image.path));
       expect(
         File(restoredItems.single.imagePath!).readAsBytesSync(),
@@ -155,6 +174,10 @@ void main() {
       );
       expect(await orders.loadPrintJobs(), hasLength(1));
       expect(await orders.loadDrafts(), hasLength(1));
+      expect(
+        (await orders.loadDrafts()).single.lines.single.price,
+        const ProductPrice(minorUnits: 375, currency: 'USD'),
+      );
       expect(await orders.loadNextOrderNumber(), 2);
       expect((await orders.loadFeatureSettings()).orderNotesEnabled, isFalse);
       expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
@@ -174,6 +197,7 @@ void main() {
           preparationNotesEnabled: false,
           courseGroupsEnabled: true,
           managedOrdersEnabled: true,
+          pricesEnabled: true,
         ),
       );
       final archive = await service.createArchive(
@@ -207,6 +231,7 @@ void main() {
       );
       expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
       expect((await orders.loadFeatureSettings()).managedOrdersEnabled, isTrue);
+      expect((await orders.loadFeatureSettings()).pricesEnabled, isTrue);
     },
   );
 
@@ -223,7 +248,13 @@ void main() {
         updatedAt: pairedAt,
       ),
     );
-    final item = await orders.saveItem(name: 'Soup');
+    await orders.saveFeatureSettings(
+      const OrderFeatureSettings(pricesEnabled: true),
+    );
+    final item = await orders.saveItem(
+      name: 'Soup',
+      price: const ProductPrice(minorUnits: 99999999, currency: 'GBP'),
+    );
     final draft = await orders.createDraft();
     final ticket = await orders.convertDraftToTicket(
       draft.copyWith(
@@ -236,6 +267,7 @@ void main() {
             name: item.name,
             quantity: 3,
             courseId: 'first',
+            price: item.price,
           ),
         ],
       ),
@@ -293,6 +325,16 @@ void main() {
       (await destination.loadTickets()).single.lines.single.courseId,
       'first',
     );
+    expect((await destination.loadItems()).single.price, item.price);
+    expect(
+      (await destination.loadTickets()).single.lines.single.price,
+      item.price,
+    );
+    expect(
+      (await destination.loadManagedOrders()).single.lines.single.price,
+      item.price,
+    );
+    expect((await destination.loadFeatureSettings()).pricesEnabled, isTrue);
     expect(await destination.loadNextOrderNumber(), 2);
     expect((await destination.loadManagedOrders()).single.id, managed.id);
     expect((await destination.loadManagedOrders()).single.deliveredCount, 2);
@@ -324,7 +366,14 @@ void main() {
       final ticket = await orders.convertDraftToTicket(
         draft.copyWith(
           updatedAt: DateTime.now().toUtc(),
-          lines: [TicketLine(id: createLocalId(), name: 'Keep', quantity: 1)],
+          lines: [
+            TicketLine(
+              id: createLocalId(),
+              name: 'Keep',
+              quantity: 1,
+              price: const ProductPrice(minorUnits: 275, currency: 'EUR'),
+            ),
+          ],
         ),
         heading: 'Before import',
         keepOpen: true,
@@ -362,6 +411,10 @@ void main() {
       await service.recoverInterruptedRestore();
 
       expect((await orders.loadTickets()).single.id, ticket.id);
+      expect(
+        (await orders.loadManagedOrders()).single.lines.single.price,
+        const ProductPrice(minorUnits: 275, currency: 'EUR'),
+      );
       expect(settings.stored!.heading, 'Before import');
       expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
       expect(journal.existsSync(), isFalse);
@@ -508,7 +561,12 @@ void main() {
     final currentTicket = await orders.convertDraftToTicket(
       currentDraft.copyWith(
         lines: const [
-          TicketLine(id: 'current-progress', name: 'Current only', quantity: 2),
+          TicketLine(
+            id: 'current-progress',
+            name: 'Current only',
+            quantity: 2,
+            price: ProductPrice(minorUnits: 275, currency: 'USD'),
+          ),
         ],
       ),
       heading: 'Current',
@@ -529,6 +587,10 @@ void main() {
 
     expect((await orders.loadTickets()).single.id, currentTicket.id);
     expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
+    expect(
+      (await orders.loadTickets()).single.lines.single.price,
+      const ProductPrice(minorUnits: 275, currency: 'USD'),
+    );
     expect(
       (await orders.loadItems()).any((item) => item.id == currentItem.id),
       isTrue,
@@ -581,6 +643,126 @@ void main() {
       }
     },
   );
+
+  test('legacy configurations default to hidden prices and invalid price switches are rejected', () async {
+    await orders.saveFeatureSettings(
+      const OrderFeatureSettings(pricesEnabled: true),
+    );
+    final bytes = await service.createArchive(
+      PortableArchiveKind.configuration,
+    );
+    for (final version in [1, 2, 3]) {
+      final old = _rewriteEntry(bytes, 'configuration.json', (configuration) {
+        configuration['version'] = version;
+        (configuration['orderFeatures'] as Map).remove('pricesEnabled');
+      });
+      await service.restore(await service.inspectArchive(old));
+      expect((await orders.loadFeatureSettings()).pricesEnabled, isFalse);
+    }
+    for (final value in [null, 1, 'true']) {
+      final invalid = _rewriteEntry(bytes, 'configuration.json', (
+        configuration,
+      ) {
+        (configuration['orderFeatures'] as Map)['pricesEnabled'] = value;
+      });
+      await expectLater(
+        service.inspectArchive(invalid),
+        throwsA(isA<PortabilityException>()),
+      );
+    }
+    final invalidLegacy = _rewriteEntry(bytes, 'configuration.json', (
+      configuration,
+    ) {
+      configuration['version'] = 3;
+    });
+    await expectLater(
+      service.inspectArchive(invalidLegacy),
+      throwsA(isA<PortabilityException>()),
+    );
+  });
+
+  test('invalid catalogue, line and managed prices fail preview without changing data', () async {
+    final item = await orders.saveItem(
+      name: 'Priced',
+      price: const ProductPrice(minorUnits: 125, currency: 'EUR'),
+    );
+    final draft = await orders.createDraft();
+    await orders.convertDraftToTicket(
+      draft.copyWith(
+        lines: [
+          TicketLine(
+            id: 'price-line',
+            catalogueItemId: item.id,
+            name: item.name,
+            quantity: 2,
+            price: item.price,
+          ),
+        ],
+      ),
+      heading: 'Kitchen',
+      keepOpen: true,
+    );
+    final composition = await orders.createDraft();
+    await orders.saveDraft(
+      composition.copyWith(
+        lines: [
+          TicketLine(
+            id: 'draft-price',
+            catalogueItemId: item.id,
+            name: item.name,
+            quantity: 1,
+            price: item.price,
+          ),
+        ],
+      ),
+    );
+    final archive = await service.createArchive(PortableArchiveKind.fullBackup);
+    for (final table in [
+      'items',
+      'draft_lines',
+      'ticket_lines',
+      'managed_orders',
+    ]) {
+      for (final (amount, currency) in [
+        (-1, 'EUR'),
+        (100000000, 'EUR'),
+        (1.5, 'EUR'),
+        ('125', 'EUR'),
+        (125, 'eur'),
+        (125, 'JPY'),
+        (null, 'EUR'),
+        (125, null),
+      ]) {
+        final broken = _rewriteDatabase(archive, (snapshot) {
+          final row =
+              ((snapshot['tables'] as Map)[table] as List).single as Map;
+          if (table == 'managed_orders') {
+            final lines = jsonDecode(row['lines_json'] as String) as List;
+            lines.single['priceMinorUnits'] = amount;
+            lines.single['priceCurrency'] = currency;
+            row['lines_json'] = jsonEncode(lines);
+          } else {
+            row['price_minor_units'] = amount;
+            row['price_currency'] = currency;
+          }
+        });
+        await expectLater(
+          service.inspectArchive(broken),
+          throwsA(isA<PortabilityException>()),
+        );
+        expect((await orders.loadItems()).single.price, item.price);
+      }
+    }
+    final mismatched = _rewriteDatabase(archive, (snapshot) {
+      (((snapshot['tables'] as Map)['ticket_lines'] as List).single
+              as Map)['price_minor_units'] =
+          126;
+    });
+    await expectLater(
+      service.inspectArchive(mismatched),
+      throwsA(isA<PortabilityException>()),
+    );
+  });
 
   test('invalid delivered quantities fail archive preview with current progress intact', () async {
     final draft = await orders.createDraft();
@@ -675,16 +857,21 @@ void main() {
 Uint8List _rewriteDatabase(
   Uint8List bytes,
   void Function(Map<String, dynamic>) update,
+) => _rewriteEntry(bytes, 'database.json', update);
+
+Uint8List _rewriteEntry(
+  Uint8List bytes,
+  String path,
+  void Function(Map<String, dynamic>) update,
 ) {
   final entries = {
     for (final entry in ZipDecoder().decodeBytes(bytes))
       entry.name: entry.content as List<int>,
   };
-  final snapshot = jsonDecode(
-    utf8.decode(entries['database.json']!),
-  ) as Map<String, dynamic>;
+  final snapshot =
+      jsonDecode(utf8.decode(entries[path]!)) as Map<String, dynamic>;
   update(snapshot);
-  entries['database.json'] = utf8.encode(jsonEncode(snapshot));
+  entries[path] = utf8.encode(jsonEncode(snapshot));
   final manifest = jsonDecode(
     utf8.decode(entries['manifest.json']!),
   ) as Map<String, dynamic>;

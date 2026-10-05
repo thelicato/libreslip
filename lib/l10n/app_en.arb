@@ -631,5 +631,35 @@
       }
     }
   },
-  "progressServerNewer": "The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order."
+  "progressServerNewer": "The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.",
+  "productPrices": "Product prices and estimates",
+  "productPricesBody": "Optional and off by default. Prices are captured when items are added. Estimates stay on this device; preparation tickets contain no prices.",
+  "unitPrice": "Unit price (optional)",
+  "unitPriceHelp": "Leave blank for no price. Zero is a price. Up to 999999.99, with two decimal places.",
+  "priceCurrency": "Currency",
+  "invalidPrice": "Enter a price from 0 to 999999.99, with at most two decimal places and no thousands separator.",
+  "noPrice": "No price",
+  "itemPrices": "Item prices",
+  "estimatedOrderTotal": "Estimated order total",
+  "pricedItemsSubtotal": "Subtotal of priced items",
+  "priceMissingCount": "{count, plural, =1{1 item has no price. The estimate is incomplete.} other{{count} items have no price. The estimate is incomplete.}}",
+  "priceCurrenciesSeparate": "Currencies are shown separately and are not converted or combined.",
+  "priceLineEstimate": "{unit} each · {total}",
+  "@priceMissingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@priceLineEstimate": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  }
 }

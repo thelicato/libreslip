@@ -631,5 +631,35 @@
       }
     }
   },
-  "progressServerNewer": "Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine."
+  "progressServerNewer": "Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine.",
+  "productPrices": "Prezzi e stime",
+  "productPricesBody": "Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. Le stime restano su questo dispositivo; le comande di preparazione non contengono prezzi.",
+  "unitPrice": "Prezzo unitario (facoltativo)",
+  "unitPriceHelp": "Lascia vuoto per nessun prezzo. Zero è un prezzo. Fino a 999999,99, con due cifre decimali.",
+  "priceCurrency": "Valuta",
+  "invalidPrice": "Inserisci un prezzo da 0 a 999999,99, con al massimo due cifre decimali e senza separatore delle migliaia.",
+  "noPrice": "Nessun prezzo",
+  "itemPrices": "Prezzi degli articoli",
+  "estimatedOrderTotal": "Totale stimato dell’ordine",
+  "pricedItemsSubtotal": "Subtotale degli articoli con prezzo",
+  "priceMissingCount": "{count, plural, =1{1 articolo non ha un prezzo. La stima è incompleta.} other{{count} articoli non hanno un prezzo. La stima è incompleta.}}",
+  "priceCurrenciesSeparate": "Le valute sono mostrate separatamente e non vengono convertite o sommate.",
+  "priceLineEstimate": "{unit} ciascuno · {total}",
+  "@priceMissingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@priceLineEstimate": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  }
 }
