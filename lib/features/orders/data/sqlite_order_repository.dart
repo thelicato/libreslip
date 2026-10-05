@@ -31,7 +31,7 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 16;
+  static const databaseVersion = 17;
   static const portableSchemaVersions = {
     5,
     6,
@@ -44,6 +44,7 @@ class SqliteOrderRepository
     13,
     14,
     15,
+    16,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -684,6 +685,18 @@ class SqliteOrderRepository
         PRIMARY KEY (client_id, operation_id)
       )''');
     }
+    if (oldVersion < 17 && newVersion >= 17) {
+      await database.execute('DROP INDEX network_destinations_one_active');
+      await database.execute(
+        'ALTER TABLE network_destinations ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1))',
+      );
+      await database.execute(
+        'UPDATE network_destinations SET is_default = is_active',
+      );
+      await database.execute(
+        'CREATE UNIQUE INDEX network_destinations_one_default ON network_destinations(is_default) WHERE is_default = 1',
+      );
+    }
   }
 
   @override
@@ -1066,6 +1079,7 @@ class SqliteOrderRepository
       final rows = await (await _db).query(
         'network_destinations',
         where: 'is_active = 1',
+        orderBy: 'is_default DESC, id ASC',
         limit: 1,
       );
       return rows.isEmpty ? null : _pairedServerFromRow(rows.single);
@@ -1078,7 +1092,7 @@ class SqliteOrderRepository
   Future<void> savePairedServer(PairedServer server) async {
     try {
       await (await _db).transaction((transaction) async {
-        await transaction.update('network_destinations', {'is_active': 0});
+        await transaction.update('network_destinations', {'is_default': 0});
         final existing = await transaction.query(
           'network_destinations',
           columns: ['id'],
@@ -1092,6 +1106,7 @@ class SqliteOrderRepository
           'certificate_fingerprint': server.certificateFingerprint,
           'updated_at': _timestamp(server.updatedAt),
           'is_active': 1,
+          'is_default': 1,
         };
         if (existing.isEmpty) {
           await transaction.insert('network_destinations', {
@@ -1114,17 +1129,64 @@ class SqliteOrderRepository
   }
 
   @override
-  Future<void> deactivateServer(String id) async {
-    try {
-      await (await _db).update(
+  Future<List<PairedServer>> loadActiveServers() async {
+    final rows = await (await _db).query(
+      'network_destinations',
+      where: 'is_active = 1',
+      orderBy: 'is_default DESC, id ASC',
+    );
+    return rows.map(_pairedServerFromRow).toList();
+  }
+
+  @override
+  Future<void> selectServer(String id) async {
+    await (await _db).transaction((tx) async {
+      final rows = await tx.query(
         'network_destinations',
-        {'is_active': 0, 'updated_at': _timestamp(DateTime.now().toUtc())},
         where: 'id = ? AND is_active = 1',
         whereArgs: [id],
       );
-    } catch (error) {
-      throw OrderStorageException('Could not disconnect the server.', error);
-    }
+      if (rows.isEmpty) {
+        throw const OrderStorageException('The Server is disconnected.');
+      }
+      await tx.update('network_destinations', {'is_default': 0});
+      await tx.update(
+        'network_destinations',
+        {'is_default': 1},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
+  }
+
+  @override
+  Future<void> deactivateServer(String id) async {
+    await (await _db).transaction((tx) async {
+      await tx.update(
+        'network_destinations',
+        {
+          'is_active': 0,
+          'is_default': 0,
+          'updated_at': _timestamp(DateTime.now().toUtc()),
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      final remaining = await tx.query(
+        'network_destinations',
+        where: 'is_active = 1',
+        orderBy: 'is_default DESC, id ASC',
+        limit: 1,
+      );
+      if (remaining.isNotEmpty) {
+        await tx.update(
+          'network_destinations',
+          {'is_default': 1},
+          where: 'id = ?',
+          whereArgs: [remaining.single['id']],
+        );
+      }
+    });
   }
 
   @override
@@ -2289,6 +2351,7 @@ class SqliteOrderRepository
           'network_destinations',
           columns: ['id'],
           where: 'is_active = 1',
+          orderBy: 'is_default DESC, id ASC',
           limit: 1,
         );
         final destinationId = previous == null

@@ -16,9 +16,14 @@ class SharedOrderControls extends StatelessWidget {
     listenable: controller,
     builder: (context, _) {
       final l = AppLocalizations.of(context);
-      if (!controller.enabled ||
-          (order != null &&
-              order!.destinationId != controller.delivery.activeServer?.id)) {
+      final server = controller.delivery.serverFor(order?.destinationId);
+      final syncError = order == null
+          ? controller.error
+          : controller.serverErrors[server?.id];
+      final syncedAt = order == null
+          ? controller.lastSyncedAt
+          : controller.serverSyncedAt[server?.id];
+      if (!controller.enabled || (order != null && server == null)) {
         return order != null || controller.sharedIds.isNotEmpty
             ? Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -43,9 +48,15 @@ class SharedOrderControls extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    l.sharedOrdersWith(
-                      controller.delivery.activeServer!.displayName,
-                    ),
+                    order != null
+                        ? l.sharedOrdersWith(server!.displayName)
+                        : controller.delivery.servers.length == 1
+                        ? l.sharedOrdersWith(
+                            controller.delivery.servers.single.displayName,
+                          )
+                        : l.sharedOrdersServers(
+                            controller.delivery.servers.length,
+                          ),
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
@@ -53,11 +64,11 @@ class SharedOrderControls extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             if (order == null) Text(l.sharedOrdersBody),
-            if (controller.lastSyncedAt != null && controller.error == null)
+            if (syncedAt != null && syncError == null)
               Text(
                 l.sharedOrdersRefreshed(
                   DateFormat.Hm(Localizations.localeOf(context).toLanguageTag())
-                      .format(controller.lastSyncedAt!),
+                      .format(syncedAt),
                 ),
               ),
             if (order != null && controller.unavailableIds.contains(order!.id))
@@ -65,14 +76,20 @@ class SharedOrderControls extends StatelessWidget {
                 l.progressOrderMissing,
                 style: TextStyle(color: theme.colorScheme.error),
               ),
-            if (controller.error != null)
-              Text(switch (controller.error) {
-                'unsupported_shared' => l.sharedOrdersUnsupported,
-                'credentials' || 'unauthorised' => l.progressPairAgain,
-                'order_missing' => l.progressOrderMissing,
-                'unreachable' || 'server' => l.sharedOrdersOffline,
-                _ => l.deliveryProgressFailed,
-              }, style: TextStyle(color: theme.colorScheme.error)),
+            if (syncError != null)
+              Text(
+                _errorText(l, syncError),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            if (order == null && controller.delivery.servers.length > 1)
+              for (final destination in controller.delivery.servers)
+                Text(
+                  '${destination.displayName}: ${controller.serverErrors.containsKey(destination.id)
+                      ? _errorText(l, controller.serverErrors[destination.id]!)
+                      : controller.serverSyncedAt.containsKey(destination.id)
+                      ? l.sharedOrdersRefreshed(DateFormat.Hm(Localizations.localeOf(context).toLanguageTag()).format(controller.serverSyncedAt[destination.id]!))
+                      : l.progressSyncing}',
+                ),
             if (order == null && controller.conflicts.isNotEmpty)
               Text(l.sharedOrdersUnresolved),
             if (remote != null && local != null) ...[
@@ -124,7 +141,11 @@ class SharedOrderControls extends StatelessWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   key: ValueKey('refresh-shared-${order?.id ?? 'all'}'),
-                  onPressed: controller.busy ? null : controller.synchronise,
+                  onPressed: controller.busy
+                      ? null
+                      : () => controller.synchronise(
+                          serverId: order?.destinationId,
+                        ),
                   icon: controller.busy
                       ? const SizedBox(
                           width: 18,
@@ -142,4 +163,11 @@ class SharedOrderControls extends StatelessWidget {
       );
     },
   );
+  static String _errorText(AppLocalizations l, String code) => switch (code) {
+    'unsupported_shared' => l.sharedOrdersUnsupported,
+    'credentials' || 'unauthorised' => l.progressPairAgain,
+    'order_missing' => l.progressOrderMissing,
+    'unreachable' || 'server' => l.sharedOrdersOffline,
+    _ => l.deliveryProgressFailed,
+  };
 }

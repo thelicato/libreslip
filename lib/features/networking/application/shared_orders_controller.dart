@@ -13,7 +13,7 @@ import '../domain/shared_orders.dart';
 import 'client_delivery_controller.dart';
 import 'network_mode_controller.dart';
 
-/// Polls the paired local Server while Client mode is in the foreground.
+/// Polls every connected local Server while Client mode is in the foreground.
 /// Printing and its recovery queue are never driven by this controller.
 class SharedOrdersController extends ChangeNotifier
     with WidgetsBindingObserver {
@@ -38,6 +38,8 @@ class SharedOrdersController extends ChangeNotifier
   final Set<String> unavailableIds = {};
   bool busy = false;
   String? error;
+  final Map<String, String> serverErrors = {};
+  final Map<String, DateTime> serverSyncedAt = {};
   DateTime? lastSyncedAt;
   bool _started = false;
   bool _disposed = false;
@@ -45,6 +47,7 @@ class SharedOrdersController extends ChangeNotifier
   Timer? _timer;
   Timer? _debounce;
   String? _inputs;
+  Future<void> _mergeQueue = Future<void>.value();
 
   bool get enabled =>
       workspace.loaded &&
@@ -52,7 +55,7 @@ class SharedOrdersController extends ChangeNotifier
       mode.loaded &&
       mode.mode == LibreSlipMode.client &&
       workspace.featureSettings.managedOrdersEnabled &&
-      delivery.activeServer != null;
+      delivery.servers.isNotEmpty;
 
   Future<void> start() async {
     if (_started) return;
@@ -71,13 +74,15 @@ class SharedOrdersController extends ChangeNotifier
   void _changed() {
     if (_disposed) return;
     final fingerprint =
-        '$enabled/${delivery.activeServer?.id}/'
+        '$enabled/${delivery.servers.map((s) => s.id).join(',')}/'
         '${workspace.managedOrders.map((o) => '${o.id}:${o.revision}:${o.deliveryEditRevision}').join(',')}/'
         '${delivery.deliveries.map((d) => '${d.id}:${d.status.name}').join(',')}';
     if (_inputs == fingerprint) return;
     _inputs = fingerprint;
     if (!enabled) {
       error = null;
+      serverErrors.clear();
+      serverSyncedAt.clear();
       conflicts.clear();
       lastSyncedAt = null;
     }
@@ -103,6 +108,7 @@ class SharedOrdersController extends ChangeNotifier
   Future<void> synchronise({
     String? resolveOrderId,
     ProgressResolution? resolution,
+    String? serverId,
   }) async {
     if (_disposed || busy || !enabled || !_foreground || workspace.saving) {
       return;
@@ -110,13 +116,45 @@ class SharedOrdersController extends ChangeNotifier
     busy = true;
     error = null;
     notifyListeners();
-    final server = delivery.activeServer!;
+    final targets = List<PairedServer>.from(delivery.servers);
+    if (resolveOrderId != null) {
+      final order = workspace.managedOrders
+          .where((o) => o.id == resolveOrderId)
+          .firstOrNull;
+      targets.removeWhere((s) => s.id != order?.destinationId);
+    } else if (serverId != null) {
+      targets.removeWhere((s) => s.id != serverId);
+    }
+    try {
+      await Future.wait(
+        targets.map(
+          (server) => _synchroniseServer(
+            server,
+            resolveOrderId: resolveOrderId,
+            resolution: resolution,
+          ),
+        ),
+      );
+      serverErrors.removeWhere((id, _) => delivery.serverFor(id) == null);
+      error = serverErrors.values.firstOrNull;
+    } finally {
+      busy = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> _synchroniseServer(
+    PairedServer server, {
+    String? resolveOrderId,
+    ProgressResolution? resolution,
+  }) async {
+    serverErrors.remove(server.id);
     final actor = mode.configuration!.installationId;
     bool current() =>
         !_disposed &&
         enabled &&
         _foreground &&
-        delivery.activeServer?.id == server.id;
+        delivery.serverFor(server.id) != null;
     try {
       final token = await secrets.readServerAccessToken(server.id);
       if (token == null || token.isEmpty) {
@@ -159,7 +197,7 @@ class SharedOrdersController extends ChangeNotifier
         }
         if (page.length < 50) break;
       }
-      unavailableIds.clear();
+      unavailableIds.removeAll(allLinks.map((link) => link.orderId));
       unavailableIds.addAll(
         allLinks
             .where((link) => !heads.containsKey(link.baseline.serverOrderId))
@@ -167,7 +205,7 @@ class SharedOrdersController extends ChangeNotifier
       );
       for (final head in heads.values) {
         final id = head.id;
-        if (!current() || workspace.saving) return;
+        if (!current()) return;
         final known = linksByServer[id];
         final cachedOrder = known == null ? null : ordersByLocal[known.orderId];
         if (known != null &&
@@ -241,9 +279,12 @@ class SharedOrdersController extends ChangeNotifier
           }
           if (!current()) return;
           // Pull additions under the composition lock, preserving local edits.
-          await workspace.refreshSharedOrders(
+          if (!await _merge(
+            current,
             () => store.mergeSharedOrder(server.id, remote),
-          );
+          )) {
+            return;
+          }
           for (final order in workspace.managedOrders) {
             final mapping = await store.loadSharedLink(order.id);
             if (mapping?.destinationId == server.id &&
@@ -342,22 +383,45 @@ class SharedOrdersController extends ChangeNotifier
             await store.settleSharedProgress(local.id, accepted: true);
           }
           if (!current()) return;
-          await workspace.refreshSharedOrders(
+          if (!await _merge(
+            current,
             () => store.mergeSharedOrder(server.id, remote),
-          );
+          )) {
+            return;
+          }
           conflicts.remove(local.id);
         } on ProgressConflict {
           if (local != null) conflicts[local.id] = remote;
         }
       }
-      if (current()) lastSyncedAt = DateTime.now();
+      if (current()) {
+        lastSyncedAt = DateTime.now();
+        serverSyncedAt[server.id] = lastSyncedAt!;
+      }
     } on ClientTransportException catch (e) {
-      error = e.code;
+      if (current()) serverErrors[server.id] = e.code;
     } catch (_) {
-      error = 'storage';
+      if (current()) serverErrors[server.id] = 'storage';
     } finally {
-      busy = false;
       if (!_disposed) notifyListeners();
+    }
+  }
+
+  /// Network requests run independently; composition merges share one writer.
+  Future<bool> _merge(
+    bool Function() current,
+    Future<void> Function() merge,
+  ) async {
+    final previous = _mergeQueue;
+    final released = Completer<void>();
+    _mergeQueue = released.future;
+    try {
+      await previous;
+      if (!current() || workspace.saving) return false;
+      await workspace.refreshSharedOrders(merge);
+      return true;
+    } finally {
+      released.complete();
     }
   }
 

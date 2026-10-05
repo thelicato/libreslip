@@ -1183,7 +1183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientServerBody =>
-      'Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.';
+      'Pair with local Servers on the same Wi-Fi. All paired Servers remain connected. Select the destination for new orders; additions keep the original destination. Local printing and history work offline.';
 
   @override
   String get noPairedServer => 'No server paired';
@@ -1228,7 +1228,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unpairServerBody =>
-      'New tickets will stop creating deliveries. Existing local tickets and delivery history stay on this phone.';
+      'Disconnect this Server? Its queued deliveries and local orders stay saved. Other Server connections remain available. Pair again to resume delivery to this Server.';
 
   @override
   String get serverUnpaired => 'Server unpaired';
@@ -1664,6 +1664,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sharedOrdersConflictBody =>
       'Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress.';
+
+  @override
+  String get serverForNewOrders => 'For new orders';
+
+  @override
+  String get useServerForNewOrders => 'Use for new orders';
+
+  @override
+  String get orderDestination => 'Order destination';
+
+  @override
+  String get orderDestinationBody =>
+      'New orders go to this Server. Updates stay with their original Server. All connected Servers continue to sync.';
+
+  @override
+  String get serverDisconnected => 'Original Server disconnected';
+
+  @override
+  String sharedOrdersServers(int count) {
+    return 'Shared with $count Servers';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

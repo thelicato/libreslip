@@ -136,6 +136,7 @@ Future<void> removePriceColumnsForLegacyFixture(Database database) async {
 }
 
 Future<void> removeSharedTablesForLegacyFixture(Database database) async {
+  await removeMultipleServerColumnsForLegacyFixture(database);
   await database.execute('DROP TABLE shared_order_links');
   await database.execute('DROP TABLE server_shared_receipts');
   await database.execute(
@@ -143,5 +144,20 @@ Future<void> removeSharedTablesForLegacyFixture(Database database) async {
   );
   await database.execute(
     'ALTER TABLE server_delivery_outbox DROP COLUMN shared_server_order_id',
+  );
+}
+
+Future<void> removeMultipleServerColumnsForLegacyFixture(
+  Database database,
+) async {
+  await database.execute(
+    'UPDATE network_destinations SET is_active = is_default',
+  );
+  await database.execute('DROP INDEX network_destinations_one_default');
+  await database.execute(
+    'ALTER TABLE network_destinations DROP COLUMN is_default',
+  );
+  await database.execute(
+    'CREATE UNIQUE INDEX network_destinations_one_active ON network_destinations(is_active) WHERE is_active = 1',
   );
 }

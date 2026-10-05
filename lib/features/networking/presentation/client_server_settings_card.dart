@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/client_delivery_controller.dart';
 import '../domain/network_models.dart';
+import '../domain/client_delivery_models.dart';
 
 class ClientServerSettingsCard extends StatelessWidget {
   const ClientServerSettingsCard({
@@ -65,52 +66,116 @@ class ClientServerSettingsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            if (server == null) ...[
+            if (server == null)
               Text(l.noPairedServer, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                key: const ValueKey('pair-server'),
-                onPressed: controller.pairing
-                    ? null
-                    : () => _showPairDialog(context),
-                icon: const Icon(Icons.add_link_rounded),
-                label: Text(l.pairServer),
-              ),
-            ] else ...[
-              Text(l.pairedServer, style: theme.textTheme.labelLarge),
-              const SizedBox(height: 5),
-              Text(server.displayName, style: theme.textTheme.titleMedium),
-              const SizedBox(height: 3),
-              SelectableText(server.baseUrl.toString()),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Chip(
-                    avatar: const Icon(Icons.schedule_rounded, size: 18),
-                    label: Text(
-                      '${l.pendingDeliveries}: ${controller.pendingCount}',
+            for (final destination in controller.servers) ...[
+              Container(
+                key: ValueKey('connected-server-${destination.id}'),
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: destination.id == server?.id
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      destination.displayName,
+                      style: theme.textTheme.titleMedium,
                     ),
-                  ),
-                  Chip(
-                    avatar: const Icon(Icons.error_outline_rounded, size: 18),
-                    label: Text(
-                      '${l.failedDeliveries}: ${controller.failedCount}',
+                    const SizedBox(height: 4),
+                    SelectableText(destination.baseUrl.toString()),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${l.pendingDeliveries}: ${controller.deliveries.where((d) => d.destinationId == destination.id && d.status != ClientDeliveryStatus.delivered && d.status != ClientDeliveryStatus.failed).length} · ${l.failedDeliveries}: ${controller.deliveries.where((d) => d.destinationId == destination.id && d.status == ClientDeliveryStatus.failed).length}',
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
-                key: const ValueKey('unpair-server'),
-                onPressed: controller.unpairing
-                    ? null
-                    : () => _confirmUnpair(context),
-                icon: const Icon(Icons.link_off_rounded),
-                label: Text(l.unpairServer),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        destination.id == server?.id
+                            ? Container(
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      theme.colorScheme.surfaceContainerLowest,
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(child: Text(l.serverForNewOrders)),
+                                  ],
+                                ),
+                              )
+                            : TextButton.icon(
+                                key: ValueKey(
+                                  'select-server-${destination.id}',
+                                ),
+                                onPressed:
+                                    controller.pairing || controller.unpairing
+                                    ? null
+                                    : () async {
+                                        final success = await controller
+                                            .selectServer(destination.id);
+                                        if (!success && context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    l.pairingStorageFailed,
+                                                  ),
+                                                ),
+                                              );
+                                        }
+                                      },
+                                icon: const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                ),
+                                label: Text(l.useServerForNewOrders),
+                              ),
+                        OutlinedButton.icon(
+                          key: destination.id == server?.id
+                              ? const ValueKey('unpair-server')
+                              : ValueKey('unpair-server-${destination.id}'),
+                          onPressed: controller.pairing || controller.unpairing
+                              ? null
+                              : () => _confirmUnpair(context, destination),
+                          icon: const Icon(Icons.link_off_rounded),
+                          label: Text(l.unpairServer),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              key: const ValueKey('pair-server'),
+              onPressed: controller.pairing || controller.unpairing
+                  ? null
+                  : () => _showPairDialog(context),
+              icon: const Icon(Icons.add_link_rounded),
+              label: Text(l.pairServer),
+            ),
           ],
         ),
       );
@@ -133,13 +198,14 @@ class ClientServerSettingsCard extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmUnpair(BuildContext context) async {
+  Future<void> _confirmUnpair(BuildContext context, PairedServer server) async {
     final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: Text(l.unpairServerTitle),
-        content: Text(l.unpairServerBody),
+        content: Text('${server.displayName}\n\n${l.unpairServerBody}'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -154,7 +220,7 @@ class ClientServerSettingsCard extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final success = await controller.unpair();
+    final success = await controller.unpair(server.id);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

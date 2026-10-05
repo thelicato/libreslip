@@ -474,7 +474,7 @@
   },
   "deleteCompletedOrdersFailed": "The completed order history could not be deleted.",
   "clientServerTitle": "Optional order server",
-  "clientServerBody": "Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.",
+  "clientServerBody": "Pair with local Servers on the same Wi-Fi. All paired Servers remain connected. Select the destination for new orders; additions keep the original destination. Local printing and history work offline.",
   "noPairedServer": "No server paired",
   "pairServer": "Pair server",
   "pairedServer": "Paired server",
@@ -488,7 +488,7 @@
   "serverPaired": "Server paired",
   "unpairServer": "Unpair server",
   "unpairServerTitle": "Unpair this server?",
-  "unpairServerBody": "New tickets will stop creating deliveries. Existing local tickets and delivery history stay on this phone.",
+  "unpairServerBody": "Disconnect this Server? Its queued deliveries and local orders stay saved. Other Server connections remain available. Pair again to resume delivery to this Server.",
   "serverUnpaired": "Server unpaired",
   "pairingInvalid": "Enter a valid local IPv4 address and port.",
   "pairingCertificateError": "The Server identity changed during connection. Nothing was paired.",
@@ -697,5 +697,18 @@
     }
   },
   "sharedOrdersPaused": "Shared synchronisation is paused. Enable Keep orders open and connect to this order’s Server to resume. Local changes remain saved.",
-  "sharedOrdersConflictBody": "Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress."
+  "sharedOrdersConflictBody": "Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress.",
+  "serverForNewOrders": "For new orders",
+  "useServerForNewOrders": "Use for new orders",
+  "orderDestination": "Order destination",
+  "orderDestinationBody": "New orders go to this Server. Updates stay with their original Server. All connected Servers continue to sync.",
+  "serverDisconnected": "Original Server disconnected",
+  "sharedOrdersServers": "Shared with {count} Servers",
+  "@sharedOrdersServers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

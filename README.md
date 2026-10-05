@@ -41,6 +41,8 @@ Client mode is the everyday workspace. Add catalogue items, compose an order, co
 
 A paired LibreSlip Server is optional. If it becomes unavailable, local composition, printing, history, PDF sharing and backups continue normally. Items marked Local only remain on the printed ticket but are not included in the Server copy.
 
+Pair with several Servers in Client Settings to keep them available together. The most recently paired Server becomes the destination for new orders; select another with **Use for new orders** or the **Order destination** selector in Compose. Each order goes to its selected Server, and additions and delivery progress keep that original destination. All connected Servers continue to deliver and, with Keep orders open enabled, sync their shared orders independently. Unpairing one Server retains its queued work and leaves the others connected.
+
 Use **Order title / table** in Compose to name an order, for example Table 4 or Garden. Leave it blank to use the order number alone, or disable the field in Client Settings under Order fields. Existing table references serve as titles and keep their content. Saved titles remain visible even when the field is disabled for new tickets.
 
 Enable **Order dividers** in Client Settings under Order fields. Add the first items, then tap **Add divider** in the order summary. The next selected items go below a teal separator, with no name to enter. Use the arrow controls on a selected item to move it above or below a divider; **Remove last divider** joins the last two sections without changing quantities or notes. In Compact Compose, catalogue quantities apply below the latest divider and the summary shows all sections. Each new order starts without dividers.

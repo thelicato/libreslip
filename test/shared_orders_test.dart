@@ -353,7 +353,10 @@ void main() {
     addTearDown(repository.close);
     expect((await repository.loadTickets()).single.id, ticket.id);
     expect(await repository.loadSharedLink(draft.id), isNull);
-    expect((await repository.createPortableSnapshot())['schemaVersion'], 16);
+    expect(
+      (await repository.createPortableSnapshot())['schemaVersion'],
+      SqliteOrderRepository.databaseVersion,
+    );
   });
 
   test('automatic sync is opt-in, pauses in Server mode and never blocks offline composition', () async {

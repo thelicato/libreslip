@@ -127,7 +127,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([controller, ?sharedOrders]),
+    listenable: Listenable.merge([controller, ?sharedOrders, ?delivery]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       return AlertDialog(
@@ -161,6 +161,18 @@ class _ActiveOrdersDialog extends StatelessWidget {
                             reference: order.reference,
                             numberLabel: l.ticketNumber(order.number),
                           ),
+                          if (order.destinationId != null &&
+                              delivery != null &&
+                              (delivery!.servers.length > 1 ||
+                                  order.destinationId !=
+                                      delivery!.activeServer?.id))
+                            Text(
+                              delivery!
+                                      .serverFor(order.destinationId)
+                                      ?.displayName ??
+                                  l.serverDisconnected,
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
                           Text(l.orderRevision(order.revision)),
                           Text(l.itemCount(order.itemCount)),
                           if (controller.featureSettings.pricesEnabled)

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/shared_orders_controller.dart';
+import '../../networking/presentation/server_destination_selector.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/domain/ticket_document.dart';
 import '../../settings/domain/app_settings.dart';
@@ -83,6 +84,16 @@ class ComposePageState extends State<ComposePage> {
               controller: widget.controller,
               delivery: widget.delivery,
               sharedOrders: widget.sharedOrders,
+              busy: widget.printing.value || widget.controller.saving,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (widget.delivery != null &&
+              (widget.delivery!.servers.isNotEmpty ||
+                  widget.controller.editingOrder?.destinationId != null)) ...[
+            ServerDestinationSelector(
+              controller: widget.delivery!,
+              order: widget.controller.editingOrder,
               busy: widget.printing.value || widget.controller.saving,
             ),
             const SizedBox(height: 12),

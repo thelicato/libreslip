@@ -27,7 +27,30 @@ class ClientDeliveryController extends ChangeNotifier {
   final ClientServerTransport _transport;
   final Duration retryDelay;
 
+  /// Selected destination for new orders; all connected Servers remain usable.
   PairedServer? activeServer;
+  List<PairedServer> servers = const [];
+
+  PairedServer? serverFor(String? id) {
+    for (final server in servers) {
+      if (server.id == id) return server;
+    }
+    return null;
+  }
+
+  Future<bool> selectServer(String id) async {
+    if (pairing || unpairing) return false;
+    try {
+      await _store.selectServer(id);
+      await _refresh();
+      return true;
+    } catch (_) {
+      lastPairingError = 'storage';
+      notifyListeners();
+      return false;
+    }
+  }
+
   List<ClientDelivery> deliveries = const [];
   bool loaded = false;
   bool loadFailed = false;
@@ -37,6 +60,7 @@ class ClientDeliveryController extends ChangeNotifier {
   final Set<String> _sendingIds = {};
   Timer? _retryTimer;
   bool _draining = false;
+  bool _drainRequested = false;
   bool _disposed = false;
 
   static const _automaticallyRetryableErrors = {'unreachable', 'server'};
@@ -74,6 +98,7 @@ class ClientDeliveryController extends ChangeNotifier {
     notifyListeners();
     try {
       activeServer = await _store.loadActiveServer();
+      servers = await _store.loadActiveServers();
       deliveries = await _store.loadClientDeliveries();
       loaded = true;
       unawaited(_drainRecoverableDeliveries());
@@ -121,7 +146,9 @@ class ClientDeliveryController extends ChangeNotifier {
         rethrow;
       }
       activeServer = await _store.loadActiveServer();
+      servers = await _store.loadActiveServers();
       deliveries = await _store.loadClientDeliveries();
+      unawaited(_drainRecoverableDeliveries());
       return true;
     } on FormatException {
       lastPairingError = 'invalid_pairing';
@@ -138,8 +165,8 @@ class ClientDeliveryController extends ChangeNotifier {
     }
   }
 
-  Future<bool> unpair() async {
-    final server = activeServer;
+  Future<bool> unpair([String? serverId]) async {
+    final server = serverId == null ? activeServer : serverFor(serverId);
     if (server == null || pairing || unpairing) return server == null;
     unpairing = true;
     lastPairingError = null;
@@ -149,8 +176,8 @@ class ClientDeliveryController extends ChangeNotifier {
       await _store.deactivateServer(server.id);
       _retryTimer?.cancel();
       _retryTimer = null;
-      activeServer = null;
-      deliveries = await _store.loadClientDeliveries();
+      await _refresh();
+      unawaited(_drainRecoverableDeliveries());
       return true;
     } catch (_) {
       lastPairingError = 'storage';
@@ -217,7 +244,11 @@ class ClientDeliveryController extends ChangeNotifier {
   }
 
   Future<void> _drainRecoverableDeliveries() async {
-    if (_disposed || _draining) return;
+    if (_disposed) return;
+    if (_draining) {
+      _drainRequested = true;
+      return;
+    }
     _draining = true;
     _retryTimer?.cancel();
     _retryTimer = null;
@@ -233,31 +264,45 @@ class ClientDeliveryController extends ChangeNotifier {
               ? order
               : a.envelope.revision.compareTo(b.envelope.revision);
         });
-      for (var delivery in ordered) {
-        if (waitingForEarlierRevision(delivery)) continue;
-        if (_disposed) return;
-        if (delivery.status == ClientDeliveryStatus.failed &&
-            _isAutomaticallyRetryable(delivery)) {
-          try {
-            delivery = await _store.resetClientDeliveryForRetry(delivery.id);
-            await _refresh();
-          } catch (_) {
-            await _refreshSafely();
-            continue;
+      await Future.wait(
+        servers.map((server) async {
+          for (var delivery in ordered.where(
+            (d) => d.destinationId == server.id,
+          )) {
+            if (waitingForEarlierRevision(delivery)) continue;
+            if (_disposed) return;
+            if (delivery.status == ClientDeliveryStatus.failed &&
+                _isAutomaticallyRetryable(delivery)) {
+              try {
+                delivery = await _store.resetClientDeliveryForRetry(
+                  delivery.id,
+                );
+                await _refresh();
+              } catch (_) {
+                await _refreshSafely();
+                continue;
+              }
+            }
+            if (delivery.status == ClientDeliveryStatus.pending) {
+              await _send(delivery);
+            }
           }
-        }
-        if (delivery.status == ClientDeliveryStatus.pending) {
-          await _send(delivery);
-        }
-      }
+        }),
+      );
     } finally {
       _draining = false;
-      _scheduleRetry();
+      if (_drainRequested && !_disposed) {
+        _drainRequested = false;
+        unawaited(_drainRecoverableDeliveries());
+      } else {
+        _scheduleRetry();
+      }
     }
   }
 
   bool _isAutomaticallyRetryable(ClientDelivery delivery) =>
       delivery.status == ClientDeliveryStatus.failed &&
+      serverFor(delivery.destinationId) != null &&
       _automaticallyRetryableErrors.contains(delivery.errorCode);
 
   void _cancelRetryWhenSettled() {
@@ -270,7 +315,7 @@ class ClientDeliveryController extends ChangeNotifier {
     if (_disposed ||
         _draining ||
         _retryTimer != null ||
-        activeServer == null ||
+        servers.isEmpty ||
         !deliveries.any(_isAutomaticallyRetryable)) {
       return;
     }
@@ -294,8 +339,8 @@ class ClientDeliveryController extends ChangeNotifier {
 
   Future<bool> _send(ClientDelivery delivery) async {
     if (_sendingIds.contains(delivery.id)) return false;
-    final server = activeServer;
-    if (server == null || server.id != delivery.destinationId) {
+    final server = serverFor(delivery.destinationId);
+    if (server == null) {
       await _fail(delivery.id, 'destination');
       return false;
     }
@@ -381,6 +426,7 @@ class ClientDeliveryController extends ChangeNotifier {
 
   Future<void> _refresh() async {
     activeServer = await _store.loadActiveServer();
+    servers = await _store.loadActiveServers();
     deliveries = await _store.loadClientDeliveries();
     notifyListeners();
   }

@@ -69,7 +69,12 @@ class ClientDelivery {
 }
 
 abstract interface class ClientDeliveryStore {
+  /// The selected destination for new tickets. Existing orders keep their route.
   Future<PairedServer?> loadActiveServer();
+
+  Future<List<PairedServer>> loadActiveServers();
+
+  Future<void> selectServer(String id);
 
   Future<void> savePairedServer(PairedServer server);
 

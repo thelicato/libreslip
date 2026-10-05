@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Multiple simultaneous Servers, 5 October 2026
+
+Validated step 9 with `VERSION` unchanged at 1.8.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 109 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 227 active tests passed, including ten new multiple-Server integration and widget tests. The normal run skipped only opt-in workspace capture. Existing interrupted printing, migration, localisation, shared conflicts and invalid or interrupted restore checks passed. |
+| Routing and identity | Pairing retained both Servers and their separate credentials. Selection routed new tickets to the chosen Server; additions retained the original destination after selection changed. Shared orders with overlapping stable item identities kept progress scoped to their destination. Saved snapshots and print queues retained their existing behaviour. |
+| Independent work and recovery | A blocked delivery did not prevent the other Server from delivering. A blocked shared feed did not prevent another Server from importing its order; parallel merges retained both orders. Offline delivery remained queued and explicit recovery reached the original destination. Deleted orders remained unavailable only for their own Server, without erasing cached work. Disconnect retained the other connection and credential. |
+| Migration and archives | Schema 16 migration preserved the previous selected Server. Subsequent connections and selection survived database close and reopen. Invalid selection rolled back. Disconnect selected a remaining Server, then left no destination when the final connection was removed. Full backups excluded connections and selection; fresh-install replacement recreated no pairing. Existing rollback and restore recovery checks passed. |
+| Pinned HTTPS | Two real loopback HTTPS Servers with distinct certificate pins and tokens paired two Clients. Shared imports, another Client's additions and delivery progress reached the correct Server after changing the selected destination. Disconnecting one Server retained the other. No physical multi-phone LAN test was performed. |
+| Responsive and localised rendering | Seventy-nine captures passed framework and missed-tap checks. Inspected multiple-Server controls in English tablet, English dark landscape and Italian 320-pixel doubled-text layouts. The selected-destination label wraps completely and disconnect confirmation scrolls. Actual selection and disconnect controls remained reachable in all three layouts. Review images: [multiple Servers](previews/multiple-servers-en-1100.png) and [Italian enlarged text](previews/multiple-servers-it-320.png). |
+| Android preview APK | Fresh 1.8.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial, multi-phone LAN or physical printer verification was performed. Host SQLite, pinned TLS and widget checks do not establish physical-device behaviour or paper output. |
+
 ## Shared managed orders, 5 October 2026
 
 Validated step 8 with `VERSION` unchanged at 1.7.0.

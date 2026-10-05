@@ -2185,7 +2185,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientServerBody.
   ///
   /// In en, this message translates to:
-  /// **'Pair a LibreSlip Server on this local network. Local printing and ticket history continue even when the server is unavailable.'**
+  /// **'Pair with local Servers on the same Wi-Fi. All paired Servers remain connected. Select the destination for new orders; additions keep the original destination. Local printing and history work offline.'**
   String get clientServerBody;
 
   /// No description provided for @noPairedServer.
@@ -2269,7 +2269,7 @@ abstract class AppLocalizations {
   /// No description provided for @unpairServerBody.
   ///
   /// In en, this message translates to:
-  /// **'New tickets will stop creating deliveries. Existing local tickets and delivery history stay on this phone.'**
+  /// **'Disconnect this Server? Its queued deliveries and local orders stay saved. Other Server connections remain available. Pair again to resume delivery to this Server.'**
   String get unpairServerBody;
 
   /// No description provided for @serverUnpaired.
@@ -2991,6 +2991,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress.'**
   String get sharedOrdersConflictBody;
+
+  /// No description provided for @serverForNewOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'For new orders'**
+  String get serverForNewOrders;
+
+  /// No description provided for @useServerForNewOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Use for new orders'**
+  String get useServerForNewOrders;
+
+  /// No description provided for @orderDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Order destination'**
+  String get orderDestination;
+
+  /// No description provided for @orderDestinationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New orders go to this Server. Updates stay with their original Server. All connected Servers continue to sync.'**
+  String get orderDestinationBody;
+
+  /// No description provided for @serverDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Server disconnected'**
+  String get serverDisconnected;
+
+  /// No description provided for @sharedOrdersServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {count} Servers'**
+  String sharedOrdersServers(int count);
 }
 
 class _AppLocalizationsDelegate

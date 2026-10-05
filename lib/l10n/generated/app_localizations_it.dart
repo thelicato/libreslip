@@ -1194,7 +1194,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get clientServerBody =>
-      'Associa un Server LibreSlip su questa rete locale. La stampa locale e lo storico continuano a funzionare anche quando il Server non è disponibile.';
+      'Associa Server locali sulla stessa rete Wi-Fi. Tutti i Server associati restano connessi. Scegli la destinazione dei nuovi ordini; le aggiunte mantengono quella originale. Stampa locale e cronologia funzionano offline.';
 
   @override
   String get noPairedServer => 'Nessun Server associato';
@@ -1239,7 +1239,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get unpairServerBody =>
-      'Le nuove comande non creeranno più consegne. Le comande locali e lo storico delle consegne restano su questo telefono.';
+      'Disconnettere questo Server? Le consegne in coda e gli ordini locali restano salvati. Le altre connessioni restano disponibili. Associalo di nuovo per riprendere le consegne a questo Server.';
 
   @override
   String get serverUnpaired => 'Server disassociato';
@@ -1679,6 +1679,27 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get sharedOrdersConflictBody =>
       'Scegli l’avanzamento da conservare per gli articoli modificati su questo Client. Gli altri articoli usano i conteggi più recenti del Server. Gli articoli Solo locale mantengono il loro avanzamento locale.';
+
+  @override
+  String get serverForNewOrders => 'Per i nuovi ordini';
+
+  @override
+  String get useServerForNewOrders => 'Usa per i nuovi ordini';
+
+  @override
+  String get orderDestination => 'Destinazione ordine';
+
+  @override
+  String get orderDestinationBody =>
+      'I nuovi ordini vanno a questo Server. Gli aggiornamenti mantengono il Server originale. Tutti i Server connessi continuano a sincronizzarsi.';
+
+  @override
+  String get serverDisconnected => 'Server originale disconnesso';
+
+  @override
+  String sharedOrdersServers(int count) {
+    return 'Condivisi con $count Server';
+  }
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).
