@@ -46,6 +46,12 @@ Transactional SQLite schema 15 adds bounded nullable price and currency pairs to
 
 Client Settings adds Require printer connection, on by default. Switching it off enables Save order and Save additions without a connected printer, saving the same immutable snapshots without creating print attempts. Eligible Server envelopes are ready immediately. Connected printing and explicit reprints retain their normal connection guards. The policy is captured for each new outbox row; changing the preference cannot release older Waiting for print entries or bypass earlier managed revisions. Settings format 8 persists and backs up the preference, while versions 1 through 7 migrate with it enabled. Database schema 15 and network protocol formats remain unchanged.
 
+## 7. Unnamed order dividers: implemented
+
+Order dividers replaces the named course composer with Add divider. Add items, insert a boundary and add the next items below it. No name entry or group-management dialog is needed. Standard and Compact Compose share teal rules with a small central detail; Client delivery progress, Server cards and details, history, ticket previews, printing and PDFs retain the same split. Item arrows move editable lines across boundaries, and Remove last divider joins the last two sections without changing quantities, notes or identifiers. Empty repeated boundaries are prevented. Existing committed managed boundaries remain fixed and new orders start with no inherited divisions.
+
+The disabled-by-default setting retains the existing `courseGroupsEnabled` preference. Stable divider identifiers and automatic ordinal tokens reuse the bounded group snapshots, so database, archive and protocol formats remain unchanged. Existing saved named content stays immutable and retains its captions. Older grouped-order Servers preserve sections but display the token; updated Servers show an unlabelled rule.
+
 ## Validation and delivery
 
 Each step includes formatting, analysis, relevant automated checks, localised responsive render inspection, source ZIP and a development-key Android preview when buildable. Changes to persistence, protocols or restore require migration, interruption and invalid-restore tests. Automated byte transmission and rendered previews do not establish physical printer output; Android and physical hardware checks must be reported separately.

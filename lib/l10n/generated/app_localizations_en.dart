@@ -393,11 +393,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add an item to this draft without saving it to your reusable shelf.';
 
   @override
-  String get courseGroups => 'Course groups';
+  String get courseGroups => 'Order dividers';
 
   @override
   String get courseGroupsBody =>
-      'Separate items into named courses. Off by default. Turning this off applies to new orders; existing groups are preserved.';
+      'Separate items with a divider, without naming groups. Off by default. Existing divisions remain when this is turned off.';
 
   @override
   String get course => 'Course';
@@ -426,7 +426,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use a unique name of 1 to 40 characters, without line breaks.';
 
   @override
-  String get courseLimit => 'You can add up to 20 courses to an order.';
+  String get courseLimit => 'You can add up to 20 dividers to an order.';
 
   @override
   String get courseMoveUp => 'Move course earlier';
@@ -442,7 +442,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Items in this course will move to Ungrouped. Quantities and notes are kept.';
 
   @override
-  String get groupedOrderSummary => 'Order by course';
+  String get groupedOrderSummary => 'Order summary';
 
   @override
   String get deliveryCoursesUnsupported =>
@@ -1605,6 +1605,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderSavedWithoutPrinting => 'Order saved without printing.';
+
+  @override
+  String get addDivider => 'Add divider';
+
+  @override
+  String get removeDivider => 'Remove last divider';
+
+  @override
+  String get orderDivider => 'Order divider';
+
+  @override
+  String get dividerEmptyBody => 'Add the next items below this divider.';
+
+  @override
+  String get moveAboveDivider => 'Move above divider';
+
+  @override
+  String get moveBelowDivider => 'Move below divider';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

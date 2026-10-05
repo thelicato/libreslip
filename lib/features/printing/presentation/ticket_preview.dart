@@ -108,15 +108,16 @@ class TicketPreview extends StatelessWidget {
               ],
               const _Rule(),
               for (final section in document.sections) ...[
-                if (document.courses.isNotEmpty) ...[
+                if (document.showsSectionBoundary(section)) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    section.course?.name ?? document.ungroupedLabel,
-                    style: TextStyle(
-                      fontSize: previewSize(typography.details),
-                      fontWeight: FontWeight.w700,
+                  if (document.sectionLabel(section).isNotEmpty)
+                    Text(
+                      document.sectionLabel(section),
+                      style: TextStyle(
+                        fontSize: previewSize(typography.details),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
                   const _Rule(),
                 ],
                 for (final line in section.lines)

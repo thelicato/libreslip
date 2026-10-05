@@ -295,6 +295,72 @@ class OrderWorkspaceController extends ChangeNotifier {
     );
   }
 
+  bool get canAddDivider {
+    final draft = activeDraft;
+    if (saving ||
+        draft == null ||
+        !courseControlsAvailable ||
+        draft.courses.length >= OrderCourse.maxCount ||
+        (draft.lines.isEmpty && editingOrder == null)) {
+      return false;
+    }
+    final last = draft.courses.lastOrNull;
+    return last == null ||
+        !last.isDivider ||
+        draft.lines.any((line) => line.courseId == last.id) ||
+        (editingOrder?.lines.any((line) => line.courseId == last.id) ?? false);
+  }
+
+  bool addDivider() {
+    if (!canAddDivider) return false;
+    final draft = activeDraft!;
+    var ordinal = 1;
+    while (draft.courses.any((course) => course.name == '#$ordinal')) {
+      ordinal++;
+    }
+    final divider = OrderCourse.divider(id: createLocalId(), ordinal: ordinal);
+    _replaceActive(
+      draft.copyWith(
+        courses: [...draft.courses, divider],
+        activeCourseId: divider.id,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+    return true;
+  }
+
+  void removeDivider(String id) {
+    final draft = activeDraft;
+    if (saving ||
+        draft == null ||
+        !courseControlsAvailable ||
+        editingOrder?.courses.any((course) => course.id == id) == true) {
+      return;
+    }
+    final index = draft.courses.indexWhere(
+      (course) => course.id == id && course.isDivider,
+    );
+    if (index < 0) return;
+    final previous = index == 0 ? null : draft.courses[index - 1].id;
+    _replaceActive(
+      draft.copyWith(
+        courses: draft.courses.where((course) => course.id != id).toList(),
+        activeCourseId: draft.activeCourseId == id
+            ? previous
+            : draft.activeCourseId,
+        clearActiveCourse: draft.activeCourseId == id && previous == null,
+        lines: [
+          for (final line in draft.lines)
+            if (line.courseId == id)
+              line.copyWith(courseId: previous, clearCourse: previous == null)
+            else
+              line,
+        ],
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
   bool saveCourse(String name, {String? id}) {
     final draft = activeDraft;
     if (saving || draft == null || !courseControlsAvailable) return false;
@@ -521,11 +587,7 @@ class OrderWorkspaceController extends ChangeNotifier {
       managedOrders = await _repository.loadManagedOrders();
       nextOrderNumber = await _repository.loadNextOrderNumber();
       if (drafts.isEmpty) {
-        var replacement = await _repository.createDraft();
-        if (features.courseGroupsEnabled && draft.courses.isNotEmpty) {
-          replacement = replacement.copyWith(courses: draft.courses);
-          await _repository.saveDraft(replacement);
-        }
+        final replacement = await _repository.createDraft();
         drafts = [replacement];
       }
       activeDraftId = drafts.first.id;

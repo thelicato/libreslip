@@ -3,6 +3,13 @@ import 'dart:convert';
 class OrderCourse {
   const OrderCourse({required this.id, required this.name});
 
+  /// Retains the existing archive and wire shape without asking for a title.
+  factory OrderCourse.divider({required String id, required int ordinal}) =>
+      OrderCourse(id: 'divider-$id', name: '#$ordinal');
+
+  bool get isDivider =>
+      id.startsWith('divider-') && RegExp(r'^#[1-9][0-9]*$').hasMatch(name);
+
   static const maxCount = 20;
   static const maxNameLength = 40;
   final String id;

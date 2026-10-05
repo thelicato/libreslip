@@ -395,11 +395,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiungi un articolo a questa bozza senza salvarlo tra quelli riutilizzabili.';
 
   @override
-  String get courseGroups => 'Gruppi di portata';
+  String get courseGroups => 'Separatori ordine';
 
   @override
   String get courseGroupsBody =>
-      'Separa gli articoli in portate con un nome. Disattivato inizialmente. La disattivazione vale per i nuovi ordini; i gruppi esistenti restano.';
+      'Separa gli articoli con un divisore, senza dare un nome ai gruppi. Disattivato inizialmente. Le divisioni esistenti restano dopo la disattivazione.';
 
   @override
   String get course => 'Portata';
@@ -427,7 +427,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Usa un nome univoco da 1 a 40 caratteri, senza interruzioni di riga.';
 
   @override
-  String get courseLimit => 'Puoi aggiungere fino a 20 portate a un ordine.';
+  String get courseLimit => 'Puoi aggiungere fino a 20 divisori a un ordine.';
 
   @override
   String get courseMoveUp => 'Anticipa portata';
@@ -443,7 +443,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Gli articoli di questa portata passano a Senza gruppo. Quantità e note restano.';
 
   @override
-  String get groupedOrderSummary => 'Ordine per portata';
+  String get groupedOrderSummary => 'Riepilogo ordine';
 
   @override
   String get deliveryCoursesUnsupported =>
@@ -1619,6 +1619,25 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get orderSavedWithoutPrinting => 'Ordine salvato senza stampa.';
+
+  @override
+  String get addDivider => 'Aggiungi divisore';
+
+  @override
+  String get removeDivider => 'Rimuovi ultimo divisore';
+
+  @override
+  String get orderDivider => 'Divisore ordine';
+
+  @override
+  String get dividerEmptyBody =>
+      'Aggiungi i prossimi articoli sotto questo divisore.';
+
+  @override
+  String get moveAboveDivider => 'Sposta sopra il divisore';
+
+  @override
+  String get moveBelowDivider => 'Sposta sotto il divisore';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

@@ -131,12 +131,10 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
           ],
           pw.Divider(),
           for (final section in document.sections) ...[
-            if (document.courses.isNotEmpty) ...[
+            if (document.showsSectionBoundary(section)) ...[
               pw.SizedBox(height: 5),
-              pw.Text(
-                section.course?.name ?? document.ungroupedLabel,
-                style: detailsBold,
-              ),
+              if (document.sectionLabel(section).isNotEmpty)
+                pw.Text(document.sectionLabel(section), style: detailsBold),
               pw.Divider(),
             ],
             for (final line in section.lines)

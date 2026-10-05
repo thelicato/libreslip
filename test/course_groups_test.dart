@@ -134,8 +134,8 @@ void main() {
       'Second course',
       'First course',
     ]);
-    expect(recovered.activeDraft!.courses, hasLength(2));
-    recovered.saveCourse('Changed name', id: secondCourse);
+    expect(recovered.activeDraft!.courses, isEmpty);
+    recovered.saveCourse('Changed name');
     await recovered.flushWrites();
     expect(
       (await second.loadTickets()).single.courses.first.name,
@@ -382,25 +382,28 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('nav-2')));
         await tester.pumpAndSettle();
-        final add = find.byKey(const ValueKey('add-course'));
-        await tester.ensureVisible(add);
-        await tester.tap(add);
-        await tester.pumpAndSettle();
-        await tester.enterText(
-          find.byKey(const ValueKey('course-name-input')),
-          'First course',
-        );
-        await tester.tap(find.byKey(const ValueKey('save-course')));
-        await tester.pumpAndSettle();
         final item = find.byKey(
           ValueKey('compose-item-${orders.items.single.id}'),
         );
         await tester.ensureVisible(item);
         await tester.tap(item);
         await tester.pumpAndSettle();
-        orders.saveCourse('Second course');
+        final add = find.byKey(const ValueKey('add-divider'));
+        await tester.ensureVisible(add);
         await tester.pumpAndSettle();
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+        final divider = orders.activeDraft!.courses.single;
+        expect(divider.isDivider, isTrue);
+        expect(
+          find.byKey(ValueKey('order-divider-${divider.id}')),
+          findsOneWidget,
+        );
+        expect(find.text(divider.name), findsNothing);
         await tester.ensureVisible(item);
+        await tester.pumpAndSettle();
         await tester.tap(item);
         await tester.pumpAndSettle();
         expect(orders.activeDraft!.lines, hasLength(2));

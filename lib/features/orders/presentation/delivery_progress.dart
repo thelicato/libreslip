@@ -62,7 +62,7 @@ class DeliveryProgress extends StatelessWidget {
           (line) => line.courseId,
         )) ...[
           if (courses.isNotEmpty)
-            CourseHeading(name: section.course?.name ?? l.ungrouped),
+            CourseHeading(course: section.course, courses: courses),
           for (final completed in [false, true])
             if (section.lines.any(
               (line) => (line.delivered == line.quantity) == completed,

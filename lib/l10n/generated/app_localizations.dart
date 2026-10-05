@@ -823,13 +823,13 @@ abstract class AppLocalizations {
   /// No description provided for @courseGroups.
   ///
   /// In en, this message translates to:
-  /// **'Course groups'**
+  /// **'Order dividers'**
   String get courseGroups;
 
   /// No description provided for @courseGroupsBody.
   ///
   /// In en, this message translates to:
-  /// **'Separate items into named courses. Off by default. Turning this off applies to new orders; existing groups are preserved.'**
+  /// **'Separate items with a divider, without naming groups. Off by default. Existing divisions remain when this is turned off.'**
   String get courseGroupsBody;
 
   /// No description provided for @course.
@@ -883,7 +883,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseLimit.
   ///
   /// In en, this message translates to:
-  /// **'You can add up to 20 courses to an order.'**
+  /// **'You can add up to 20 dividers to an order.'**
   String get courseLimit;
 
   /// No description provided for @courseMoveUp.
@@ -913,7 +913,7 @@ abstract class AppLocalizations {
   /// No description provided for @groupedOrderSummary.
   ///
   /// In en, this message translates to:
-  /// **'Order by course'**
+  /// **'Order summary'**
   String get groupedOrderSummary;
 
   /// No description provided for @deliveryCoursesUnsupported.
@@ -2895,6 +2895,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Order saved without printing.'**
   String get orderSavedWithoutPrinting;
+
+  /// No description provided for @addDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Add divider'**
+  String get addDivider;
+
+  /// No description provided for @removeDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove last divider'**
+  String get removeDivider;
+
+  /// No description provided for @orderDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Order divider'**
+  String get orderDivider;
+
+  /// No description provided for @dividerEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the next items below this divider.'**
+  String get dividerEmptyBody;
+
+  /// No description provided for @moveAboveDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Move above divider'**
+  String get moveAboveDivider;
+
+  /// No description provided for @moveBelowDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'Move below divider'**
+  String get moveBelowDivider;
 }
 
 class _AppLocalizationsDelegate

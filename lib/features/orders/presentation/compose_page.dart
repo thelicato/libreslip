@@ -91,13 +91,6 @@ class ComposePageState extends State<ComposePage> {
             ),
             const SizedBox(height: 12),
           ],
-          if (widget.controller.courseControlsAvailable) ...[
-            CourseComposer(
-              controller: widget.controller,
-              busy: widget.controller.saving || widget.printing.value,
-            ),
-            const SizedBox(height: 12),
-          ],
           LayoutBuilder(
             builder: (context, constraints) {
               if (widget.settings.compactCompose) {
@@ -112,6 +105,13 @@ class ComposePageState extends State<ComposePage> {
                           orderReferenceEnabled: true,
                           orderNotesEnabled: true,
                         ),
+                  dividerControl: widget.controller.courseControlsAvailable
+                      ? CourseComposer(
+                          controller: widget.controller,
+                          busy:
+                              widget.controller.saving || widget.printing.value,
+                        )
+                      : null,
                   grouped: widget.controller.courseControlsAvailable,
                   onQuantityChanged: widget.controller.setQuantity,
                   onRemoveLine: widget.controller.removeLine,
@@ -156,6 +156,12 @@ class ComposePageState extends State<ComposePage> {
                         orderReferenceEnabled: true,
                         orderNotesEnabled: true,
                       ),
+                dividerControl: widget.controller.courseControlsAvailable
+                    ? CourseComposer(
+                        controller: widget.controller,
+                        busy: widget.controller.saving || widget.printing.value,
+                      )
+                    : null,
                 grouped: widget.controller.courseControlsAvailable,
                 onLineCourseChanged: widget.controller.setLineCourse,
                 busy: widget.controller.saving || widget.printing.value,
@@ -465,6 +471,7 @@ class _CompactComposePanel extends StatelessWidget {
     required this.draft,
     required this.orderNumber,
     required this.features,
+    this.dividerControl,
     required this.grouped,
     required this.onQuantityChanged,
     required this.onRemoveLine,
@@ -487,6 +494,7 @@ class _CompactComposePanel extends StatelessWidget {
   final OrderDraft draft;
   final int orderNumber;
   final OrderFeatureSettings features;
+  final Widget? dividerControl;
   final bool grouped;
   final void Function(String, int) onQuantityChanged;
   final ValueChanged<String> onRemoveLine;
@@ -674,6 +682,7 @@ class _CompactComposePanel extends StatelessWidget {
                 onLineCourseChanged: onLineCourseChanged,
               ),
             ],
+            ?dividerControl,
           ],
         ),
       ),
@@ -932,6 +941,7 @@ class _OrderPanel extends StatelessWidget {
     required this.draft,
     required this.orderNumber,
     required this.features,
+    this.dividerControl,
     required this.grouped,
     required this.onLineCourseChanged,
     required this.busy,
@@ -947,6 +957,7 @@ class _OrderPanel extends StatelessWidget {
   final OrderDraft draft;
   final int orderNumber;
   final OrderFeatureSettings features;
+  final Widget? dividerControl;
   final bool grouped;
   final void Function(String, String?) onLineCourseChanged;
   final bool busy;
@@ -1031,6 +1042,7 @@ class _OrderPanel extends StatelessWidget {
               onRemoveLine: onRemoveLine,
               onLineCourseChanged: onLineCourseChanged,
             ),
+          ?dividerControl,
           if (features.orderNotesEnabled) ...[
             const SizedBox(height: 12),
             TextFormField(
@@ -1085,26 +1097,17 @@ class _OrderLines extends StatelessWidget {
         (line) => line.courseId,
       )) ...[
         if (grouped)
-          CourseHeading(
-            name:
-                section.course?.name ?? AppLocalizations.of(context).ungrouped,
-          ),
+          CourseHeading(course: section.course, courses: draft.courses),
         for (final line in section.lines)
           _OrderLineCard(
             line: line,
             preparationNotesEnabled: preparationNotesEnabled,
-            coursePicker: grouped
-                ? DropdownButtonFormField<String>(
-                    key: ValueKey('line-course-${line.id}-${line.courseId}'),
-                    initialValue: line.courseId,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context).course,
-                    ),
-                    items: courseChoices(context, draft.courses),
-                    onChanged: busy
-                        ? null
-                        : (value) => onLineCourseChanged(line.id, value),
+            coursePicker: grouped && draft.courses.isNotEmpty
+                ? _LineDividerMoves(
+                    draft: draft,
+                    line: line,
+                    busy: busy,
+                    onMove: onLineCourseChanged,
                   )
                 : null,
             onQuantityChanged: (value) => onQuantityChanged(line.id, value),
@@ -1112,8 +1115,62 @@ class _OrderLines extends StatelessWidget {
             onRemove: () => onRemoveLine(line.id),
           ),
       ],
+      if (grouped &&
+          draft.courses.lastOrNull?.isDivider == true &&
+          !draft.lines.any(
+            (line) => line.courseId == draft.courses.last.id,
+          )) ...[
+        CourseHeading(course: draft.courses.last, courses: draft.courses),
+        Text(
+          AppLocalizations.of(context).dividerEmptyBody,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
     ],
   );
+}
+
+class _LineDividerMoves extends StatelessWidget {
+  const _LineDividerMoves({
+    required this.draft,
+    required this.line,
+    required this.busy,
+    required this.onMove,
+  });
+  final OrderDraft draft;
+  final TicketLine line;
+  final bool busy;
+  final void Function(String, String?) onMove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final ids = <String?>[null, ...draft.courses.map((course) => course.id)];
+    final index = ids.indexOf(line.courseId);
+    return Wrap(
+      alignment: WrapAlignment.end,
+      children: [
+        IconButton(
+          key: ValueKey('line-above-divider-${line.id}'),
+          tooltip: l.moveAboveDivider,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          onPressed: busy || index <= 0
+              ? null
+              : () => onMove(line.id, ids[index - 1]),
+          icon: const Icon(Icons.keyboard_arrow_up_rounded),
+        ),
+        IconButton(
+          key: ValueKey('line-below-divider-${line.id}'),
+          tooltip: l.moveBelowDivider,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          onPressed: busy || index < 0 || index >= ids.length - 1
+              ? null
+              : () => onMove(line.id, ids[index + 1]),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+        ),
+      ],
+    );
+  }
 }
 
 class _OrderLineCard extends StatelessWidget {

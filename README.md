@@ -26,7 +26,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Create a reusable catalogue with categories, search and optional item images.
 - Compose tickets with quantities, preparation notes, order notes and an optional order title or table name. Titles appear prominently in Compose, ticket history and the Server board, alongside the order number. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
-- Optionally separate items into named, ordered courses in Compose, Server orders, ticket previews, printed tickets and PDFs.
+- Optionally separate items with unnamed visual dividers in Compose, Server orders, ticket previews, printed tickets and PDFs.
 - Optionally keep orders open, add items later and print labelled additions while retaining every saved revision. Track delivered quantities and undo deliveries within each course.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
@@ -43,9 +43,9 @@ A paired LibreSlip Server is optional. If it becomes unavailable, local composit
 
 Use **Order title / table** in Compose to name an order, for example Table 4 or Garden. Leave it blank to use the order number alone, or disable the field in Client Settings under Order fields. Existing table references serve as titles and keep their content. Saved titles remain visible even when the field is disabled for new tickets.
 
-Enable **Course groups** in Client Settings under Order fields to organise items into Drinks, First course or other names. Select a course before adding items, or move an existing line using its Course selector. Manage courses to rename, reorder or remove them. Removing a course keeps its items under Ungrouped. The same product in two courses has separate quantities and notes. In Compact Compose, catalogue quantities apply to the selected course; the order summary shows every course.
+Enable **Order dividers** in Client Settings under Order fields. Add the first items, then tap **Add divider** in the order summary. The next selected items go below a teal separator, with no name to enter. Use the arrow controls on a selected item to move it above or below a divider; **Remove last divider** joins the last two sections without changing quantities or notes. In Compact Compose, catalogue quantities apply below the latest divider and the summary shows all sections. Each new order starts without dividers.
 
-Course groups are off by default. When enabled, new orders reuse your course names and ordering. Disabling them preserves the current order and saved tickets; the next order uses the ordinary layout. Grouped delivery requires an updated Server; an older Server leaves the delivery available for explicit retry after updating.
+Order dividers are off by default. Disabling them preserves the current composition and saved tickets. Existing named groups retain their saved captions. Updated Servers show the same visual separators; older grouped-order Servers preserve the split but show its automatic marker. Preparation tickets and PDFs use an unlabelled rule between sections.
 
 Enable **Keep orders open** under Order fields to retain new orders for later additions. After printing or saving, choose **Active orders** in Compose, select an order and add drinks or other catalogue items. Finish the current composition before selecting another order. **Print additions** saves a new full-order revision and prints only the new items, with the original order number and a revision label. Ticket details retain the complete snapshot and explicit reprint recovery. Previously submitted content stays fixed. Cancel additions discards only the current additions; Close order ends further additions without deleting history or marking the Server order Done. Existing active orders remain available after disabling the option.
 

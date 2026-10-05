@@ -91,15 +91,17 @@ class EscPosTicketEncoder {
     _line(output, '-' * profile.charactersPerLine);
 
     for (final section in document.sections) {
-      if (document.courses.isNotEmpty) {
+      if (document.showsSectionBoundary(section)) {
         _line(output, '');
-        await _writeStyled(
-          output,
-          section.course?.name ?? document.ungroupedLabel,
-          bold: true,
-          fontSize: typography.details,
-          nativeFontSize: TicketTypography.defaultDetails,
-        );
+        if (document.sectionLabel(section).isNotEmpty) {
+          await _writeStyled(
+            output,
+            document.sectionLabel(section),
+            bold: true,
+            fontSize: typography.details,
+            nativeFontSize: TicketTypography.defaultDetails,
+          );
+        }
         _line(output, '-' * profile.charactersPerLine);
       }
       for (final line in section.lines) {

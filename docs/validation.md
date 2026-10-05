@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Unnamed order dividers, 5 October 2026
+
+Validated step 7 with `VERSION` unchanged at 1.7.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 100 Dart files passed formatting checks and `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 192 active tests passed; the normal run skipped only opt-in render capture. Existing migration, optional printer, Server delivery, progress exchange and invalid or interrupted restore tests passed. |
+| One-button composition | English and Italian tests covered standard tablet and doubled-text phone layouts, Compact Compose and landscape. Add divider opened no dialog, immediately created a visible boundary and placed later items below it without displaying a name. Repeated empty boundaries were prevented. New orders inherited no group inventory. |
+| Persistence and printing | Fresh controllers recovered divider identities, active selection, quantities and notes after database reopen. Removing the latest boundary merged its items into the preceding section without losing content. Saved managed boundaries could not be removed during additions and earlier immutable revisions remained intact. ESC/POS content placed an unlabelled rule between sections; PDF generation passed. Interrupted printing recovered as Uncertain with the exact original payload. |
+| Archives and Server receipt | Full backup restore retained divider metadata, active selection and line relationships. The existing envelope codec round-tripped the same content and checksum. Server storage retained the split and duplicate receipt left one order. Existing named snapshots and printed captions retained compatibility. No database, archive or protocol version changed. |
+| Responsive and localised rendering | Seventy captures passed framework and missed-tap checks. Inspected full-width centred teal dividers in English tablet Compose, Italian Compact Compose, a 320-pixel Italian doubled-text layout, Italian Server cards, English Server details and the Italian ticket preview. Legacy captions wrap and the new unnamed sections show no stored ordinal tokens. |
+| Android preview APK | Fresh 1.7.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle APK outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial or physical printer verification was performed. Host database, widget and encoded checks do not establish device behaviour or paper output. |
+| Compatibility | Order dividers remains optional and off by default. Existing named group content remains immutable and keeps its captions. Updated Servers show unnamed visual rules; older grouped-order Servers preserve section relationships but display automatic markers. Actual printing and optional printer readiness retain their existing behaviour. |
+
 ## Optional printer connection, 5 October 2026
 
 Validated step 6 with `VERSION` unchanged at 1.7.0.

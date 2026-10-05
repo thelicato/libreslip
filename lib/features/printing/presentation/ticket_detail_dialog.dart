@@ -5,6 +5,7 @@ import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/presentation/client_delivery_status.dart';
 import '../../orders/domain/order_models.dart';
 import '../../orders/presentation/order_identity.dart';
+import '../../orders/presentation/course_composer.dart';
 import '../../orders/presentation/order_estimate.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/ticket_output_controller.dart';
@@ -74,9 +75,9 @@ class TicketDetailDialog extends StatelessWidget {
                       (line) => line.courseId,
                     )) ...[
                       if (ticket.courses.isNotEmpty)
-                        Text(
-                          section.course?.name ?? l.ungrouped,
-                          style: Theme.of(context).textTheme.titleSmall,
+                        CourseHeading(
+                          course: section.course,
+                          courses: ticket.courses,
                         ),
                       for (final line in section.lines)
                         ListTile(

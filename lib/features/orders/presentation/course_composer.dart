@@ -10,7 +10,6 @@ class CourseComposer extends StatelessWidget {
     required this.controller,
     this.busy = false,
   });
-
   final OrderWorkspaceController controller;
   final bool busy;
 
@@ -18,306 +17,124 @@ class CourseComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final draft = controller.activeDraft!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey(
-                'active-course-${draft.id}-${draft.activeCourseId}',
+    final last = draft.courses.lastOrNull;
+    final removable =
+        last?.isDivider == true &&
+        !(controller.editingOrder?.courses.any(
+              (course) => course.id == last!.id,
+            ) ??
+            false);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const ValueKey('add-divider'),
+                onPressed: busy || !controller.canAddDivider
+                    ? null
+                    : controller.addDivider,
+                icon: const Icon(Icons.horizontal_rule_rounded),
+                label: Text(l.addDivider),
               ),
-              initialValue: draft.activeCourseId,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: l.course),
-              items: courseChoices(context, draft.courses),
-              onChanged: busy || controller.saving
-                  ? null
-                  : controller.selectCourse,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
+              if (removable)
                 TextButton.icon(
-                  key: const ValueKey('add-course'),
-                  onPressed:
-                      busy ||
-                          controller.saving ||
-                          draft.courses.length >= OrderCourse.maxCount
+                  key: const ValueKey('remove-divider'),
+                  onPressed: busy || controller.saving
                       ? null
-                      : () => _editCourse(context, controller),
-                  icon: const Icon(Icons.add_rounded),
-                  label: Text(l.addCourse),
+                      : () => controller.removeDivider(last!.id),
+                  icon: const Icon(Icons.undo_rounded),
+                  label: Text(l.removeDivider),
                 ),
-                TextButton.icon(
-                  key: const ValueKey('manage-courses'),
-                  onPressed: busy || controller.saving || draft.courses.isEmpty
-                      ? null
-                      : () => showDialog<void>(
-                          context: context,
-                          builder: (_) =>
-                              _CoursesDialog(controller: controller),
-                        ),
-                  icon: const Icon(Icons.view_list_rounded),
-                  label: Text(l.manageCourses),
-                ),
-              ],
-            ),
-            if (draft.courses.length >= OrderCourse.maxCount)
-              Text(l.courseLimit),
-          ],
-        ),
+            ],
+          ),
+          if (draft.courses.length >= OrderCourse.maxCount) Text(l.courseLimit),
+        ],
       ),
     );
   }
 }
 
-List<DropdownMenuItem<String>> courseChoices(
-  BuildContext context,
-  List<OrderCourse> courses,
-) => [
-  DropdownMenuItem(
-    value: null,
-    child: Text(AppLocalizations.of(context).ungrouped),
-  ),
-  for (final course in courses)
-    DropdownMenuItem(
-      value: course.id,
-      child: Text(course.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-    ),
-];
-
-Future<void> _editCourse(
-  BuildContext context,
-  OrderWorkspaceController controller, [
-  OrderCourse? course,
-]) => showDialog<void>(
-  context: context,
-  builder: (_) => _CourseEditDialog(controller: controller, course: course),
-);
-
-class _CourseEditDialog extends StatefulWidget {
-  const _CourseEditDialog({required this.controller, this.course});
-  final OrderWorkspaceController controller;
+/// One visual language for composition, history and both preparation boards.
+class CourseHeading extends StatelessWidget {
+  const CourseHeading({super.key, required this.course, required this.courses});
   final OrderCourse? course;
-
-  @override
-  State<_CourseEditDialog> createState() => _CourseEditDialogState();
-}
-
-class _CourseEditDialogState extends State<_CourseEditDialog> {
-  late final _input = TextEditingController(text: widget.course?.name ?? '');
-  final _form = GlobalKey<FormState>();
-
-  @override
-  void dispose() {
-    _input.dispose();
-    super.dispose();
-  }
+  final List<OrderCourse> courses;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(widget.course == null ? l.addCourse : l.editCourse),
-      content: SizedBox(
-        width: 420,
-        child: Form(
-          key: _form,
-          child: TextFormField(
-            key: const ValueKey('course-name-input'),
-            controller: _input,
-            autofocus: true,
-            maxLength: OrderCourse.maxNameLength,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l.courseName,
-              hintText: l.courseNameHint,
+    if (course == null && courses.any((course) => course.isDivider)) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    final divider = course?.isDivider == true;
+    return Semantics(
+      label: divider ? l.orderDivider : null,
+      header: true,
+      child: Padding(
+        key: divider ? ValueKey('order-divider-${course!.id}') : null,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 1.5,
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
             ),
-            validator: (value) {
-              final name = (value ?? '').trim();
-              final courses = widget.controller.activeDraft!.courses;
-              if (widget.course == null &&
-                  courses.length >= OrderCourse.maxCount) {
-                return l.courseLimit;
-              }
-              if (name.isEmpty ||
-                  name.length > OrderCourse.maxNameLength ||
-                  RegExp(r'[\x00-\x1f\x7f]').hasMatch(name) ||
-                  courses.any(
-                    (course) =>
-                        course.id != widget.course?.id &&
-                        course.name.toLowerCase() == name.toLowerCase(),
-                  )) {
-                return l.courseNameInvalid;
-              }
-              return null;
-            },
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('save-course'),
-          onPressed: () {
-            if (_form.currentState!.validate() &&
-                widget.controller.saveCourse(
-                  _input.text,
-                  id: widget.course?.id,
-                )) {
-              Navigator.pop(context);
-            }
-          },
-          child: Text(l.save),
-        ),
-      ],
-    );
-  }
-}
-
-class _CoursesDialog extends StatelessWidget {
-  const _CoursesDialog({required this.controller});
-  final OrderWorkspaceController controller;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
-    builder: (context, _) {
-      final l = AppLocalizations.of(context);
-      final courses = controller.activeDraft?.courses ?? const <OrderCourse>[];
-      return AlertDialog(
-        title: Text(l.manageCourses),
-        content: SizedBox(
-          width: 460,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var index = 0; index < courses.length; index++) ...[
-                  Text(
-                    courses[index].name,
-                    style: Theme.of(context).textTheme.titleMedium,
+            if (divider)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
                   ),
-                  Wrap(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        key: ValueKey('course-up-${courses[index].id}'),
-                        onPressed: controller.editingOrder != null || index == 0
-                            ? null
-                            : () =>
-                                  controller.moveCourse(courses[index].id, -1),
-                        tooltip: l.courseMoveUp,
-                        icon: const Icon(Icons.arrow_upward_rounded),
-                      ),
-                      IconButton(
-                        key: ValueKey('course-down-${courses[index].id}'),
-                        onPressed:
-                            controller.editingOrder != null ||
-                                index == courses.length - 1
-                            ? null
-                            : () => controller.moveCourse(courses[index].id, 1),
-                        tooltip: l.courseMoveDown,
-                        icon: const Icon(Icons.arrow_downward_rounded),
-                      ),
-                      IconButton(
-                        onPressed:
-                            controller.editingOrder?.courses.any(
-                                  (course) => course.id == courses[index].id,
-                                ) ==
-                                true
-                            ? null
-                            : () => _editCourse(
-                                context,
-                                controller,
-                                courses[index],
-                              ),
-                        tooltip: l.editCourse,
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
-                      IconButton(
-                        key: ValueKey('remove-course-${courses[index].id}'),
-                        onPressed:
-                            controller.editingOrder?.courses.any(
-                                  (course) => course.id == courses[index].id,
-                                ) ==
-                                true
-                            ? null
-                            : () => _remove(context, courses[index]),
-                        tooltip: l.removeCourse,
-                        icon: const Icon(Icons.delete_outline_rounded),
-                      ),
+                      for (var i = 0; i < 3; i++)
+                        Container(
+                          width: 4,
+                          height: 4,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                     ],
                   ),
-                  const Divider(),
-                ],
-              ],
+                ),
+              )
+            else
+              Flexible(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    course?.name ?? l.ungrouped,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Container(
+                height: 1.5,
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l.close),
-          ),
-        ],
-      );
-    },
-  );
-
-  Future<void> _remove(BuildContext context, OrderCourse course) async {
-    final l = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(course.name),
-        content: Text(l.removeCourseBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l.cancel),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-remove-course'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l.removeCourse),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) controller.removeCourse(course.id);
-  }
-}
-
-class CourseHeading extends StatelessWidget {
-  const CourseHeading({super.key, required this.name});
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Semantics(
-      header: true,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 12, bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          name,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
+          ],
         ),
       ),
     );

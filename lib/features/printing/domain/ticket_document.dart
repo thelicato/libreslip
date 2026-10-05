@@ -45,6 +45,16 @@ class TicketDocument {
     return courseSections(courses, lines, (line) => line.courseId);
   }
 
+  bool get usesDividers => courses.any((course) => course.isDivider);
+
+  bool showsSectionBoundary(CourseSection<TicketDocumentLine> section) =>
+      courses.isNotEmpty && (section.course != null || !usesDividers);
+
+  String sectionLabel(CourseSection<TicketDocumentLine> section) =>
+      section.course?.isDivider == true
+      ? ''
+      : section.course?.name ?? ungroupedLabel;
+
   factory TicketDocument.fromTicket({
     required SavedTicket ticket,
     required String fallbackHeading,

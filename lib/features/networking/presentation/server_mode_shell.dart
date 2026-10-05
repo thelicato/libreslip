@@ -725,7 +725,10 @@ class _OrderCard extends StatelessWidget {
                   (line) => line.courseId,
                 )) ...[
                   if (order.courses.isNotEmpty)
-                    CourseHeading(name: section.course?.name ?? l.ungrouped),
+                    CourseHeading(
+                      course: section.course,
+                      courses: order.courses,
+                    ),
                   for (
                     var index = 0;
                     index < section.lines.length;
@@ -893,7 +896,10 @@ class _OrderDialogContents extends StatelessWidget {
                   (line) => line.courseId,
                 )) ...[
                   if (order.courses.isNotEmpty)
-                    CourseHeading(name: section.course?.name ?? l.ungrouped),
+                    CourseHeading(
+                      course: section.course,
+                      courses: order.courses,
+                    ),
                   for (final line in section.lines) ...[
                     Text(
                       '${line.quantity}×  ${line.name}',

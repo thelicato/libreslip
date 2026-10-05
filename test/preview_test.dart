@@ -125,6 +125,55 @@ void main() {
         ThemeMode.light,
         2,
       ),
+      (
+        'dividers-compose-tablet-en',
+        const Size(1440, 1300),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'dividers-compose-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'dividers-compact-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'dividers-compose-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'dividers-server-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'dividers-server-dialog-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'dividers-ticket-preview-phone-it',
+        const Size(520, 1200),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
       (
         'overview-dashboard-phone-it',
@@ -473,7 +522,9 @@ void main() {
     ]) {
       final managedPreview = name.startsWith('managed-');
       final pricePreview = name.startsWith('prices-');
-      final groupedPreview = name.startsWith('courses-') || managedPreview;
+      final dividerPreview = name.startsWith('dividers-');
+      final groupedPreview =
+          name.startsWith('courses-') || managedPreview || dividerPreview;
       tester.view.physicalSize = size;
       tester.platformDispatcher.textScaleFactorTestValue =
           name.endsWith('large-text') ? 2 : 1;
@@ -495,7 +546,8 @@ void main() {
               name == 'prices-compact-phone-it' ||
               name == 'compose-compact-phone-it' ||
               name == 'courses-compact-phone-it' ||
-              name == 'managed-compact-phone-it',
+              name == 'managed-compact-phone-it' ||
+              name == 'dividers-compact-phone-it',
         );
       final controller = SettingsController(settingsStore);
       await controller.load();
@@ -541,7 +593,9 @@ void main() {
             heading: 'Cucina',
             reference: 'Tavolo 4',
             orderNote: 'Portare insieme',
-            courses: groupedPreview
+            courses: dividerPreview
+                ? [OrderCourse.divider(id: 'preview', ordinal: 1)]
+                : groupedPreview
                 ? const [
                     OrderCourse(id: 'first', name: 'Primo'),
                     OrderCourse(id: 'second', name: 'Secondo'),
@@ -553,14 +607,18 @@ void main() {
                 name: 'Toast ai funghi',
                 quantity: 2,
                 preparationNote: 'Senza cipolla',
-                courseId: groupedPreview ? 'first' : null,
+                courseId: dividerPreview
+                    ? null
+                    : groupedPreview
+                    ? 'first'
+                    : null,
               ),
               if (groupedPreview)
                 DeliveryLine(
                   id: managedPreview ? 'vegetables-line' : null,
                   name: 'Verdure arrosto',
                   quantity: 1,
-                  courseId: 'second',
+                  courseId: dividerPreview ? 'divider-preview' : 'second',
                 ),
             ],
           ),
@@ -700,7 +758,9 @@ void main() {
               managedOrdersEnabled: managedPreview,
             ),
           );
-          orders.saveCourse(language == 'it' ? 'Primo' : 'First course');
+          if (!dividerPreview) {
+            orders.saveCourse(language == 'it' ? 'Primo' : 'First course');
+          }
         }
         orders.addCatalogueItem(orders.items.single);
         if (pricePreview) {
@@ -740,7 +800,11 @@ void main() {
             orders.activeDraft!.lines.single.id,
             language == 'it' ? 'Uno senza pane' : 'One without bread',
           );
-          orders.saveCourse(language == 'it' ? 'Secondo' : 'Second course');
+          if (dividerPreview) {
+            orders.addDivider();
+          } else {
+            orders.saveCourse(language == 'it' ? 'Secondo' : 'Second course');
+          }
           await orders.saveItem(
             name: language == 'it' ? 'Verdure arrosto' : 'Roast vegetables',
           );
@@ -937,12 +1001,20 @@ void main() {
         }
       } else if (groupedPreview && page == 2) {
         if (name == 'courses-manage-phone-it-large-text') {
-          final manage = find.byKey(const ValueKey('manage-courses'));
+          final manage = find.byKey(const ValueKey('add-divider'));
           await tester.ensureVisible(manage);
           await tester.tap(manage);
           await tester.pumpAndSettle();
         } else if (size.width < 760) {
-          await tester.ensureVisible(find.byType(CourseHeading).first);
+          await tester.ensureVisible(
+            dividerPreview
+                ? find.byKey(
+                    ValueKey(
+                      'order-divider-${orders.activeDraft!.courses.last.id}',
+                    ),
+                  )
+                : find.byType(CourseHeading).first,
+          );
           await tester.pumpAndSettle();
         }
       }
@@ -954,6 +1026,7 @@ void main() {
       }
       if (name == 'server-order-dialog-tablet-en' ||
           name == 'courses-server-dialog-tablet-en' ||
+          name == 'dividers-server-dialog-tablet-en' ||
           name == 'managed-server-dialog-tablet-en' ||
           name.contains('delivery-server-dialog')) {
         final identity = find.text(language == 'it' ? 'Ordine 12' : 'Order 12');
@@ -1011,6 +1084,7 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (name == 'ticket-preview-phone-it' ||
+          name == 'dividers-ticket-preview-phone-it' ||
           name == 'courses-ticket-preview-phone-it' ||
           name == 'managed-ticket-preview-phone-it') {
         await tester.tap(find.text('Comanda 1').first);
