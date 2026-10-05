@@ -162,6 +162,7 @@ class OrderDraft {
 
   OrderDraft copyWith({
     DateTime? updatedAt,
+    int? baseRevision,
     String? reference,
     String? orderNote,
     List<TicketLine>? lines,
@@ -177,7 +178,7 @@ class OrderDraft {
     lines: lines ?? this.lines,
     courses: courses ?? this.courses,
     managedOrderId: managedOrderId,
-    baseRevision: baseRevision,
+    baseRevision: baseRevision ?? this.baseRevision,
     activeCourseId: clearActiveCourse
         ? null
         : activeCourseId ?? this.activeCourseId,

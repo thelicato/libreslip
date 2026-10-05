@@ -673,5 +673,29 @@
   "orderDivider": "Order divider",
   "dividerEmptyBody": "Add the next items below this divider.",
   "moveAboveDivider": "Move above divider",
-  "moveBelowDivider": "Move below divider"
+  "moveBelowDivider": "Move below divider",
+  "sharedOrdersWith": "Shared with {server}",
+  "sharedOrdersBody": "All Clients paired with this Server can add items and update deliveries. Orders refresh automatically while the app is open. Local only items and prices stay on this device.",
+  "sharedOrdersRefresh": "Refresh shared orders",
+  "sharedOrdersRefreshed": "Last refreshed {time}",
+  "sharedOrdersOffline": "Server unavailable. Saved orders and edits remain here and sync after reconnection.",
+  "sharedOrdersUnsupported": "This Server does not support shared orders. Update it to enable synchronisation.",
+  "sharedOrdersUnresolved": "Some deliveries need your review. Open their delivery progress to resolve the differences.",
+  "sharedOrdersLocalCloseBody": "Hide this order from this Client’s active orders? Its saved tickets stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.",
+  "@sharedOrdersWith": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "@sharedOrdersRefreshed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedOrdersPaused": "Shared synchronisation is paused. Enable Keep orders open and connect to this order’s Server to resume. Local changes remain saved.",
+  "sharedOrdersConflictBody": "Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress."
 }

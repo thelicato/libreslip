@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/brand_mark.dart';
 import '../features/networking/application/client_delivery_controller.dart';
+import '../features/networking/application/shared_orders_controller.dart';
 import '../features/networking/application/network_mode_controller.dart';
 import '../features/networking/application/server_inbox_controller.dart';
 import '../features/networking/domain/network_models.dart';
@@ -23,6 +24,7 @@ class LibreSlipApp extends StatelessWidget {
     this.networking,
     this.serverInbox,
     this.clientDelivery,
+    this.sharedOrders,
     this.printer,
     this.ticketOutput,
     this.portability,
@@ -33,6 +35,7 @@ class LibreSlipApp extends StatelessWidget {
   final NetworkModeController? networking;
   final ServerInboxController? serverInbox;
   final ClientDeliveryController? clientDelivery;
+  final SharedOrdersController? sharedOrders;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
@@ -44,6 +47,7 @@ class LibreSlipApp extends StatelessWidget {
       orders,
       ?networking,
       ?clientDelivery,
+      ?sharedOrders,
     ]),
     builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -90,6 +94,7 @@ class LibreSlipApp extends StatelessWidget {
                     orders: orders,
                     networking: networking,
                     clientDelivery: clientDelivery,
+                    sharedOrders: sharedOrders,
                     printer: printer,
                     ticketOutput: ticketOutput,
                     portability: portability,

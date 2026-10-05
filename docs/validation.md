@@ -1,5 +1,23 @@
 # Validation evidence
 
+## Shared managed orders, 5 October 2026
+
+Validated step 8 with `VERSION` unchanged at 1.7.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 105 Dart files passed formatting checks and final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 217 active tests passed; the normal run skipped only opt-in workspace capture. Existing printing, migration, localisation and invalid or interrupted restore tests passed. Shared-screen capture and five-second foreground refresh tests also passed. |
+| Shared content and concurrency | Separate Client and Server databases shared managed snapshots without importing catalogue rows, prices, ticket history or print jobs. Concurrent additions and unnamed dividers retained one Server order and identical shared line and divider ordering on both Clients. Each Client's saved ticket snapshots remained immutable. An originating Client appended safely before its first feed refresh. |
+| Progress and recovery | Disjoint delivery edits merged; same-line conflicts survived repeated polling and both explicit resolutions passed. Lost progress acknowledgements survived database close and reopen without undoing a later Server edit, including a local edit made while acknowledgement was pending. Lost addition acknowledgements retried the original identity without duplicating items. Offline edits and printer-gated additions retained their policy. |
+| Authenticated transport | Real pinned loopback HTTPS paired two distinct Clients, delivered another Client's addition, exchanged progress and propagated Done and Undo Done. Wrong tokens and mismatched Server identities were rejected. Ordinary tickets were excluded. Older Servers received no shared request before capability negotiation; unmapped original orders retained legacy delivery while shared mirrors never changed protocols. No physical two-phone LAN test was performed. |
+| Persistence, migration and archives | Schema 15 migration preserved saved content. Paginated inventories handled 52 orders and unchanged refreshes read revision headers without fetching snapshots. Incoming content rebased an unsaved addition without replacing its lines or selected divider. Failed settings replacement, simulated interrupted restore and malformed private recovery retained the exact pending identity. Fresh-install backup restore excluded pairing and shared metadata. Successful replacement rediscovered one mirror and preserved frozen outbox destination and additions when the history ticket disappeared. |
+| Local lifecycle and scope | Keep orders open remains off by default. Sharing pauses in Server mode, when disabled and when the Client app leaves the foreground. Periodic refresh pulled a Server edit without a Client action; local changes triggered a refresh. Local closure stayed hidden through polling without closing another Client's view. Deleted Server orders remained visibly unavailable without erasing local work. |
+| Responsive and localised rendering | Seventy-six captures passed framework and missed-tap checks. Inspected shared Active orders and conflict choices in English tablet and dark landscape layouts and Italian 320-pixel doubled text. The actual dialog controls remained reachable and resolved conflicts in both languages. Review images: [shared orders](previews/shared-orders-en-1100.png) and [delivery conflict](previews/shared-conflict-en-1100.png). |
+| Android preview APK | Fresh 1.7.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial, two-phone LAN or physical printer verification was performed. Host persistence, TLS and widget checks do not establish physical-device behaviour or paper output. |
+
+
 ## Unnamed order dividers, 5 October 2026
 
 Validated step 7 with `VERSION` unchanged at 1.7.0.
@@ -158,7 +176,7 @@ Validated on 26 September 2026 for LibreSlip 1.5.0, Android application identifi
 - The Android foreground service and retained-engine lifecycle compile and have host lifecycle coverage, but locked-screen receipt has not yet been verified on a physical Android device. Force-stop, process termination or device restart stops reception until LibreSlip is opened in Server mode again.
 - Server mode supports manual IPv4 address entry. There is no automatic discovery, boot start, hosted relay or remote-network support.
 - Networking tables and pairing secrets are outside the archive format. Moving data to another device requires fresh pairing.
-- Ordinary Server Received or Done state is not synchronised back to the Client. Managed orders support explicit delivery-count synchronisation; Client closure remains separate from Server completion. Deleting one or all Client tickets leaves durable delivery records and Server copies untouched; per-ticket delivery status is no longer available from history after the local ticket is deleted.
+- Ordinary Server Received or Done state is not synchronised back to the Client. Managed orders support automatic sharing with an updated paired Server and explicit progress exchange with older Servers; Client closure remains separate from Server completion. Deleting one or all Client tickets leaves durable delivery records and Server copies untouched; per-ticket delivery status is no longer available from history after the local ticket is deleted.
 - The Android document picker and share sheet compile into the release and have automated cancellation and state coverage, but the latest validation did not repeat every platform-owned destination flow manually.
 - USB printing is not implemented. The NETUM Classic SPP protocol does not provide battery percentage.
 - Bluetooth Classic does not provide a universally reliable side-effect-free remote liveness probe. The 15-second monitor detects Bluetooth changes and socket failures, but some printer power or range losses may only appear after Android closes the socket or the next write fails.

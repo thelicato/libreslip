@@ -1638,6 +1638,47 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get moveBelowDivider => 'Sposta sotto il divisore';
+
+  @override
+  String sharedOrdersWith(String server) {
+    return 'Condivisi con $server';
+  }
+
+  @override
+  String get sharedOrdersBody =>
+      'Tutti i Client abbinati a questo Server possono aggiungere articoli e aggiornare le consegne. Gli ordini si aggiornano automaticamente quando l’app è aperta. Articoli Solo locale e prezzi restano su questo dispositivo.';
+
+  @override
+  String get sharedOrdersRefresh => 'Aggiorna ordini condivisi';
+
+  @override
+  String sharedOrdersRefreshed(String time) {
+    return 'Ultimo aggiornamento $time';
+  }
+
+  @override
+  String get sharedOrdersOffline =>
+      'Server non disponibile. Ordini salvati e modifiche restano qui e si sincronizzano alla riconnessione.';
+
+  @override
+  String get sharedOrdersUnsupported =>
+      'Questo Server non supporta gli ordini condivisi. Aggiornalo per attivare la sincronizzazione.';
+
+  @override
+  String get sharedOrdersUnresolved =>
+      'Alcune consegne richiedono una verifica. Apri il loro avanzamento per risolvere le differenze.';
+
+  @override
+  String get sharedOrdersLocalCloseBody =>
+      'Nascondere questo ordine dagli ordini attivi di questo Client? Le comande salvate restano nello storico. Gli altri Client possono ancora aggiornare l’ordine condiviso e l’ordine sul Server non viene segnato come completato.';
+
+  @override
+  String get sharedOrdersPaused =>
+      'La sincronizzazione condivisa è in pausa. Attiva Mantieni ordini aperti e collegati al Server di questo ordine per riprendere. Le modifiche locali restano salvate.';
+
+  @override
+  String get sharedOrdersConflictBody =>
+      'Scegli l’avanzamento da conservare per gli articoli modificati su questo Client. Gli altri articoli usano i conteggi più recenti del Server. Gli articoli Solo locale mantengono il loro avanzamento locale.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

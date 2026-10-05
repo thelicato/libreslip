@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/application/shared_orders_controller.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/domain/ticket_document.dart';
 import '../../settings/domain/app_settings.dart';
@@ -22,6 +23,7 @@ class ComposePage extends StatefulWidget {
     required this.printing,
     this.output,
     this.delivery,
+    this.sharedOrders,
   });
 
   final OrderWorkspaceController controller;
@@ -29,6 +31,7 @@ class ComposePage extends StatefulWidget {
   final ValueNotifier<bool> printing;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
 
   @override
   State<ComposePage> createState() => ComposePageState();
@@ -45,6 +48,7 @@ class ComposePageState extends State<ComposePage> {
       if (widget.output != null) widget.output!,
       if (widget.output != null) widget.output!.printer,
       widget.printing,
+      ?widget.sharedOrders,
       if (widget.delivery != null) widget.delivery!,
     ]),
     builder: (context, _) {
@@ -78,6 +82,7 @@ class ComposePageState extends State<ComposePage> {
             ManagedOrderComposer(
               controller: widget.controller,
               delivery: widget.delivery,
+              sharedOrders: widget.sharedOrders,
               busy: widget.printing.value || widget.controller.saving,
             ),
             const SizedBox(height: 12),

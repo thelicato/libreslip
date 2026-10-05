@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/application/shared_orders_controller.dart';
 import '../../networking/application/network_mode_controller.dart';
 import '../../orders/application/order_workspace_controller.dart';
 import '../../orders/presentation/compose_page.dart';
@@ -24,6 +25,7 @@ class WorkspaceShell extends StatefulWidget {
     required this.orders,
     this.networking,
     this.clientDelivery,
+    this.sharedOrders,
     this.printer,
     this.ticketOutput,
     this.portability,
@@ -32,6 +34,7 @@ class WorkspaceShell extends StatefulWidget {
   final OrderWorkspaceController orders;
   final NetworkModeController? networking;
   final ClientDeliveryController? clientDelivery;
+  final SharedOrdersController? sharedOrders;
   final PrinterController? printer;
   final TicketOutputController? ticketOutput;
   final PortabilityController? portability;
@@ -113,6 +116,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         printing: _composePrinting,
         output: widget.ticketOutput,
         delivery: widget.clientDelivery,
+        sharedOrders: widget.sharedOrders,
       ),
       3 => TicketsPage(
         controller: widget.orders,

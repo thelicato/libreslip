@@ -62,7 +62,11 @@ class ClientDeliveryStatusPanel extends StatelessWidget {
               ClientDeliveryStatus.awaitingPrint => l.deliveryAwaitingPrintBody,
               ClientDeliveryStatus.delivered => l.deliveryDeliveredBody,
               ClientDeliveryStatus.failed =>
-                delivery.errorCode == 'unsupported_updates'
+                delivery.errorCode == 'unsupported_shared'
+                    ? l.sharedOrdersUnsupported
+                    : delivery.errorCode == 'order_missing'
+                    ? l.progressOrderMissing
+                    : delivery.errorCode == 'unsupported_updates'
                     ? l.deliveryUpdatesUnsupported
                     : delivery.errorCode == 'unsupported_courses'
                     ? l.deliveryCoursesUnsupported

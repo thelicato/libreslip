@@ -673,5 +673,29 @@
   "orderDivider": "Divisore ordine",
   "dividerEmptyBody": "Aggiungi i prossimi articoli sotto questo divisore.",
   "moveAboveDivider": "Sposta sopra il divisore",
-  "moveBelowDivider": "Sposta sotto il divisore"
+  "moveBelowDivider": "Sposta sotto il divisore",
+  "sharedOrdersWith": "Condivisi con {server}",
+  "sharedOrdersBody": "Tutti i Client abbinati a questo Server possono aggiungere articoli e aggiornare le consegne. Gli ordini si aggiornano automaticamente quando l’app è aperta. Articoli Solo locale e prezzi restano su questo dispositivo.",
+  "sharedOrdersRefresh": "Aggiorna ordini condivisi",
+  "sharedOrdersRefreshed": "Ultimo aggiornamento {time}",
+  "sharedOrdersOffline": "Server non disponibile. Ordini salvati e modifiche restano qui e si sincronizzano alla riconnessione.",
+  "sharedOrdersUnsupported": "Questo Server non supporta gli ordini condivisi. Aggiornalo per attivare la sincronizzazione.",
+  "sharedOrdersUnresolved": "Alcune consegne richiedono una verifica. Apri il loro avanzamento per risolvere le differenze.",
+  "sharedOrdersLocalCloseBody": "Nascondere questo ordine dagli ordini attivi di questo Client? Le comande salvate restano nello storico. Gli altri Client possono ancora aggiornare l’ordine condiviso e l’ordine sul Server non viene segnato come completato.",
+  "@sharedOrdersWith": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "@sharedOrdersRefreshed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sharedOrdersPaused": "La sincronizzazione condivisa è in pausa. Attiva Mantieni ordini aperti e collegati al Server di questo ordine per riprendere. Le modifiche locali restano salvate.",
+  "sharedOrdersConflictBody": "Scegli l’avanzamento da conservare per gli articoli modificati su questo Client. Gli altri articoli usano i conteggi più recenti del Server. Gli articoli Solo locale mantengono il loro avanzamento locale."
 }

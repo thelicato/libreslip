@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/application/shared_orders_controller.dart';
 import '../../networking/presentation/progress_sync_controls.dart';
+import '../../networking/presentation/shared_order_controls.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'delivery_progress.dart';
@@ -15,10 +17,12 @@ class ManagedOrderComposer extends StatelessWidget {
     required this.controller,
     this.busy = false,
     this.delivery,
+    this.sharedOrders,
   });
   final OrderWorkspaceController controller;
   final bool busy;
   final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +49,7 @@ class ManagedOrderComposer extends StatelessWidget {
                           builder: (_) => _ActiveOrdersDialog(
                             controller: controller,
                             delivery: delivery,
+                            sharedOrders: sharedOrders,
                           ),
                         ),
                   icon: const Icon(Icons.playlist_add_rounded),
@@ -74,6 +79,7 @@ class ManagedOrderComposer extends StatelessWidget {
                     order: order,
                     controller: controller,
                     delivery: delivery,
+                    sharedOrders: sharedOrders,
                   ),
                 ],
               ),
@@ -110,13 +116,18 @@ class ManagedOrderComposer extends StatelessWidget {
 }
 
 class _ActiveOrdersDialog extends StatelessWidget {
-  const _ActiveOrdersDialog({required this.controller, this.delivery});
+  const _ActiveOrdersDialog({
+    required this.controller,
+    this.delivery,
+    this.sharedOrders,
+  });
   final OrderWorkspaceController controller;
   final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, ?sharedOrders]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       return AlertDialog(
@@ -132,6 +143,8 @@ class _ActiveOrdersDialog extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (sharedOrders != null)
+                  SharedOrderControls(controller: sharedOrders!),
                 if (controller.managedOrders.isEmpty) Text(l.activeOrdersEmpty),
                 if (!controller.canBeginAddition) ...[
                   Text(l.finishCompositionFirst),
@@ -162,6 +175,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                 order: order,
                                 controller: controller,
                                 delivery: delivery,
+                                sharedOrders: sharedOrders,
                               ),
                             ],
                           ),
@@ -171,7 +185,12 @@ class _ActiveOrdersDialog extends StatelessWidget {
                             children: [
                               FilledButton.icon(
                                 key: ValueKey('add-to-order-${order.id}'),
-                                onPressed: !controller.canBeginAddition
+                                onPressed:
+                                    !controller.canBeginAddition ||
+                                        (sharedOrders?.unavailableIds.contains(
+                                              order.id,
+                                            ) ??
+                                            false)
                                     ? null
                                     : () async {
                                         final opened = await controller
@@ -196,7 +215,12 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                         if (await _confirm(
                                               context,
                                               l.closeActiveOrder,
-                                              l.closeActiveOrderBody,
+                                              sharedOrders?.sharedIds.contains(
+                                                        order.id,
+                                                      ) ==
+                                                      true
+                                                  ? l.sharedOrdersLocalCloseBody
+                                                  : l.closeActiveOrderBody,
                                             ) ==
                                             true) {
                                           await controller.closeOrder(order.id);
@@ -237,10 +261,12 @@ class _OrderContents extends StatelessWidget {
     required this.order,
     required this.controller,
     this.delivery,
+    this.sharedOrders,
   });
   final ManagedOrder order;
   final OrderWorkspaceController controller;
   final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +274,9 @@ class _OrderContents extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (order.destinationId != null && delivery != null)
+        if (sharedOrders != null && sharedOrders!.sharedIds.contains(order.id))
+          SharedOrderControls(controller: sharedOrders!, order: order)
+        else if (order.destinationId != null && delivery != null)
           ProgressSyncControls(
             key: ValueKey('progress-sync-controls-${order.id}'),
             order: order,

@@ -5,6 +5,7 @@ import 'dart:io';
 import '../domain/network_models.dart';
 import '../domain/network_protocol.dart';
 import '../domain/order_progress.dart';
+import '../domain/shared_orders.dart';
 import '../domain/server_inbox_models.dart';
 import '../domain/server_security.dart';
 import '../domain/server_transport.dart';
@@ -95,6 +96,7 @@ class LocalHttpsServer implements ServerHost {
             NetworkProtocol.managedVersion,
           ],
           'progressVersions': [if (_store is ServerProgressStore) 1],
+          'sharedOrderVersions': [if (_store is SharedServerStore) 1],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,
           'certificateFingerprint': identity.certificateFingerprint,
@@ -108,6 +110,12 @@ class LocalHttpsServer implements ServerHost {
           configuration: configuration,
           requestPairingApproval: requestPairingApproval,
         );
+        return;
+      }
+      if (request.uri.path == '/v1/shared-orders' ||
+          request.uri.path == '/v1/shared-additions' ||
+          request.uri.path == '/v1/shared-progress') {
+        await _shared(request, onOrderReceived: onOrderReceived);
         return;
       }
       if (request.uri.path == _progressPath &&
@@ -325,6 +333,99 @@ class LocalHttpsServer implements ServerHost {
       onOrderReceived();
     }
     await _writeJson(request.response, HttpStatus.ok, result.toJson());
+  }
+
+  Future<void> _shared(
+    HttpRequest request, {
+    required void Function() onOrderReceived,
+  }) async {
+    final actor = await _authenticateClient(request);
+    if (actor == null) return;
+    final store = _store;
+    if (store is! SharedServerStore) {
+      await _writeError(
+        request.response,
+        HttpStatus.notFound,
+        'unsupported_shared',
+      );
+      return;
+    }
+    final shared = store as SharedServerStore;
+    if (request.method == 'GET' && request.uri.path == '/v1/shared-orders') {
+      final params = request.uri.queryParameters;
+      if (params.length != 1) {
+        throw const FormatException('Invalid shared query');
+      }
+      final id = params['orderId'];
+      if (id != null && _identifierPattern.hasMatch(id)) {
+        await _writeJson(
+          request.response,
+          HttpStatus.ok,
+          (await shared.sharedOrder(id)).toJson(),
+        );
+        return;
+      }
+      final after = params['after'];
+      if (after == null ||
+          (after.isNotEmpty && !_identifierPattern.hasMatch(after))) {
+        throw const FormatException('Invalid shared cursor');
+      }
+      await _writeJson(request.response, HttpStatus.ok, {
+        'orders': (await shared.sharedOrderIds(after))
+            .map((head) => head.toJson())
+            .toList(),
+      });
+      return;
+    }
+    if (request.method != 'POST') {
+      await _writeError(
+        request.response,
+        HttpStatus.methodNotAllowed,
+        'method_not_allowed',
+      );
+      return;
+    }
+    _requireJson(request);
+    final decoded = jsonDecode(
+      await _readBody(request, SharedOrderSnapshot.maxBytes),
+    );
+    if (request.uri.path == '/v1/shared-progress') {
+      final change = OrderProgressChange.fromJson(decoded);
+      final applied = await shared.changeSharedProgress(actor, change);
+      onOrderReceived();
+      await _writeJson(request.response, HttpStatus.ok, applied.toJson());
+      return;
+    }
+    if (request.uri.path != '/v1/shared-additions' ||
+        decoded is! Map<String, dynamic> ||
+        decoded.length != 3 ||
+        decoded['serverOrderId'] is! String ||
+        !_identifierPattern.hasMatch(decoded['serverOrderId'] as String) ||
+        decoded['additionIds'] is! List ||
+        (decoded['additionIds'] as List).any((id) => id is! String)) {
+      throw const FormatException('Invalid shared additions');
+    }
+    final envelope = OrderDeliveryEnvelope.fromJsonString(
+      jsonEncode(decoded['envelope']),
+    );
+    final receipt = await shared.appendSharedOrder(
+      actor,
+      decoded['serverOrderId'] as String,
+      envelope,
+      (decoded['additionIds'] as List).cast<String>(),
+    );
+    onOrderReceived();
+    await _writeJson(
+      request.response,
+      receipt.wasDuplicate ? HttpStatus.ok : HttpStatus.created,
+      {
+        'protocol': NetworkProtocol.name,
+        'version': envelope.version,
+        'deliveryId': envelope.deliveryId,
+        'serverOrderId': receipt.order.id,
+        'duplicate': receipt.wasDuplicate,
+      },
+    );
   }
 
   static void _requireJson(HttpRequest request) {

@@ -303,6 +303,7 @@ class PortabilityService {
                 .replaceProgressRecoverySnapshot({
                   'database': snapshot,
                   'progressSync': progress,
+                  'sharedSync': value['sharedSync'],
                 });
           } else {
             await _orders.replaceWithPortableSnapshot(snapshot);
@@ -352,6 +353,7 @@ class PortabilityService {
         oldFeatures: oldFeatures,
         oldSnapshot: oldSnapshot,
         progressSync: recovery?['progressSync'],
+        sharedSync: recovery?['sharedSync'],
         stagedDirectory: stagedDirectory.path,
       );
       final configuration =
@@ -425,6 +427,7 @@ class PortabilityService {
     required OrderFeatureSettings oldFeatures,
     required Map<String, Object?>? oldSnapshot,
     Object? progressSync,
+    Object? sharedSync,
     required String stagedDirectory,
   }) async {
     final journal = File(p.join(support.path, 'portability_recovery.json'));
@@ -443,6 +446,7 @@ class PortabilityService {
       },
       'database': oldSnapshot,
       'progressSync': ?progressSync,
+      'sharedSync': ?sharedSync,
       'stagedDirectory': stagedDirectory,
     };
     await temporary.writeAsString(jsonEncode(document), flush: true);

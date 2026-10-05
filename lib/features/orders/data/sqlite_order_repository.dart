@@ -2,15 +2,19 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
+import 'package:crypto/crypto.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../../networking/domain/client_delivery_models.dart';
 import '../../networking/domain/network_models.dart';
 import '../../networking/domain/network_protocol.dart';
 import '../../networking/domain/order_progress.dart';
+import '../../networking/domain/shared_orders.dart';
 import '../../networking/domain/server_inbox_models.dart';
 import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
+
+part 'shared_order_persistence.dart';
 
 class SqliteOrderRepository
     implements
@@ -21,11 +25,13 @@ class SqliteOrderRepository
         ServerInboxStore,
         ClientProgressStore,
         ServerProgressStore,
-        ProgressRecoveryStore {
+        ProgressRecoveryStore,
+        SharedClientStore,
+        SharedServerStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 15;
+  static const databaseVersion = 16;
   static const portableSchemaVersions = {
     5,
     6,
@@ -37,6 +43,7 @@ class SqliteOrderRepository
     12,
     13,
     14,
+    15,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -52,6 +59,50 @@ class SqliteOrderRepository
     }
     return database;
   }
+
+  @override
+  Future<List<SharedOrderHead>> sharedOrderIds(String after) =>
+      _SharedPersistence(this).ids(after);
+  @override
+  Future<SharedOrderSnapshot> sharedOrder(String id) =>
+      _SharedPersistence(this).snapshot(id);
+  @override
+  Future<ServerOrderReceipt> appendSharedOrder(
+    String actor,
+    String id,
+    OrderDeliveryEnvelope envelope,
+    List<String> ids,
+  ) => _SharedPersistence(this).append(actor, id, envelope, ids);
+  @override
+  Future<OrderProgressSnapshot> changeSharedProgress(
+    String actor,
+    OrderProgressChange change,
+  ) => _SharedPersistence(this).progress(actor, change);
+  @override
+  Future<SharedOrderLink?> loadSharedLink(String id) =>
+      _SharedPersistence(this).link(id);
+  @override
+  Future<List<SharedOrderLink>> loadSharedLinks() =>
+      _SharedPersistence(this).links();
+  @override
+  Future<SharedDeliveryTarget?> sharedDeliveryTarget(ClientDelivery delivery) =>
+      _SharedPersistence(this).target(delivery);
+  @override
+  Future<void> mergeSharedOrder(
+    String destination,
+    SharedOrderSnapshot snapshot,
+  ) => _SharedPersistence(this).merge(destination, snapshot);
+  @override
+  Future<void> saveSharedProgress(
+    ManagedOrder order,
+    OrderProgressChange change,
+  ) => _SharedPersistence(this).saveProgress(order, change);
+  @override
+  Future<void> settleSharedProgress(
+    String id, {
+    required bool accepted,
+    OrderProgressSnapshot? applied,
+  }) => _SharedPersistence(this).settle(id, accepted, applied);
 
   @override
   Future<void> open() async {
@@ -609,6 +660,30 @@ class SqliteOrderRepository
         );
       }
     }
+    if (oldVersion < 16 && newVersion >= 16) {
+      await database.execute(
+        'ALTER TABLE server_delivery_outbox ADD COLUMN shared_addition_ids TEXT',
+      );
+      await database.execute(
+        'ALTER TABLE server_delivery_outbox ADD COLUMN shared_server_order_id TEXT',
+      );
+      await database.execute(
+        '''UPDATE server_delivery_outbox SET shared_addition_ids =
+        (SELECT addition_line_ids FROM tickets WHERE tickets.id = server_delivery_outbox.ticket_id AND managed_order_id IS NOT NULL)''',
+      );
+      await database.execute('''CREATE TABLE shared_order_links (
+        order_id TEXT PRIMARY KEY, destination_id TEXT NOT NULL,
+        server_order_id TEXT NOT NULL, baseline_json TEXT NOT NULL,
+        pending_json TEXT, pending_local_revision INTEGER,
+        UNIQUE(destination_id, server_order_id),
+        FOREIGN KEY (order_id) REFERENCES managed_orders(id) ON DELETE CASCADE
+      )''');
+      await database.execute('''CREATE TABLE server_shared_receipts (
+        client_id TEXT NOT NULL, operation_id TEXT NOT NULL, order_id TEXT NOT NULL,
+        payload_checksum TEXT NOT NULL, addition_ids TEXT NOT NULL,
+        PRIMARY KEY (client_id, operation_id)
+      )''');
+    }
   }
 
   @override
@@ -905,74 +980,84 @@ class SqliteOrderRepository
     String clientId,
     OrderProgressChange change,
   ) async {
-    return (await _db).transaction((tx) async {
-      final order = await _scopedServerProgressOrder(
-        tx,
-        clientId,
-        change.orderId,
-      );
-      final request = canonicalProgressChange(change);
-      final receipts = await tx.query(
-        'server_progress_receipts',
-        where: 'client_id = ? AND operation_id = ?',
-        whereArgs: [clientId, change.operationId],
-      );
-      if (receipts.isNotEmpty) {
-        if (receipts.single['request_json'] != request ||
-            receipts.single['order_id'] != order.id) {
-          throw const ServerOrderConflictException();
-        }
-        return OrderProgressSnapshot.fromJson(
-          jsonDecode(receipts.single['applied_json'] as String),
-        );
-      }
-      if (order.revision != change.orderRevision ||
-          order.progressRevision != change.expectedRevision) {
+    return (await _db).transaction(
+      (tx) => _applyProgress(tx, clientId, change),
+    );
+  }
+
+  static Future<OrderProgressSnapshot> _applyProgress(
+    DatabaseExecutor tx,
+    String clientId,
+    OrderProgressChange change, {
+    String? serverOrderId,
+  }) async {
+    final order = serverOrderId == null
+        ? await _scopedServerProgressOrder(tx, clientId, change.orderId)
+        : await _loadServerOrder(tx, serverOrderId);
+    if (order.managedOrderId == null) {
+      throw const ProgressSyncException('missing');
+    }
+    final request = canonicalProgressChange(change);
+    final receipts = await tx.query(
+      'server_progress_receipts',
+      where: 'client_id = ? AND operation_id = ?',
+      whereArgs: [clientId, change.operationId],
+    );
+    if (receipts.isNotEmpty) {
+      if (receipts.single['request_json'] != request ||
+          receipts.single['order_id'] != order.id) {
         throw const ServerOrderConflictException();
       }
-      if (change.quantities.length != order.lines.length ||
-          order.lines.any(
-            (line) =>
-                change.quantities[line.id] == null ||
-                change.quantities[line.id]! < 0 ||
-                change.quantities[line.id]! > line.quantity,
-          )) {
-        throw const FormatException('Invalid shared delivery inventory');
-      }
-      for (final line in order.lines) {
-        await tx.update(
-          'server_order_lines',
-          {'delivered_quantity': change.quantities[line.id]},
-          where: 'order_id = ? AND order_line_id = ?',
-          whereArgs: [order.id, line.id],
-        );
-      }
-      final complete = order.lines.every(
-        (line) => change.quantities[line.id] == line.quantity,
+      return OrderProgressSnapshot.fromJson(
+        jsonDecode(receipts.single['applied_json'] as String),
       );
+    }
+    if (order.revision != change.orderRevision ||
+        order.progressRevision != change.expectedRevision) {
+      throw const ServerOrderConflictException();
+    }
+    if (change.quantities.length != order.lines.length ||
+        order.lines.any(
+          (line) =>
+              change.quantities[line.id] == null ||
+              change.quantities[line.id]! < 0 ||
+              change.quantities[line.id]! > line.quantity,
+        )) {
+      throw const FormatException('Invalid shared delivery inventory');
+    }
+    for (final line in order.lines) {
       await tx.update(
-        'server_orders',
-        {
-          'progress_revision': order.progressRevision + 1,
-          'status': complete
-              ? ServerOrderStatus.done.value
-              : ServerOrderStatus.received.value,
-          'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
-          'completed_revision': complete ? order.revision : 0,
-        },
-        where: 'id = ?',
-        whereArgs: [order.id],
+        'server_order_lines',
+        {'delivered_quantity': change.quantities[line.id]},
+        where: 'order_id = ? AND order_line_id = ?',
+        whereArgs: [order.id, line.id],
       );
-      final result = _serverProgress(await _loadServerOrder(tx, order.id));
-      await tx.insert('server_progress_receipts', {
-        'client_id': clientId,
-        'operation_id': change.operationId,
-        'order_id': order.id,
-        'request_json': request,
-        'applied_json': jsonEncode(result.toJson()),
-      });
-      return result;
+    }
+    final complete = order.lines.every(
+      (line) => change.quantities[line.id] == line.quantity,
+    );
+    await tx.update(
+      'server_orders',
+      {
+        'progress_revision': order.progressRevision + 1,
+        'status': complete
+            ? ServerOrderStatus.done.value
+            : ServerOrderStatus.received.value,
+        'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
+        'completed_revision': complete ? order.revision : 0,
+      },
+      where: 'id = ?',
+      whereArgs: [order.id],
+    );
+    final result = _serverProgress(await _loadServerOrder(tx, order.id));
+    await tx.insert('server_progress_receipts', {
+      'client_id': clientId,
+      'operation_id': change.operationId,
+      'order_id': order.id,
+      'request_json': request,
+      'applied_json': jsonEncode(result.toJson()),
     });
+    return result;
   }
 
   @override
@@ -2248,7 +2333,26 @@ class SqliteOrderRepository
                 .toList(),
           );
           final now = _timestamp(createdAt);
+          final sharedRoutes = managedId == null
+              ? <Map<String, Object?>>[]
+              : await transaction.query(
+                  'shared_order_links',
+                  columns: ['server_order_id'],
+                  where: 'order_id = ? AND destination_id = ?',
+                  whereArgs: [managedId, destinationId],
+                );
           await transaction.insert('server_delivery_outbox', {
+            'shared_addition_ids': managedId == null
+                ? null
+                : jsonEncode(
+                    additionLines
+                        .where((line) => line.sendToServer)
+                        .map((line) => line.id)
+                        .toList(),
+                  ),
+            'shared_server_order_id': sharedRoutes.isEmpty
+                ? null
+                : sharedRoutes.single['server_order_id'],
             'id': deliveryId,
             'destination_id': destinationId,
             'client_installation_id': installationId,
@@ -2795,6 +2899,7 @@ class SqliteOrderRepository
       WHERE closed_at IS NOT NULL
         AND NOT EXISTS (SELECT 1 FROM tickets WHERE managed_order_id = managed_orders.id)
         AND NOT EXISTS (SELECT 1 FROM drafts WHERE managed_order_id = managed_orders.id)
+        AND NOT EXISTS (SELECT 1 FROM shared_order_links WHERE order_id = managed_orders.id)
     ''');
   }
 
@@ -2858,6 +2963,7 @@ class SqliteOrderRepository
         (tx) async => {
           'database': await _portableSnapshot(tx),
           'progressSync': await tx.query('client_progress_sync'),
+          'sharedSync': await tx.query('shared_order_links'),
         },
       );
 
@@ -2870,7 +2976,11 @@ class SqliteOrderRepository
     if (database is! Map<String, Object?> || rows is! List) {
       throw const FormatException('Invalid progress recovery snapshot');
     }
-    await replaceWithPortableSnapshot(database, progressRecovery: rows);
+    await replaceWithPortableSnapshot(
+      database,
+      progressRecovery: rows,
+      sharedRecovery: recovery['sharedSync'] as List<Object?>?,
+    );
   }
 
   static Future<void> _restoreProgressRecovery(
@@ -2956,6 +3066,7 @@ class SqliteOrderRepository
   Future<void> replaceWithPortableSnapshot(
     Map<String, Object?> snapshot, {
     List<Object?>? progressRecovery,
+    List<Object?>? sharedRecovery,
   }) async {
     try {
       if (!portableSchemaVersions.contains(snapshot['schemaVersion']) ||
@@ -3025,6 +3136,9 @@ class SqliteOrderRepository
             }
             await transaction.insert(table, row);
           }
+        }
+        if (sharedRecovery != null) {
+          await _SharedPersistence.restoreLinks(transaction, sharedRecovery);
         }
         if (progressRecovery != null) {
           await _restoreProgressRecovery(transaction, progressRecovery);

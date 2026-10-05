@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'app/libreslip_app.dart';
 import 'features/networking/application/client_delivery_controller.dart';
+import 'features/networking/application/shared_orders_controller.dart';
 import 'features/networking/application/network_mode_controller.dart';
 import 'features/networking/application/server_inbox_controller.dart';
 import 'features/networking/data/android_server_runtime_service.dart';
@@ -46,10 +47,20 @@ void main() {
     LocalHttpsServer(repository, serverSecrets),
     runtimeService: const AndroidServerRuntimeService(),
   );
+  final clientSecrets = SecureClientSecretStore();
+  const clientTransport = PinnedHttpsClient();
   final clientDelivery = ClientDeliveryController(
     repository,
-    SecureClientSecretStore(),
-    const PinnedHttpsClient(),
+    clientSecrets,
+    clientTransport,
+  );
+  final sharedOrders = SharedOrdersController(
+    store: repository,
+    workspace: orders,
+    delivery: clientDelivery,
+    mode: networking,
+    secrets: clientSecrets,
+    transport: clientTransport,
   );
   final printer = PrinterController(
     AndroidBluetoothPrinterTransport(),
@@ -80,6 +91,7 @@ void main() {
       networking: networking,
       serverInbox: serverInbox,
       clientDelivery: clientDelivery,
+      sharedOrders: sharedOrders,
       printer: printer,
       ticketOutput: ticketOutput,
       portability: portability,
@@ -95,6 +107,7 @@ void main() {
     await orders.load();
     await networking.load();
     await clientDelivery.load();
+    await sharedOrders.start();
     await ticketOutput.load();
   }());
 }

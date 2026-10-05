@@ -55,3 +55,11 @@ The disabled-by-default setting retains the existing `courseGroupsEnabled` prefe
 ## Validation and delivery
 
 Each step includes formatting, analysis, relevant automated checks, localised responsive render inspection, source ZIP and a development-key Android preview when buildable. Changes to persistence, protocols or restore require migration, interruption and invalid-restore tests. Automated byte transmission and rendered previews do not establish physical printer output; Android and physical hardware checks must be reported separately.
+
+## 8. Shared managed orders: implemented
+
+With Keep orders open enabled, foreground Clients paired with the same updated Server receive its managed orders and can add catalogue items or change delivered quantities. Refresh runs every five seconds and after local changes; revision headers avoid fetching unchanged snapshots. Received mirrors contain preparation content and current progress without importing catalogue rows, private prices, ticket history or print jobs. Local only lines remain private.
+
+Concurrent additions append stable identifiers transactionally, retain other Clients' changes and preserve original Server identity. Unnamed divider markers stay unique. Delivery edits on different lines merge; same-line conflicts retain local intent across repeated polling and expose explicit Client or Server choices. Lost acknowledgements retry the original durable identity. Existing printer readiness still gates additions, and offline composition and recovery remain available. Current additions rebase against incoming content without changing their selected lines. Closing an order hides it only on that Client, and deleting it on the Server marks cached views unavailable without deleting local work.
+
+Schema 16 adds private link and append-receipt tables. Version 1 shared capability negotiation uses separate authenticated pinned HTTPS routes; earlier envelope and explicit progress formats remain intact. Configuration and full backups exclude network metadata, while private failed or interrupted restore recovery retains exact pending operations. Automatic sharing pauses when Keep orders open is disabled, in Server mode and when the Client app leaves the foreground.

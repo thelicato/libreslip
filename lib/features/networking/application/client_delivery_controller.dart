@@ -10,6 +10,7 @@ import '../domain/client_security.dart';
 import '../domain/client_transport.dart';
 import '../domain/network_models.dart';
 import '../domain/order_progress.dart';
+import '../domain/shared_orders.dart';
 import '../../orders/domain/order_models.dart';
 import 'order_progress_synchroniser.dart';
 
@@ -308,10 +309,14 @@ class ClientDeliveryController extends ChangeNotifier {
       }
       final sending = await _store.markClientDeliverySending(delivery.id);
       await _refresh();
-      final acknowledgement = await _transport.deliver(
-        server: server,
-        accessToken: token,
-        delivery: sending,
+      final target = _store is SharedClientStore
+          ? await (_store as SharedClientStore).sharedDeliveryTarget(sending)
+          : null;
+      final acknowledgement = await _deliverToServer(
+        server,
+        token,
+        sending,
+        target,
       );
       await _store.markClientDeliveryDelivered(
         delivery.id,
@@ -331,6 +336,37 @@ class ClientDeliveryController extends ChangeNotifier {
       _sendingIds.remove(delivery.id);
       notifyListeners();
     }
+  }
+
+  Future<DeliveryAcknowledgement> _deliverToServer(
+    PairedServer server,
+    String token,
+    ClientDelivery delivery,
+    SharedDeliveryTarget? target,
+  ) async {
+    if (target != null && _transport is SharedOrdersTransport) {
+      try {
+        return await (_transport as SharedOrdersTransport).appendSharedOrder(
+          server: server,
+          accessToken: token,
+          delivery: delivery,
+          target: target,
+        );
+      } on ClientTransportException catch (error) {
+        // Capability rejection precedes any mutation. Ambiguous responses
+        // retain the shared operation and must never switch protocols.
+        if (error.code != 'unsupported_shared' || target.requiresSharing) {
+          rethrow;
+        }
+      }
+    } else if (target?.requiresSharing ?? false) {
+      throw const ClientTransportException('unsupported_shared');
+    }
+    return _transport.deliver(
+      server: server,
+      accessToken: token,
+      delivery: delivery,
+    );
   }
 
   Future<void> _fail(String id, String code) async {

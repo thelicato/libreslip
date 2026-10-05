@@ -112,6 +112,7 @@ Future<void> removeProgressSyncColumnsForLegacyFixture(
 }
 
 Future<void> removePriceColumnsForLegacyFixture(Database database) async {
+  await removeSharedTablesForLegacyFixture(database);
   for (final table in ['items', 'draft_lines', 'ticket_lines']) {
     await database.execute('ALTER TABLE $table DROP COLUMN price_currency');
     await database.execute('ALTER TABLE $table DROP COLUMN price_minor_units');
@@ -132,4 +133,15 @@ Future<void> removePriceColumnsForLegacyFixture(Database database) async {
       whereArgs: [row['id']],
     );
   }
+}
+
+Future<void> removeSharedTablesForLegacyFixture(Database database) async {
+  await database.execute('DROP TABLE shared_order_links');
+  await database.execute('DROP TABLE server_shared_receipts');
+  await database.execute(
+    'ALTER TABLE server_delivery_outbox DROP COLUMN shared_addition_ids',
+  );
+  await database.execute(
+    'ALTER TABLE server_delivery_outbox DROP COLUMN shared_server_order_id',
+  );
 }

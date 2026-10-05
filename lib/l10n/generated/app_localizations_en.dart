@@ -1623,6 +1623,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moveBelowDivider => 'Move below divider';
+
+  @override
+  String sharedOrdersWith(String server) {
+    return 'Shared with $server';
+  }
+
+  @override
+  String get sharedOrdersBody =>
+      'All Clients paired with this Server can add items and update deliveries. Orders refresh automatically while the app is open. Local only items and prices stay on this device.';
+
+  @override
+  String get sharedOrdersRefresh => 'Refresh shared orders';
+
+  @override
+  String sharedOrdersRefreshed(String time) {
+    return 'Last refreshed $time';
+  }
+
+  @override
+  String get sharedOrdersOffline =>
+      'Server unavailable. Saved orders and edits remain here and sync after reconnection.';
+
+  @override
+  String get sharedOrdersUnsupported =>
+      'This Server does not support shared orders. Update it to enable synchronisation.';
+
+  @override
+  String get sharedOrdersUnresolved =>
+      'Some deliveries need your review. Open their delivery progress to resolve the differences.';
+
+  @override
+  String get sharedOrdersLocalCloseBody =>
+      'Hide this order from this Client’s active orders? Its saved tickets stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.';
+
+  @override
+  String get sharedOrdersPaused =>
+      'Shared synchronisation is paused. Enable Keep orders open and connect to this order’s Server to resume. Local changes remain saved.';
+
+  @override
+  String get sharedOrdersConflictBody =>
+      'Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

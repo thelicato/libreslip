@@ -64,6 +64,22 @@ class OrderWorkspaceController extends ChangeNotifier {
     managedOrders = await _repository.loadManagedOrders();
   }
 
+  /// Applies received snapshots without racing persistent composition writes.
+  Future<void> refreshSharedOrders(Future<void> Function() merge) async {
+    if (saving) throw const OrderStorageException('The workspace is busy.');
+    saving = true;
+    notifyListeners();
+    try {
+      await flushWrites();
+      await merge();
+      drafts = await _repository.loadDrafts();
+      managedOrders = await _repository.loadManagedOrders();
+    } finally {
+      saving = false;
+      notifyListeners();
+    }
+  }
+
   ManagedOrder? get editingOrder {
     for (final order in managedOrders) {
       if (order.id == activeDraft?.managedOrderId) return order;

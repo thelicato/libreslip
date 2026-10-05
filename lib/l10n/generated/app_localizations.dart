@@ -2931,6 +2931,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move below divider'**
   String get moveBelowDivider;
+
+  /// No description provided for @sharedOrdersWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {server}'**
+  String sharedOrdersWith(String server);
+
+  /// No description provided for @sharedOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All Clients paired with this Server can add items and update deliveries. Orders refresh automatically while the app is open. Local only items and prices stay on this device.'**
+  String get sharedOrdersBody;
+
+  /// No description provided for @sharedOrdersRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh shared orders'**
+  String get sharedOrdersRefresh;
+
+  /// No description provided for @sharedOrdersRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last refreshed {time}'**
+  String sharedOrdersRefreshed(String time);
+
+  /// No description provided for @sharedOrdersOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Server unavailable. Saved orders and edits remain here and sync after reconnection.'**
+  String get sharedOrdersOffline;
+
+  /// No description provided for @sharedOrdersUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This Server does not support shared orders. Update it to enable synchronisation.'**
+  String get sharedOrdersUnsupported;
+
+  /// No description provided for @sharedOrdersUnresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Some deliveries need your review. Open their delivery progress to resolve the differences.'**
+  String get sharedOrdersUnresolved;
+
+  /// No description provided for @sharedOrdersLocalCloseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide this order from this Client’s active orders? Its saved tickets stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.'**
+  String get sharedOrdersLocalCloseBody;
+
+  /// No description provided for @sharedOrdersPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared synchronisation is paused. Enable Keep orders open and connect to this order’s Server to resume. Local changes remain saved.'**
+  String get sharedOrdersPaused;
+
+  /// No description provided for @sharedOrdersConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the progress to keep for items changed on this Client. Other items use the Server’s latest counts. Local only items keep their local progress.'**
+  String get sharedOrdersConflictBody;
 }
 
 class _AppLocalizationsDelegate

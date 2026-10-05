@@ -8,9 +8,13 @@ import '../domain/client_delivery_models.dart';
 import '../domain/client_transport.dart';
 import '../domain/network_protocol.dart';
 import '../domain/order_progress.dart';
+import '../domain/shared_orders.dart';
 
 class PinnedHttpsClient
-    implements ClientServerTransport, OrderProgressTransport {
+    implements
+        ClientServerTransport,
+        OrderProgressTransport,
+        SharedOrdersTransport {
   const PinnedHttpsClient();
 
   static const _responseLimit = 65536;
@@ -277,6 +281,180 @@ class PinnedHttpsClient
     change: change,
   );
 
+  Future<void> _checkSharedSupport(PairedServer server) async {
+    final response = await _request(
+      server.baseUrl.resolve('/v1/status'),
+      fingerprint: server.certificateFingerprint,
+    );
+    if (response.statusCode != HttpStatus.ok ||
+        response.body['protocol'] != NetworkProtocol.name ||
+        response.body['serverInstallationId'] != server.id) {
+      throw const ClientTransportException('server_identity');
+    }
+    final versions = response.body['sharedOrderVersions'];
+    if (versions is! List || !versions.contains(1)) {
+      throw const ClientTransportException('unsupported_shared');
+    }
+  }
+
+  Future<Map<String, dynamic>> _sharedRequest(
+    PairedServer server,
+    String token,
+    String actor,
+    String path, {
+    Map<String, String>? query,
+    Map<String, Object?>? body,
+  }) async {
+    if (token.isEmpty || !_identifierPattern.hasMatch(actor)) {
+      throw const ClientTransportException('credentials');
+    }
+    await _checkSharedSupport(server);
+    final uri = server.baseUrl.resolve(path);
+    final response = await _request(
+      query == null ? uri : uri.replace(queryParameters: query),
+      fingerprint: server.certificateFingerprint,
+      body: body,
+      maxResponseBytes: SharedOrderSnapshot.maxBytes,
+      headers: {
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+        'X-LibreSlip-Client-Id': actor,
+      },
+    );
+    if (response.statusCode == HttpStatus.unauthorized ||
+        response.statusCode == HttpStatus.forbidden) {
+      throw const ClientTransportException('unauthorised');
+    }
+    if (response.statusCode == HttpStatus.conflict) {
+      throw const ClientTransportException('conflict');
+    }
+    if (response.statusCode == HttpStatus.notFound) {
+      throw const ClientTransportException('order_missing');
+    }
+    if (response.statusCode != HttpStatus.ok &&
+        response.statusCode != HttpStatus.created) {
+      throw ClientTransportException(
+        response.statusCode >= 500 ? 'server' : 'rejected',
+      );
+    }
+    return response.body;
+  }
+
+  @override
+  Future<List<SharedOrderHead>> sharedOrderIds({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required String after,
+  }) async {
+    final response = await _sharedRequest(
+      server,
+      accessToken,
+      clientId,
+      '/v1/shared-orders',
+      query: {'after': after},
+    );
+    final orders = response['orders'];
+    if (response.length != 1 || orders is! List || orders.length > 50) {
+      throw const ClientTransportException('invalid_response');
+    }
+    try {
+      final result = orders.map(SharedOrderHead.fromJson).toList();
+      var previous = after;
+      for (final head in result) {
+        if (head.id.compareTo(previous) <= 0) {
+          throw const FormatException('Invalid shared cursor');
+        }
+        previous = head.id;
+      }
+      return result;
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+  }
+
+  @override
+  Future<SharedOrderSnapshot> sharedOrder({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required String serverOrderId,
+  }) async {
+    final response = await _sharedRequest(
+      server,
+      accessToken,
+      clientId,
+      '/v1/shared-orders',
+      query: {'orderId': serverOrderId},
+    );
+    try {
+      final snapshot = SharedOrderSnapshot.fromJson(response);
+      if (snapshot.serverOrderId != serverOrderId) {
+        throw const FormatException('Wrong shared order');
+      }
+      return snapshot;
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+  }
+
+  @override
+  Future<DeliveryAcknowledgement> appendSharedOrder({
+    required PairedServer server,
+    required String accessToken,
+    required ClientDelivery delivery,
+    required SharedDeliveryTarget target,
+  }) async {
+    if (delivery.destinationId != server.id ||
+        delivery.envelope.clientInstallationId !=
+            delivery.clientInstallationId) {
+      throw const ClientTransportException('credentials');
+    }
+    final response = await _sharedRequest(
+      server,
+      accessToken,
+      delivery.clientInstallationId,
+      '/v1/shared-additions',
+      body: {
+        'serverOrderId': target.serverOrderId,
+        'envelope': delivery.envelope.toJson(),
+        'additionIds': target.additionIds,
+      },
+    );
+    if (response['protocol'] != NetworkProtocol.name ||
+        response['version'] != delivery.envelope.version ||
+        response['deliveryId'] != delivery.id ||
+        response['serverOrderId'] != target.serverOrderId ||
+        response['duplicate'] is! bool) {
+      throw const ClientTransportException('invalid_response');
+    }
+    return DeliveryAcknowledgement(
+      deliveryId: delivery.id,
+      serverOrderId: target.serverOrderId,
+      duplicate: response['duplicate'] as bool,
+    );
+  }
+
+  @override
+  Future<OrderProgressSnapshot> changeSharedProgress({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderProgressChange change,
+  }) async {
+    final response = await _sharedRequest(
+      server,
+      accessToken,
+      clientId,
+      '/v1/shared-progress',
+      body: change.toJson(),
+    );
+    try {
+      return OrderProgressSnapshot.fromJson(response);
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+  }
+
   Future<_FirstContactResponse> _requestFirstContact(Uri uri) async {
     String? callbackFingerprint;
     final context = SecurityContext(withTrustedRoots: false);
@@ -334,6 +512,7 @@ class PinnedHttpsClient
     Map<String, Object?>? body,
     Map<String, String> headers = const {},
     Duration responseTimeout = const Duration(seconds: 10),
+    int maxResponseBytes = _responseLimit,
   }) async {
     final context = SecurityContext(withTrustedRoots: false);
     final client = HttpClient(context: context)
@@ -360,7 +539,7 @@ class PinnedHttpsClient
           sha256.convert(certificate.der).toString() != fingerprint) {
         throw const ClientTransportException('certificate');
       }
-      return await _readResponse(response, responseTimeout);
+      return await _readResponse(response, responseTimeout, maxResponseBytes);
     } on ClientTransportException {
       rethrow;
     } on HandshakeException {
@@ -380,12 +559,13 @@ class PinnedHttpsClient
 
   Future<_JsonResponse> _readResponse(
     HttpClientResponse response,
-    Duration timeout,
-  ) async {
+    Duration timeout, [
+    int maxBytes = _responseLimit,
+  ]) async {
     final bytes = <int>[];
     await for (final chunk in response.timeout(timeout)) {
       bytes.addAll(chunk);
-      if (bytes.length > _responseLimit) {
+      if (bytes.length > maxBytes) {
         throw const ClientTransportException('invalid_response');
       }
     }
