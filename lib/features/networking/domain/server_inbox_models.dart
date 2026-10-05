@@ -37,6 +37,7 @@ class ServerOrderLine {
     this.courseId,
     this.id,
     this.addedRevision = 0,
+    this.deliveredQuantity = 0,
   });
 
   final String name;
@@ -45,6 +46,8 @@ class ServerOrderLine {
   final String? courseId;
   final String? id;
   final int addedRevision;
+  final int deliveredQuantity;
+  int get outstandingQuantity => quantity - deliveredQuantity;
 }
 
 class ServerOrder {
@@ -112,16 +115,16 @@ List<OutstandingItemTotal> summariseOutstandingItems(
   for (final order in orders) {
     if (order.status != ServerOrderStatus.received) continue;
     for (final line in order.lines) {
-      if (order.managedOrderId != null &&
-          line.addedRevision <= order.completedRevision) {
-        continue;
-      }
+      final outstanding = order.managedOrderId == null
+          ? line.quantity
+          : line.outstandingQuantity;
+      if (outstanding == 0) continue;
       final name = line.name.trim();
       final key = name.toLowerCase();
       final current = totals[key];
       totals[key] = (
         name: current?.name ?? name,
-        quantity: (current?.quantity ?? 0) + line.quantity,
+        quantity: (current?.quantity ?? 0) + outstanding,
       );
     }
   }
@@ -152,6 +155,13 @@ abstract interface class ServerInboxStore {
   Future<ServerOrderReceipt> receiveServerOrder(
     OrderDeliveryEnvelope envelope, {
     required DateTime receivedAt,
+  });
+
+  Future<ServerOrder> setServerLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
   });
 
   Future<ServerOrder> markServerOrderDone(

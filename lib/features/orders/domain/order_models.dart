@@ -229,6 +229,13 @@ abstract interface class OrderRepository {
 
   Future<void> closeManagedOrder(String orderId);
 
+  Future<void> setManagedLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
+  });
+
   Future<void> deleteTicket(String id);
 
   Future<void> deleteAllTickets();
@@ -293,6 +300,7 @@ class ManagedOrder {
     this.destinationId,
     this.clientInstallationId,
     this.serverRevision = 0,
+    this.deliveredQuantities = const {},
   });
   final String id;
   final int number;
@@ -308,6 +316,10 @@ class ManagedOrder {
   final String? destinationId;
   final String? clientInstallationId;
   final int serverRevision;
+  final Map<String, int> deliveredQuantities;
+  int deliveredQuantity(String lineId) => deliveredQuantities[lineId] ?? 0;
+  int get deliveredCount => deliveredQuantities.values.fold(0, (a, b) => a + b);
+  int get outstandingCount => itemCount - deliveredCount;
   int get itemCount => lines.fold(0, (sum, line) => sum + line.quantity);
 }
 
@@ -371,3 +383,31 @@ List<TicketLine> decodeOrderLines(Object? source) {
 
 bool validOrderId(String id) =>
     RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$').hasMatch(id);
+
+/// Progress is independent of immutable ticket content. Missing keys mean zero.
+Map<String, int> decodeDeliveryProgress(
+  Object? source,
+  List<TicketLine> lines,
+) {
+  if (source is! String || source.length > 32768) {
+    throw const FormatException('Invalid delivery progress');
+  }
+  final decoded = jsonDecode(source);
+  if (decoded is! Map || decoded.length > lines.length) {
+    throw const FormatException('Invalid delivery progress');
+  }
+  final quantities = {for (final line in lines) line.id: line.quantity};
+  final result = <String, int>{};
+  for (final entry in decoded.entries) {
+    final maximum = quantities[entry.key];
+    if (entry.key is! String ||
+        maximum == null ||
+        entry.value is! int ||
+        (entry.value as int) < 1 ||
+        (entry.value as int) > maximum) {
+      throw const FormatException('Invalid delivered quantity');
+    }
+    result[entry.key as String] = entry.value as int;
+  }
+  return Map.unmodifiable(result);
+}

@@ -8,6 +8,7 @@ import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../orders/presentation/order_identity.dart';
 import '../../orders/presentation/course_composer.dart';
+import '../../orders/presentation/delivery_progress.dart';
 import '../../orders/domain/course_groups.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/personalisation_settings.dart';
@@ -711,62 +712,73 @@ class _OrderCard extends StatelessWidget {
               ),
               if (order.revision > 0) Text(l.orderRevision(order.revision)),
               const SizedBox(height: 16),
-              for (final section in courseSections(
-                order.courses,
-                order.lines,
-                (line) => line.courseId,
-              )) ...[
-                if (order.courses.isNotEmpty)
-                  CourseHeading(name: section.course?.name ?? l.ungrouped),
-                for (var index = 0; index < section.lines.length; index++) ...[
-                  if (index > 0) const SizedBox(height: 12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 48,
-                        child: Text(
-                          '${section.lines[index].quantity}×',
-                          style: theme.textTheme.titleMedium,
+              if (order.managedOrderId != null)
+                DeliveryProgress(
+                  courses: order.courses,
+                  lines: _progressLines(order),
+                  showHelp: false,
+                )
+              else
+                for (final section in courseSections(
+                  order.courses,
+                  order.lines,
+                  (line) => line.courseId,
+                )) ...[
+                  if (order.courses.isNotEmpty)
+                    CourseHeading(name: section.course?.name ?? l.ungrouped),
+                  for (
+                    var index = 0;
+                    index < section.lines.length;
+                    index++
+                  ) ...[
+                    if (index > 0) const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 48,
+                          child: Text(
+                            '${section.lines[index].quantity}×',
+                            style: theme.textTheme.titleMedium,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          section.lines[index].name,
-                          style: theme.textTheme.titleMedium,
+                        Expanded(
+                          child: Text(
+                            section.lines[index].name,
+                            style: theme.textTheme.titleMedium,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  if (order.managedOrderId != null &&
-                      section.lines[index].addedRevision <=
-                          order.completedRevision)
-                    Text(
-                      l.previouslyCompleted,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      ],
                     ),
-                  if (order.revision > 1 &&
-                      section.lines[index].addedRevision == order.revision)
-                    Text(
-                      l.latestAdditions,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  if (section.lines[index].preparationNote.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 48, top: 3),
-                      child: Text(
-                        section.lines[index].preparationNote,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                    if (order.managedOrderId != null &&
+                        section.lines[index].addedRevision <=
+                            order.completedRevision)
+                      Text(
+                        l.previouslyCompleted,
+                        style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
+                    if (order.revision > 1 &&
+                        section.lines[index].addedRevision == order.revision)
+                      Text(
+                        l.latestAdditions,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    if (section.lines[index].preparationNote.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 48, top: 3),
+                        child: Text(
+                          section.lines[index].preparationNote,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
-              ],
               const SizedBox(height: 16),
               Text(
                 DateFormat.yMMMd(locale)
@@ -787,6 +799,26 @@ class _OrderCard extends StatelessWidget {
 class _OrderDialog extends StatelessWidget {
   const _OrderDialog({required this.order, required this.controller});
 
+  final ServerOrder order;
+  final ServerInboxController controller;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: controller,
+    builder: (context, _) {
+      final current = controller.orders
+          .where((value) => value.id == order.id)
+          .firstOrNull;
+      return _OrderDialogContents(
+        order: current ?? order,
+        controller: controller,
+      );
+    },
+  );
+}
+
+class _OrderDialogContents extends StatelessWidget {
+  const _OrderDialogContents({required this.order, required this.controller});
   final ServerOrder order;
   final ServerInboxController controller;
 
@@ -833,41 +865,63 @@ class _OrderDialog extends StatelessWidget {
               if (order.heading.isNotEmpty)
                 _DetailRow(label: l.heading, value: order.heading),
               const Divider(height: 28),
-              for (final section in courseSections(
-                order.courses,
-                order.lines,
-                (line) => line.courseId,
-              )) ...[
-                if (order.courses.isNotEmpty)
-                  CourseHeading(name: section.course?.name ?? l.ungrouped),
-                for (final line in section.lines) ...[
-                  Text(
-                    '${line.quantity}×  ${line.name}',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  if (order.managedOrderId != null &&
-                      line.addedRevision <= order.completedRevision)
+              if (order.managedOrderId != null) ...[
+                Text(l.serverDeliveryRules),
+                const SizedBox(height: 12),
+                DeliveryProgress(
+                  courses: order.courses,
+                  lines: _progressLines(order),
+                  busy: controller.updating,
+                  onChanged: (id, quantity, expected) async {
+                    final success = await controller.setLineDelivered(
+                      order.id,
+                      id,
+                      quantity,
+                      expectedQuantity: expected,
+                    );
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l.deliveryProgressFailed)),
+                      );
+                    }
+                  },
+                ),
+              ] else
+                for (final section in courseSections(
+                  order.courses,
+                  order.lines,
+                  (line) => line.courseId,
+                )) ...[
+                  if (order.courses.isNotEmpty)
+                    CourseHeading(name: section.course?.name ?? l.ungrouped),
+                  for (final line in section.lines) ...[
                     Text(
-                      l.previouslyCompleted,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      '${line.quantity}×  ${line.name}',
+                      style: theme.textTheme.titleMedium,
                     ),
-                  if (order.revision > 1 &&
-                      line.addedRevision == order.revision)
-                    Text(
-                      l.latestAdditions,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.primary,
+                    if (order.managedOrderId != null &&
+                        line.addedRevision <= order.completedRevision)
+                      Text(
+                        l.previouslyCompleted,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  if (line.preparationNote.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(line.preparationNote),
+                    if (order.revision > 1 &&
+                        line.addedRevision == order.revision)
+                      Text(
+                        l.latestAdditions,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    if (line.preparationNote.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(line.preparationNote),
+                    ],
+                    const SizedBox(height: 14),
                   ],
-                  const SizedBox(height: 14),
                 ],
-              ],
               if (order.orderNote.isNotEmpty) ...[
                 const Divider(),
                 Text(l.orderNotes, style: theme.textTheme.labelLarge),
@@ -995,3 +1049,16 @@ class _DetailRow extends StatelessWidget {
     ),
   );
 }
+
+List<DeliveryProgressLine> _progressLines(ServerOrder order) => [
+  for (final line in order.lines)
+    DeliveryProgressLine(
+      id: line.id!,
+      name: line.name,
+      quantity: line.quantity,
+      delivered: line.deliveredQuantity,
+      note: line.preparationNote,
+      courseId: line.courseId,
+      isAddition: order.revision > 1 && line.addedRevision == order.revision,
+    ),
+];

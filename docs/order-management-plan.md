@@ -20,9 +20,17 @@ Transactional SQLite schema 12 stores active orders independently of the editor 
 
 An active order retains its original Server destination and per-line Local only choices. Orders started unpaired remain local. Moving a backup to a different installation restores active orders for local additions without recreating networking credentials or deliveries. Restore on the original installation does not rewind a Server; a stale revision is rejected. Managed tickets with unfinished Server delivery cannot be deleted because they are needed for print recovery and revision ordering. Client item statistics count additions rather than counting the same items again in every full snapshot. This step supports additions; edits or removal of already submitted items and per-item delivery remain outside its scope.
 
-## 4. Per-item delivery: planned
+## 4a. Per-item delivery on each device: implemented
 
-Track delivered quantities against stable order-line identifiers, allowing partial delivery when a line contains several units. Show outstanding and delivered items within each course on both devices. Persist local delivery progress and synchronise changes explicitly with revision and conflict handling when paired. Additions remain outstanding and must not inherit earlier delivery state. Preserve the existing Received and Completed workflow for ordinary tickets. Completion and undo rules must be explicit and recoverable.
+Keep orders open also enables delivery tracking for retained active orders. In Active orders, expand Delivery progress to mark individual units, mark a whole line delivered or undo a delivery. Previously ordered content stays fixed. Outstanding and fully delivered lines are visually separated within each course, with partial counts on each line. New additions start outstanding even when the same product was delivered earlier. Delivery edits need no printer, Server or internet and do not create tickets, print jobs or transactions. Fully delivered Client orders stay open for additions until explicitly closed. Disabling Keep orders open retains controls for existing active orders.
+
+Managed Server orders use the same controls in their details. Preparation totals subtract delivered quantities. Delivering every item moves the order to Completed; undoing any unit returns it to Received. Done marks all items delivered and Undo Done resets every delivered quantity. Additions return the order to Received and preserve prior line progress. Ordinary tickets retain their existing Received/Done workflow and do not expose per-item controls. Transactional SQLite schema 13 preserves earlier Server completion markers as delivered quantities during migration and stores Client progress independently of saved content. Full backups retain and validate Client progress; schema 12 backups restore with zero Client deliveries. Server inbox data remains outside backups.
+
+Progress is currently independent on each device, and controls explicitly explain that it is not shared with the paired device. Keeping local tracking and paired synchronisation in separate changes makes persistence and completion rules independently reviewable.
+
+## 4b. Paired delivery progress synchronisation: planned
+
+Synchronise delivery quantities explicitly between paired devices, with revisions, idempotent retry after interrupted acknowledgement and conflict handling when both devices change progress. Retain offline edits without silently overwriting them, scope updates to the original Client and Server identities and wait for referenced order additions to be received. Preserve Local only line progress on the Client. Older Servers must leave progress usable locally and explain unsupported synchronisation. Completion and undo must follow the same rules after synchronisation.
 
 ## 5. Optional product prices and totals: planned
 

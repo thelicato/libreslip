@@ -1430,6 +1430,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deliveryWaitingForRevision =>
       'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.';
+
+  @override
+  String get deliveryProgress => 'Delivery progress';
+
+  @override
+  String get deliveryProgressLocal =>
+      'Progress is saved on this device. It is not yet shared with the paired device.';
+
+  @override
+  String get deliveredItems => 'Delivered items';
+
+  @override
+  String deliveryQuantity(String delivered, String outstanding) {
+    return 'Delivered: $delivered · Outstanding: $outstanding';
+  }
+
+  @override
+  String deliverOne(String name) {
+    return 'Deliver one $name';
+  }
+
+  @override
+  String undoOneDelivery(String name) {
+    return 'Undo delivery of one $name';
+  }
+
+  @override
+  String get deliverWholeLine => 'Mark all delivered';
+
+  @override
+  String get undoLineDelivery => 'Undo this line';
+
+  @override
+  String get deliveryProgressFailed =>
+      'Could not save delivery progress. Check the current quantities and try again.';
+
+  @override
+  String get serverDeliveryRules =>
+      'Mark Done marks every item delivered. Move to Received resets all deliveries. Undoing an individual delivery returns the order to Received.';
+
+  @override
+  String get clientDeliveryRules =>
+      'Delivered orders stay open for additions until you close them.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

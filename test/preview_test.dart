@@ -36,6 +36,12 @@ void main() {
   testWidgets('capture representative workspace renders', skip: !capture, (
     tester,
   ) async {
+    final previousHitTestSetting = WidgetController.hitTestWarningShouldBeFatal;
+    WidgetController.hitTestWarningShouldBeFatal = true;
+    addTearDown(
+      () =>
+          WidgetController.hitTestWarningShouldBeFatal = previousHitTestSetting,
+    );
     final configFile = File('.dart_tool/package_config.json').absolute;
     final config =
         jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
@@ -203,6 +209,55 @@ void main() {
       (
         'managed-server-dialog-tablet-en',
         const Size(1100, 1200),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-delivery-active-tablet-en',
+        const Size(1100, 1100),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-delivery-active-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-delivery-active-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-delivery-active-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-delivery-server-dialog-tablet-en',
+        const Size(1100, 1200),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-delivery-server-dialog-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-delivery-server-dialog-landscape-en',
+        const Size(915, 412),
         'en',
         ThemeMode.light,
         5,
@@ -516,7 +571,8 @@ void main() {
       }
       if (managedPreview && (page == 2 || page == 3)) {
         await orders.saveActiveTicket(heading: 'Corner & Co.');
-        if (name != 'managed-active-phone-it-large-text') {
+        if (name != 'managed-active-phone-it-large-text' &&
+            !name.contains('delivery-active')) {
           await orders.beginAddition(orders.managedOrders.single.id);
           orders.saveCourse(language == 'it' ? 'Bevande' : 'Drinks');
           await orders.saveItem(
@@ -535,6 +591,31 @@ void main() {
       }
       if (page == 3) {
         await orders.saveActiveTicket(heading: 'Corner & Co.');
+      }
+      if (name.contains('delivery-active')) {
+        final order = orders.managedOrders.single;
+        await orders.setLineDelivered(
+          order.id,
+          order.lines.first.id,
+          1,
+          expectedQuantity: 0,
+        );
+        await orders.setLineDelivered(
+          order.id,
+          order.lines.last.id,
+          1,
+          expectedQuantity: 0,
+        );
+      }
+      if (name.contains('delivery-server')) {
+        final order = (await environment.repository.loadServerOrders())
+            .firstWhere((order) => order.managedOrderId != null);
+        await environment.repository.setServerLineDelivered(
+          order.id,
+          'toast-line',
+          1,
+          expectedQuantity: 2,
+        );
       }
       final boundary = GlobalKey();
       await tester.pumpWidget(
@@ -564,12 +645,29 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (managedPreview && page == 2) {
-        if (name == 'managed-active-phone-it-large-text') {
+        if (name == 'managed-active-phone-it-large-text' ||
+            name.contains('delivery-active')) {
           final active = find.byKey(const ValueKey('active-orders'));
           await tester.ensureVisible(active);
           await tester.pumpAndSettle();
           await tester.tap(active);
           await tester.pumpAndSettle();
+          if (name.contains('delivery-active')) {
+            final expansion = find.byType(ExpansionTile).last;
+            await tester.ensureVisible(expansion);
+            await tester.tap(expansion);
+            await tester.pumpAndSettle();
+            if (size.width < 760 || size.height < 600) {
+              await tester.ensureVisible(
+                find.byKey(
+                  ValueKey(
+                    'delivery-line-${orders.managedOrders.single.lines.first.id}',
+                  ),
+                ),
+              );
+              await tester.pumpAndSettle();
+            }
+          }
         }
       } else if (groupedPreview && page == 2) {
         if (name == 'courses-manage-phone-it-large-text') {
@@ -590,9 +688,45 @@ void main() {
       }
       if (name == 'server-order-dialog-tablet-en' ||
           name == 'courses-server-dialog-tablet-en' ||
-          name == 'managed-server-dialog-tablet-en') {
-        await tester.tap(find.text('Order 12'));
-        await tester.pumpAndSettle();
+          name == 'managed-server-dialog-tablet-en' ||
+          name.contains('delivery-server-dialog')) {
+        final identity = find.text(language == 'it' ? 'Ordine 12' : 'Order 12');
+        // Use the stored title because the Italian order-number label differs.
+        if (name.contains('delivery-server-dialog')) {
+          final card = find.byKey(
+            ValueKey(
+              'server-order-${inbox!.orders.firstWhere((order) => order.displayNumber == 12).id}',
+            ),
+          );
+          await tester.scrollUntilVisible(
+            card,
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          final title = find.descendant(
+            of: card,
+            matching: find.text('Tavolo 4'),
+          );
+          await tester.ensureVisible(title);
+          await tester.pumpAndSettle();
+          await tester.tap(title);
+          await tester.pumpAndSettle();
+          expect(find.byType(AlertDialog), findsOneWidget);
+          if (size.width < 760 || size.height < 600) {
+            await tester.ensureVisible(
+              find.descendant(
+                of: find.byType(AlertDialog),
+                matching: find.byKey(
+                  const ValueKey('delivery-line-toast-line'),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+          }
+        } else {
+          await tester.tap(identity);
+          await tester.pumpAndSettle();
+        }
       }
       if (name == 'server-completed-dialog-tablet-en') {
         await tester.tap(find.text('Completed (1)'));

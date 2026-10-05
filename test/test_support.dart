@@ -61,6 +61,7 @@ class MemorySettingsRepository implements SettingsRepository {
 }
 
 Future<void> removeManagedColumnsForLegacyFixture(Database database) async {
+  await removeDeliveryColumnsForLegacyFixture(database);
   await database.execute('DROP INDEX server_managed_order_unique');
   await database.execute('DROP TABLE managed_orders');
   await database.execute('DROP TABLE server_order_revisions');
@@ -80,4 +81,13 @@ Future<void> removeManagedColumnsForLegacyFixture(Database database) async {
   ]) {
     await database.execute('ALTER TABLE $table DROP COLUMN $column');
   }
+}
+
+Future<void> removeDeliveryColumnsForLegacyFixture(Database database) async {
+  await database.execute(
+    'ALTER TABLE managed_orders DROP COLUMN delivery_progress_json',
+  );
+  await database.execute(
+    'ALTER TABLE server_order_lines DROP COLUMN delivered_quantity',
+  );
 }

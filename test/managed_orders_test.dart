@@ -542,6 +542,27 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('active-orders')));
         await tester.pumpAndSettle();
+        final order = controller.managedOrders.single;
+        final expand = find.byType(ExpansionTile).last;
+        await tester.ensureVisible(expand);
+        await tester.tap(expand);
+        await tester.pumpAndSettle();
+        final deliver = find.byKey(
+          ValueKey('deliver-one-${order.lines.single.id}'),
+        );
+        await tester.ensureVisible(deliver);
+        await tester.pumpAndSettle();
+        await tester.tap(deliver);
+        await tester.pumpAndSettle();
+        expect(controller.managedOrders.single.deliveredCount, 1);
+        final undo = find.byKey(
+          ValueKey('undo-delivery-${order.lines.single.id}'),
+        );
+        await tester.ensureVisible(undo);
+        await tester.pumpAndSettle();
+        await tester.tap(undo);
+        await tester.pumpAndSettle();
+        expect(controller.managedOrders.single.deliveredCount, 0);
         final add = find.byKey(
           ValueKey('add-to-order-${controller.managedOrders.single.id}'),
         );

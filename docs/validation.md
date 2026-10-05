@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Optional per-item delivery on each device, 5 October 2026
+
+Validated step 4a of optional order management with the unchanged LibreSlip `VERSION` value 1.6.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | Dart formatting passed and `flutter analyze --no-pub` reported no issues. |
+| Automated regression | All 142 active tests passed; only the opt-in render capture was skipped in the normal run. The 32 affected persistence, Server, composition and archive tests passed again after the final layout and restore checks. |
+| Offline progress and snapshots | Partial delivery, whole-line delivery and undo survived database reopen. Editing delivery during additions preserved progress; new lines started at zero. Edits did not rewrite saved tickets, change their revision or queue networking. Retained active orders remained editable with the option disabled. Closed orders and invalid or stale quantity edits were rejected atomically. |
+| Migration and Server completion | Schema 12 migration preserved earlier managed Done actions, including orders reopened by additions, and left local ticket history unchanged. Server preparation totals subtracted delivered quantities. The final unit completed the order; undo returned it to Received. Done filled all counts, Move to Received reset them, revisions and duplicate acknowledgements retained partial deliveries, and ordinary orders kept their original controls. |
+| Archives and recovery | Full backup restore on a fresh installation preserved partial progress and continued additions locally. Schema 12 snapshots defaulted to zero progress. Unknown lines, missing maps and invalid quantity values were rejected before replacement. A malformed archive with recomputed checksums failed preview without changing progress. Failed settings replacement rolled back current delivery counts, and interrupted restore recovered the pre-import progress. |
+| Responsive and localised rendering | Forty-two captures completed with framework and missed-tap checks. Inspected English tablet and landscape Client progress, Italian phone progress and the 320-pixel Italian dialog at doubled text, plus Italian phone and English tablet and landscape Server details. Scrolling retains reachable controls; per-line buttons wrap on narrow layouts. Both Client and Server widget tests exercised delivery and undo. |
+| Android preview APK | Fresh debug APK built with version name 1.6.0, application identifier `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. This is a preview, not a production release. |
+| Platform and hardware checks | No new device installation, offline cold launch, permission-denial, Android process-death or physical printer verification was performed. SQLite reopen and widget tests do not establish Android device behaviour or paper output. |
+| Compatibility and scope | Delivery controls belong to the disabled-by-default managed-order workflow. Database schema 13 accepts portable schemas 5 through 12; configuration document version 3 and order envelope versions 1, 2 and 3 remain unchanged. Client and Server progress is explicitly local to each device. Paired progress synchronisation is step 4b; optional prices follow in step 5. |
+
 ## Optional active-order additions, 5 October 2026
 
 Validated the third optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.

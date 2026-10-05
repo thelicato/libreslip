@@ -240,6 +240,12 @@ void main() {
       keepOpen: true,
     );
     final managed = (await orders.loadManagedOrders()).single;
+    await orders.setManagedLineDelivered(
+      managed.id,
+      managed.lines.single.id,
+      2,
+      expectedQuantity: 0,
+    );
     final blankAddition = await orders.createDraft();
     final addition = await orders.beginOrderAddition(
       managed.id,
@@ -286,6 +292,7 @@ void main() {
     );
     expect(await destination.loadNextOrderNumber(), 2);
     expect((await destination.loadManagedOrders()).single.id, managed.id);
+    expect((await destination.loadManagedOrders()).single.deliveredCount, 2);
     expect(
       (await destination.loadManagedOrders()).single.destinationId,
       isNull,
@@ -314,6 +321,13 @@ void main() {
           lines: [TicketLine(id: createLocalId(), name: 'Keep', quantity: 1)],
         ),
         heading: 'Before import',
+        keepOpen: true,
+      );
+      await orders.setManagedLineDelivered(
+        ticket.managedOrderId!,
+        ticket.lines.single.id,
+        1,
+        expectedQuantity: 0,
       );
       final oldSnapshot = await orders.createPortableSnapshot();
       final oldFeatures = await orders.loadFeatureSettings();
@@ -343,6 +357,7 @@ void main() {
 
       expect((await orders.loadTickets()).single.id, ticket.id);
       expect(settings.stored!.heading, 'Before import');
+      expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
       expect(journal.existsSync(), isFalse);
       expect(staged.existsSync(), isFalse);
     },
@@ -402,6 +417,22 @@ void main() {
 
     await orders.deleteAllTickets();
     final currentItem = await orders.saveItem(name: 'Current only');
+    final currentDraft = await orders.createDraft();
+    final currentTicket = await orders.convertDraftToTicket(
+      currentDraft.copyWith(
+        lines: const [
+          TicketLine(id: 'current-progress', name: 'Current only', quantity: 2),
+        ],
+      ),
+      heading: 'Current',
+      keepOpen: true,
+    );
+    await orders.setManagedLineDelivered(
+      currentTicket.managedOrderId!,
+      'current-progress',
+      1,
+      expectedQuantity: 0,
+    );
     settings.failNextSave = true;
 
     await expectLater(
@@ -409,7 +440,8 @@ void main() {
       throwsA(isA<PortabilityException>()),
     );
 
-    expect(await orders.loadTickets(), isEmpty);
+    expect((await orders.loadTickets()).single.id, currentTicket.id);
+    expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
     expect(
       (await orders.loadItems()).any((item) => item.id == currentItem.id),
       isTrue,
@@ -421,6 +453,37 @@ void main() {
       isFalse,
     );
   });
+  test('invalid delivered quantities fail archive preview with current progress intact', () async {
+    final draft = await orders.createDraft();
+    final ticket = await orders.convertDraftToTicket(
+      draft.copyWith(
+        lines: const [
+          TicketLine(id: 'progress-soup', name: 'Soup', quantity: 2),
+        ],
+      ),
+      heading: 'Kitchen',
+      keepOpen: true,
+    );
+    await orders.setManagedLineDelivered(
+      ticket.managedOrderId!,
+      'progress-soup',
+      1,
+      expectedQuantity: 0,
+    );
+    final bytes = await service.createArchive(PortableArchiveKind.fullBackup);
+    final broken = _rewriteDatabase(bytes, (snapshot) {
+      ((snapshot['tables'] as Map)['managed_orders'] as List)
+              .single['delivery_progress_json'] =
+          '{"progress-soup":3}';
+    });
+    await expectLater(
+      service.inspectArchive(broken),
+      throwsA(isA<PortabilityException>()),
+    );
+    expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
+    expect((await orders.loadTickets()).single.id, ticket.id);
+  });
+
   test('invalid managed revision metadata fails preview before replacing current data', () async {
     final draft = await orders.createDraft();
     await orders.convertDraftToTicket(

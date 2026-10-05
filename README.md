@@ -27,7 +27,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Compose tickets with quantities, preparation notes, order notes and an optional order title or table name. Titles appear prominently in Compose, ticket history and the Server board, alongside the order number. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
 - Optionally separate items into named, ordered courses in Compose, Server orders, ticket previews, printed tickets and PDFs.
-- Optionally keep orders open, add items later and print labelled additions while retaining every saved revision.
+- Optionally keep orders open, add items later and print labelled additions while retaining every saved revision. Track delivered quantities and undo deliveries within each course.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
 - Browse immutable ticket history and delete individual tickets or clear the history when needed.
@@ -49,16 +49,20 @@ Course groups are off by default. When enabled, new orders reuse your course nam
 
 Enable **Keep orders open** under Order fields to retain new orders for later additions. After printing, choose **Active orders** in Compose, select an order and add drinks or other catalogue items. Finish the current composition before selecting another order. **Print additions** saves a new full-order revision and prints only the new items, with the original order number and a revision label. Ticket details retain the complete snapshot and explicit reprint recovery. Previously submitted content stays fixed. Cancel additions discards only the current additions; Close order ends further additions without deleting history or marking the Server order Done. Existing active orders remain available after disabling the option.
 
-Managed Server delivery requires an updated Server and sends revisions in order after local printing. The Server keeps one order, highlights additions and returns it to Received when needed, preserving which earlier revision was completed. Active orders started unpaired stay local; moving a backup to a different phone keeps those orders available locally. Pending managed deliveries retain their history tickets for recovery. Individual item delivery and optional prices remain [later steps](docs/order-management-plan.md).
+Managed Server delivery requires an updated Server and sends revisions in order after local printing. The Server keeps one order, highlights additions and returns it to Received when needed, preserving which earlier revision was completed. Active orders started unpaired stay local; moving a backup to a different phone keeps those orders available locally. Pending managed deliveries retain their history tickets for recovery. Paired progress synchronisation and optional prices remain [later steps](docs/order-management-plan.md).
+
+In **Active orders**, expand **Delivery progress** to deliver individual units, mark a whole line delivered or undo. Delivered and outstanding items are separated within each course, and new additions start outstanding. This works offline and does not print or change saved tickets. A fully delivered order stays open until you close it. Progress is currently stored independently on each device; it is not shared with a paired Server.
 
 ## Server mode
 
 Server mode turns another Android device into a focused preparation board:
 
-- **Orders** puts the item totals still waiting to be prepared above the Received and Completed lists, followed by immutable order details. Completed orders can be restored to Received or deleted individually or together.
+- **Orders** puts the item totals still waiting to be prepared above the Received and Completed lists, followed by order details. Managed orders also show per-item delivery progress. Completed orders can be restored to Received or deleted individually or together.
 - **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
 
-Server mode only receives orders, moves them between Received and Completed, and removes Completed history when requested. It does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
+For managed orders, details let you deliver individual quantities. Totals count only outstanding units. Delivering the last unit moves the order to Completed; undoing any unit returns it to Received. Done delivers all items, while Undo Done resets every delivered quantity. Ordinary orders keep their Received/Done controls. Server progress is currently independent of Client progress.
+
+Server mode receives orders, tracks preparation delivery, moves orders between Received and Completed, and removes Completed history when requested. It does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
 
 ## Printing
 

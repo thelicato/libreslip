@@ -21,7 +21,7 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 12;
+  static const databaseVersion = 13;
   static const portableSchemaVersions = {
     5,
     6,
@@ -30,6 +30,7 @@ class SqliteOrderRepository
     9,
     10,
     11,
+    12,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -525,6 +526,20 @@ class SqliteOrderRepository
         )
       ''');
     }
+    if (oldVersion < 13 && newVersion >= 13) {
+      await database.execute(
+        "ALTER TABLE managed_orders ADD COLUMN delivery_progress_json TEXT NOT NULL DEFAULT '{}' CHECK (length(delivery_progress_json) <= 32768)",
+      );
+      await database.execute(
+        'ALTER TABLE server_order_lines ADD COLUMN delivered_quantity INTEGER NOT NULL DEFAULT 0 CHECK (delivered_quantity >= 0 AND delivered_quantity <= quantity)',
+      );
+      // Preserve earlier Done actions, including orders reopened by additions.
+      await database.execute('''
+        UPDATE server_order_lines SET delivered_quantity = quantity
+        WHERE order_id IN (SELECT id FROM server_orders WHERE managed_order_id IS NOT NULL)
+          AND added_revision <= (SELECT completed_revision FROM server_orders WHERE id = order_id)
+      ''');
+    }
   }
 
   @override
@@ -1008,6 +1023,7 @@ class SqliteOrderRepository
       );
       String id;
       final oldRevisions = <String, int>{};
+      final oldDelivered = <String, int>{};
       if (current.isEmpty) {
         final deleted = await tx.query(
           'server_order_revisions',
@@ -1064,6 +1080,7 @@ class SqliteOrderRepository
             throw const ServerOrderConflictException();
           }
           oldRevisions[line.id!] = old['added_revision'] as int;
+          oldDelivered[line.id!] = old['delivered_quantity'] as int;
         }
       }
       final values = <String, Object?>{
@@ -1110,6 +1127,7 @@ class SqliteOrderRepository
           'order_id': id,
           'order_line_id': line.id,
           'added_revision': oldRevisions[line.id] ?? envelope.revision,
+          'delivered_quantity': oldDelivered[line.id] ?? 0,
           'name_snapshot': line.name,
           'quantity': line.quantity,
           'preparation_note': line.preparationNote,
@@ -1140,6 +1158,53 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<ServerOrder> setServerLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
+  }) async {
+    final database = await _db;
+    await database.transaction((tx) async {
+      final order = await _loadServerOrder(tx, orderId);
+      final lines = order.lines.where((line) => line.id == lineId).toList();
+      if (order.managedOrderId == null ||
+          lines.length != 1 ||
+          quantity < 0 ||
+          quantity > lines.single.quantity ||
+          lines.single.deliveredQuantity != expectedQuantity) {
+        throw const OrderStorageException(
+          'Invalid or stale delivery progress.',
+        );
+      }
+      await tx.update(
+        'server_order_lines',
+        {'delivered_quantity': quantity},
+        where: 'order_id = ? AND order_line_id = ?',
+        whereArgs: [orderId, lineId],
+      );
+      final complete = order.lines.every(
+        (line) =>
+            (line.id == lineId ? quantity : line.deliveredQuantity) ==
+            line.quantity,
+      );
+      await tx.update(
+        'server_orders',
+        {
+          'status': complete
+              ? ServerOrderStatus.done.value
+              : ServerOrderStatus.received.value,
+          'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
+          'completed_revision': complete ? order.revision : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+    });
+    return _loadServerOrder(database, orderId);
+  }
+
+  @override
   Future<ServerOrder> markServerOrderDone(
     String id, {
     required DateTime completedAt,
@@ -1149,7 +1214,7 @@ class SqliteOrderRepository
       await database.transaction((transaction) async {
         final rows = await transaction.query(
           'server_orders',
-          columns: ['status', 'revision'],
+          columns: ['status', 'revision', 'managed_order_id'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -1160,6 +1225,12 @@ class SqliteOrderRepository
           );
         }
         if (rows.single['status'] == ServerOrderStatus.received.value) {
+          if (rows.single['managed_order_id'] != null) {
+            await transaction.rawUpdate(
+              'UPDATE server_order_lines SET delivered_quantity = quantity WHERE order_id = ?',
+              [id],
+            );
+          }
           await transaction.update(
             'server_orders',
             {
@@ -1186,7 +1257,7 @@ class SqliteOrderRepository
       await database.transaction((transaction) async {
         final rows = await transaction.query(
           'server_orders',
-          columns: ['status'],
+          columns: ['status', 'managed_order_id'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -1197,6 +1268,14 @@ class SqliteOrderRepository
           );
         }
         if (rows.single['status'] == ServerOrderStatus.done.value) {
+          if (rows.single['managed_order_id'] != null) {
+            await transaction.update(
+              'server_order_lines',
+              {'delivered_quantity': 0},
+              where: 'order_id = ?',
+              whereArgs: [id],
+            );
+          }
           await transaction.update(
             'server_orders',
             {
@@ -1863,7 +1942,52 @@ class SqliteOrderRepository
       destinationId: row['destination_id'] as String?,
       clientInstallationId: row['client_installation_id'] as String?,
       serverRevision: row['server_revision'] as int,
+      deliveredQuantities: decodeDeliveryProgress(
+        row['delivery_progress_json'] ?? '{}',
+        lines,
+      ),
     );
+  }
+
+  @override
+  Future<void> setManagedLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
+  }) async {
+    await (await _db).transaction((tx) async {
+      final rows = await tx.query(
+        'managed_orders',
+        where: 'id = ? AND closed_at IS NULL',
+        whereArgs: [orderId],
+      );
+      if (rows.length != 1) {
+        throw const OrderStorageException('The active order was not found.');
+      }
+      final order = _managedFromRow(rows.single);
+      final lines = order.lines.where((line) => line.id == lineId).toList();
+      if (lines.length != 1 ||
+          quantity < 0 ||
+          quantity > lines.single.quantity ||
+          order.deliveredQuantity(lineId) != expectedQuantity) {
+        throw const OrderStorageException(
+          'Invalid or stale delivery progress.',
+        );
+      }
+      final progress = {...order.deliveredQuantities};
+      if (quantity == 0) {
+        progress.remove(lineId);
+      } else {
+        progress[lineId] = quantity;
+      }
+      await tx.update(
+        'managed_orders',
+        {'delivery_progress_json': jsonEncode(progress)},
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+    });
   }
 
   @override
@@ -1989,6 +2113,10 @@ class SqliteOrderRepository
             !(value as String).endsWith('Z')) {
           throw const FormatException('Invalid managed timestamp');
         }
+      }
+      if ((snapshot['schemaVersion'] as int) >= 13 &&
+          row['delivery_progress_json'] is! String) {
+        throw const FormatException('Missing delivery progress');
       }
       final order = _managedFromRow(row);
       if (orders.containsKey(order.id)) {
@@ -2653,6 +2781,7 @@ class SqliteOrderRepository
             courseId: line['course_id'] as String?,
             id: line['order_line_id'] as String?,
             addedRevision: line['added_revision'] as int? ?? 0,
+            deliveredQuantity: line['delivered_quantity'] as int? ?? 0,
           ),
       ],
     );

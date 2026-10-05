@@ -1443,6 +1443,49 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get deliveryWaitingForRevision =>
       'In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.';
+
+  @override
+  String get deliveryProgress => 'Avanzamento consegna';
+
+  @override
+  String get deliveryProgressLocal =>
+      'L’avanzamento è salvato su questo dispositivo. Non è ancora condiviso con il dispositivo abbinato.';
+
+  @override
+  String get deliveredItems => 'Articoli consegnati';
+
+  @override
+  String deliveryQuantity(String delivered, String outstanding) {
+    return 'Consegnati: $delivered · Da consegnare: $outstanding';
+  }
+
+  @override
+  String deliverOne(String name) {
+    return 'Consegna un articolo: $name';
+  }
+
+  @override
+  String undoOneDelivery(String name) {
+    return 'Annulla la consegna di un articolo: $name';
+  }
+
+  @override
+  String get deliverWholeLine => 'Segna tutti come consegnati';
+
+  @override
+  String get undoLineDelivery => 'Annulla questa riga';
+
+  @override
+  String get deliveryProgressFailed =>
+      'Impossibile salvare l’avanzamento. Controlla le quantità attuali e riprova.';
+
+  @override
+  String get serverDeliveryRules =>
+      '«Segna completato» segna tutti gli articoli come consegnati. «Riporta tra i ricevuti» azzera tutte le consegne. Annullare una singola consegna riporta l’ordine tra i Ricevuti.';
+
+  @override
+  String get clientDeliveryRules =>
+      'Gli ordini consegnati restano aperti per aggiunte finché non li chiudi.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

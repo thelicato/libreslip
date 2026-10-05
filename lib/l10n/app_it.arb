@@ -567,5 +567,40 @@
   "managedHistoryPending": "Invia le revisioni in attesa prima di eliminare le comande salvate.",
   "activeOrderLocal": "Questo ordine resta su questo telefono.",
   "previouslyCompleted": "Già completato",
-  "deliveryWaitingForRevision": "In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio."
+  "deliveryWaitingForRevision": "In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.",
+  "deliveryProgress": "Avanzamento consegna",
+  "deliveryProgressLocal": "L’avanzamento è salvato su questo dispositivo. Non è ancora condiviso con il dispositivo abbinato.",
+  "deliveredItems": "Articoli consegnati",
+  "deliveryQuantity": "Consegnati: {delivered} · Da consegnare: {outstanding}",
+  "deliverOne": "Consegna un articolo: {name}",
+  "undoOneDelivery": "Annulla la consegna di un articolo: {name}",
+  "deliverWholeLine": "Segna tutti come consegnati",
+  "undoLineDelivery": "Annulla questa riga",
+  "deliveryProgressFailed": "Impossibile salvare l’avanzamento. Controlla le quantità attuali e riprova.",
+  "serverDeliveryRules": "«Segna completato» segna tutti gli articoli come consegnati. «Riporta tra i ricevuti» azzera tutte le consegne. Annullare una singola consegna riporta l’ordine tra i Ricevuti.",
+  "clientDeliveryRules": "Gli ordini consegnati restano aperti per aggiunte finché non li chiudi.",
+  "@deliverOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@undoOneDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@deliveryQuantity": {
+    "placeholders": {
+      "delivered": {
+        "type": "String"
+      },
+      "outstanding": {
+        "type": "String"
+      }
+    }
+  }
 }

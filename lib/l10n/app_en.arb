@@ -567,5 +567,40 @@
   "managedHistoryPending": "Deliver pending revisions before deleting their saved tickets.",
   "activeOrderLocal": "This order stays on this phone.",
   "previouslyCompleted": "Previously completed",
-  "deliveryWaitingForRevision": "Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery."
+  "deliveryWaitingForRevision": "Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.",
+  "deliveryProgress": "Delivery progress",
+  "deliveryProgressLocal": "Progress is saved on this device. It is not yet shared with the paired device.",
+  "deliveredItems": "Delivered items",
+  "deliveryQuantity": "Delivered: {delivered} · Outstanding: {outstanding}",
+  "deliverOne": "Deliver one {name}",
+  "undoOneDelivery": "Undo delivery of one {name}",
+  "deliverWholeLine": "Mark all delivered",
+  "undoLineDelivery": "Undo this line",
+  "deliveryProgressFailed": "Could not save delivery progress. Check the current quantities and try again.",
+  "serverDeliveryRules": "Mark Done marks every item delivered. Move to Received resets all deliveries. Undoing an individual delivery returns the order to Received.",
+  "clientDeliveryRules": "Delivered orders stay open for additions until you close them.",
+  "@deliverOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@undoOneDelivery": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@deliveryQuantity": {
+    "placeholders": {
+      "delivered": {
+        "type": "String"
+      },
+      "outstanding": {
+        "type": "String"
+      }
+    }
+  }
 }

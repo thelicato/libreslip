@@ -138,6 +138,35 @@ class ServerInboxController extends ChangeNotifier {
     _notify();
   }
 
+  Future<bool> setLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
+  }) async {
+    if (updating) return false;
+    updating = true;
+    _notify();
+    try {
+      await _store.setServerLineDelivered(
+        orderId,
+        lineId,
+        quantity,
+        expectedQuantity: expectedQuantity,
+      );
+      orders = await _store.loadServerOrders();
+      failed = false;
+      return true;
+    } catch (_) {
+      // Reload after a stale action so the next action uses current progress.
+      await refresh();
+      return false;
+    } finally {
+      updating = false;
+      _notify();
+    }
+  }
+
   Future<bool> markDone(String id) async {
     if (updating) return false;
     updating = true;

@@ -97,6 +97,24 @@ class OrderWorkspaceController extends ChangeNotifier {
     activeDraftId = replacement.id;
   });
 
+  Future<bool> setLineDelivered(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedQuantity,
+  }) => _perform(() async {
+    try {
+      await _repository.setManagedLineDelivered(
+        orderId,
+        lineId,
+        quantity,
+        expectedQuantity: expectedQuantity,
+      );
+    } finally {
+      managedOrders = await _repository.loadManagedOrders();
+    }
+  });
+
   Future<bool> closeOrder(String id) => _perform(() async {
     await flushWrites();
     await _repository.closeManagedOrder(id);

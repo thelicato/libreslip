@@ -2619,6 +2619,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.'**
   String get deliveryWaitingForRevision;
+
+  /// No description provided for @deliveryProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery progress'**
+  String get deliveryProgress;
+
+  /// No description provided for @deliveryProgressLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress is saved on this device. It is not yet shared with the paired device.'**
+  String get deliveryProgressLocal;
+
+  /// No description provided for @deliveredItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered items'**
+  String get deliveredItems;
+
+  /// No description provided for @deliveryQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered: {delivered} · Outstanding: {outstanding}'**
+  String deliveryQuantity(String delivered, String outstanding);
+
+  /// No description provided for @deliverOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver one {name}'**
+  String deliverOne(String name);
+
+  /// No description provided for @undoOneDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo delivery of one {name}'**
+  String undoOneDelivery(String name);
+
+  /// No description provided for @deliverWholeLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all delivered'**
+  String get deliverWholeLine;
+
+  /// No description provided for @undoLineDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo this line'**
+  String get undoLineDelivery;
+
+  /// No description provided for @deliveryProgressFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save delivery progress. Check the current quantities and try again.'**
+  String get deliveryProgressFailed;
+
+  /// No description provided for @serverDeliveryRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Done marks every item delivered. Move to Received resets all deliveries. Undoing an individual delivery returns the order to Received.'**
+  String get serverDeliveryRules;
+
+  /// No description provided for @clientDeliveryRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered orders stay open for additions until you close them.'**
+  String get clientDeliveryRules;
 }
 
 class _AppLocalizationsDelegate

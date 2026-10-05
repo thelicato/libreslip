@@ -9,6 +9,7 @@ import 'package:libreslip/features/networking/domain/server_inbox_models.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
+import 'package:libreslip/features/settings/domain/app_settings.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 
 import 'test_support.dart';
@@ -53,6 +54,112 @@ void main() {
     expect(totals.map((total) => total.name), ['Soup', 'Tea']);
     expect(totals.map((total) => total.quantity), [5, 1]);
   });
+
+  for (final (language, size, scale) in [
+    ('en', const Size(1100, 900), 1.0),
+    ('it', const Size(320, 740), 2.0),
+    ('en', const Size(915, 412), 1.0),
+  ]) {
+    testWidgets('managed Server delivery and undo $language $size', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final environment = await createMemoryOrderEnvironment();
+      final repository = environment.repository;
+      await repository.pairClient(
+        PairedClient(
+          installationId: 'client',
+          displayName: 'Client',
+          identityFingerprint: 'b' * 64,
+          pairedAt: DateTime.utc(2026, 10, 5),
+        ),
+      );
+      final received = await repository.receiveServerOrder(
+        OrderDeliveryEnvelope.create(
+          clientInstallationId: 'client',
+          deliveryId: 'delivery',
+          ticketId: 'ticket',
+          managedOrderId: 'managed',
+          revision: 1,
+          ticketNumber: 17,
+          createdAt: DateTime.utc(2026, 10, 5),
+          heading: 'Kitchen',
+          reference: 'Table 4',
+          orderNote: '',
+          courses: const [OrderCourse(id: 'first', name: 'First course')],
+          lines: const [
+            DeliveryLine(
+              id: 'soup',
+              name: 'Soup',
+              quantity: 2,
+              courseId: 'first',
+            ),
+          ],
+        ),
+        receivedAt: DateTime.utc(2026, 10, 5),
+      );
+      final settings = SettingsController(
+        MemorySettingsRepository()
+          ..stored = AppSettings(language: language, appTextScale: scale),
+      );
+      final networking = NetworkModeController(repository);
+      final inbox = ServerInboxController(
+        repository,
+        _MemoryServerSecrets(),
+        _FakeServerHost(),
+      );
+      addTearDown(settings.dispose);
+      addTearDown(networking.dispose);
+      addTearDown(inbox.dispose);
+      addTearDown(environment.controller.dispose);
+      await settings.load();
+      await networking.load();
+      await networking.setMode(LibreSlipMode.server);
+      await tester.pumpWidget(
+        LibreSlipApp(
+          settings: settings,
+          orders: environment.controller,
+          networking: networking,
+          serverInbox: inbox,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final card = find.byKey(ValueKey('server-order-${received.order.id}'));
+      await tester.scrollUntilVisible(
+        card,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+      final deliver = find.byKey(const ValueKey('deliver-one-soup'));
+      await tester.ensureVisible(deliver);
+      await tester.pumpAndSettle();
+      await tester.tap(deliver);
+      await tester.pumpAndSettle();
+      expect(inbox.orders.single.lines.single.deliveredQuantity, 1);
+      expect(inbox.receivedOrders, hasLength(1));
+      final all = find.byKey(const ValueKey('deliver-all-soup'));
+      await tester.ensureVisible(all);
+      await tester.pumpAndSettle();
+      await tester.tap(all);
+      await tester.pumpAndSettle();
+      expect(inbox.completedOrders, hasLength(1));
+      final undo = find.byKey(const ValueKey('undo-delivery-soup'));
+      await tester.ensureVisible(undo);
+      await tester.pumpAndSettle();
+      await tester.tap(undo);
+      await tester.pumpAndSettle();
+      expect(inbox.orders.single.lines.single.deliveredQuantity, 1);
+      expect(inbox.receivedOrders, hasLength(1));
+      expect(inbox.completedOrders, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   test('Server orders load oldest first', () async {
     final environment = await createMemoryOrderEnvironment();

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
-import 'course_composer.dart';
+import 'delivery_progress.dart';
 import 'order_identity.dart';
 
 class ManagedOrderComposer extends StatelessWidget {
@@ -62,7 +62,9 @@ class ManagedOrderComposer extends StatelessWidget {
                 key: const ValueKey('previously-ordered'),
                 tilePadding: EdgeInsets.zero,
                 title: Text(l.previouslyOrdered),
-                children: [_OrderContents(order: order)],
+                children: [
+                  _OrderContents(order: order, controller: controller),
+                ],
               ),
               Align(
                 alignment: AlignmentDirectional.centerStart,
@@ -106,6 +108,10 @@ class _ActiveOrdersDialog extends StatelessWidget {
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       return AlertDialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
+          vertical: 24,
+        ),
         title: Text(l.activeOrders),
         content: SizedBox(
           width: 560,
@@ -136,8 +142,13 @@ class _ActiveOrdersDialog extends StatelessWidget {
                             Text(l.activeOrderLocal),
                           ExpansionTile(
                             tilePadding: EdgeInsets.zero,
-                            title: Text(l.previouslyOrdered),
-                            children: [_OrderContents(order: order)],
+                            title: Text(l.deliveryProgress),
+                            children: [
+                              _OrderContents(
+                                order: order,
+                                controller: controller,
+                              ),
+                            ],
                           ),
                           Wrap(
                             spacing: 8,
@@ -207,8 +218,9 @@ class _ActiveOrdersDialog extends StatelessWidget {
 }
 
 class _OrderContents extends StatelessWidget {
-  const _OrderContents({required this.order});
+  const _OrderContents({required this.order, required this.controller});
   final ManagedOrder order;
+  final OrderWorkspaceController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -216,21 +228,39 @@ class _OrderContents extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final section in courseSections(
-          order.courses,
-          order.lines,
-          (line) => line.courseId,
-        )) ...[
-          if (order.courses.isNotEmpty)
-            CourseHeading(name: section.course?.name ?? l.ungrouped),
-          for (final line in section.lines)
-            ListTile(
-              title: Text('${line.quantity} × ${line.name}'),
-              subtitle: line.preparationNote.isEmpty
-                  ? null
-                  : Text(line.preparationNote),
-            ),
-        ],
+        Text(l.deliveryProgressLocal),
+        const SizedBox(height: 8),
+        Text(l.clientDeliveryRules),
+        const SizedBox(height: 12),
+        DeliveryProgress(
+          showHelp: false,
+          courses: order.courses,
+          lines: [
+            for (final line in order.lines)
+              DeliveryProgressLine(
+                id: line.id,
+                name: line.name,
+                quantity: line.quantity,
+                delivered: order.deliveredQuantity(line.id),
+                note: line.preparationNote,
+                courseId: line.courseId,
+              ),
+          ],
+          busy: controller.saving,
+          onChanged: (id, quantity, expected) async {
+            final success = await controller.setLineDelivered(
+              order.id,
+              id,
+              quantity,
+              expectedQuantity: expected,
+            );
+            if (!success && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l.deliveryProgressFailed)));
+            }
+          },
+        ),
       ],
     );
   }
