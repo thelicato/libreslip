@@ -236,7 +236,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('nav-2')));
     await tester.pumpAndSettle();
-    expect(find.text('Table or order reference'), findsNothing);
+    expect(find.text('Order title / table'), findsNothing);
+    expect(find.text('Table 9'), findsNothing);
     expect(find.text('Preparation note'), findsNothing);
     expect(find.text('Order notes'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('print-ticket')));

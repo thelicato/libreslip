@@ -1,5 +1,20 @@
 # Validation evidence
 
+## Optional order titles, 5 October 2026
+
+Validated the first optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.
+
+| Check | Result |
+| --- | --- |
+| Formatting and analysis | Dart formatting check passed across application, tests and integration tests; `flutter analyze --no-pub` reported no issues. |
+| Automated tests | All 106 active unit and widget tests passed. Normal runs skipped only opt-in render capture. Existing persistence, migrations, interrupted printing, HTTPS delivery and restore failure checks passed. Title assertions cover Client composition and history, Server details, disabling the field and full-backup restoration. |
+| Responsive and localised rendering | Twenty render captures completed without framework errors. Inspected standard and Compact Compose, long Italian titles at 320 logical pixels with doubled text, landscape composition, ticket history and Italian ticket preview, and Server cards and details. Narrow or enlarged-text Compose places Reset below the title to preserve its width. |
+| Android preview APK | Debug APK built with version name 1.6.0, application identifier `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. This is a preview, not a production release. |
+| Platform and hardware checks | No new device installation, offline cold launch, permission-denial, process-death or physical printer verification was performed for this step. Existing historical hardware evidence below does not verify the revised printed title label. |
+| Compatibility and scope | Titles reuse the existing reference field. Database, configuration, archive and network protocol formats remain unchanged. Course groups, active order updates, per-item delivery and optional prices or totals are planned, not implemented in this step. |
+
+## Earlier baseline
+
 Validated on 26 September 2026 for LibreSlip 1.5.0, Android application identifier `io.thelicato.libreslip`.
 
 | Check | Result |

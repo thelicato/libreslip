@@ -395,10 +395,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiungi un articolo a questa bozza senza salvarlo tra quelli riutilizzabili.';
 
   @override
-  String get orderReference => 'Riferimento tavolo o ordine';
+  String get orderReference => 'Titolo ordine / tavolo';
 
   @override
-  String get orderReferenceHint => 'Facoltativo, ad esempio Tavolo 4';
+  String get orderReferenceHint =>
+      'Facoltativo, ad esempio Tavolo 4 o Giardino';
+
+  @override
+  String get orderReferenceBody =>
+      'Assegna un titolo o un nome tavolo all’ordine. Compare sulle comande e sul pannello Server. Lascia vuoto per usare solo il numero.';
 
   @override
   String get orderNotes => 'Note dell’ordine';

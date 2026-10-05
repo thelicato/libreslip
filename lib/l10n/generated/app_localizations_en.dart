@@ -393,10 +393,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add an item to this draft without saving it to your reusable shelf.';
 
   @override
-  String get orderReference => 'Table or order reference';
+  String get orderReference => 'Order title / table';
 
   @override
-  String get orderReferenceHint => 'Optional, for example Table 4';
+  String get orderReferenceHint => 'Optional, for example Table 4 or Garden';
+
+  @override
+  String get orderReferenceBody =>
+      'Give an order a title or table name. Shown on tickets and the Server board. Leave blank for numbered orders.';
 
   @override
   String get orderNotes => 'Order notes';

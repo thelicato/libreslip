@@ -218,6 +218,7 @@ class SettingsPage extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.orderReferenceEnabled,
                 title: Text(l.orderReference),
+                subtitle: Text(l.orderReferenceBody),
                 onChanged: orders.saving
                     ? null
                     : (value) => orders.updateFeatureSettings(

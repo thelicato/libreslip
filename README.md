@@ -24,7 +24,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 ## Highlights
 
 - Create a reusable catalogue with categories, search and optional item images.
-- Compose tickets with quantities, preparation notes, order notes and an optional table or order reference. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
+- Compose tickets with quantities, preparation notes, order notes and an optional order title or table name. Titles appear prominently in Compose, ticket history and the Server board, alongside the order number. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
@@ -38,6 +38,8 @@ There is no account, subscription or required cloud service. The catalogue, curr
 Client mode is the everyday workspace. Add catalogue items, compose an order, connect the printer and print. A connected printer is required before LibreSlip saves a new ticket through Print ticket or starts an explicit reprint.
 
 A paired LibreSlip Server is optional. If it becomes unavailable, local composition, printing, history, PDF sharing and backups continue normally. Items marked Local only remain on the printed ticket but are not included in the Server copy.
+
+Use **Order title / table** in Compose to name an order, for example Table 4 or Garden. Leave it blank to use the order number alone, or disable the field in Client Settings under Order fields. Existing table references serve as titles and keep their content. Saved titles remain visible even when the field is disabled for new tickets.
 
 ## Server mode
 
@@ -86,5 +88,6 @@ The installed version appears at the bottom of Settings in both Client and Serve
 - [Privacy, validation and current limitations](docs/validation.md)
 - [Archive and backup format](docs/archive-format.md)
 - [Local order protocol](docs/network-protocol.md)
+- [Optional order management roadmap](docs/order-management-plan.md)
 
 Development, testing, signing and release instructions are kept in [docs/development.md](docs/development.md).

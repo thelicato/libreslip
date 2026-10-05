@@ -132,6 +132,7 @@ void main() {
         _tinyJpeg,
       );
       expect((await orders.loadTickets()).single.id, ticket.id);
+      expect((await orders.loadTickets()).single.reference, 'Table 8');
       expect(await orders.loadPrintJobs(), hasLength(1));
       expect(await orders.loadDrafts(), hasLength(1));
       expect(await orders.loadNextOrderNumber(), 2);

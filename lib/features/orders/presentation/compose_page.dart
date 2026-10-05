@@ -9,6 +9,7 @@ import '../../printing/domain/ticket_document.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
+import 'order_identity.dart';
 
 class ComposePage extends StatefulWidget {
   const ComposePage({
@@ -344,6 +345,56 @@ class ComposePageState extends State<ComposePage> {
   }
 }
 
+class _ComposeOrderHeading extends StatelessWidget {
+  const _ComposeOrderHeading({
+    required this.reference,
+    required this.orderNumber,
+    required this.onReset,
+  });
+
+  final String reference;
+  final int orderNumber;
+  final VoidCallback? onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final identity = OrderIdentity(
+      reference: reference,
+      numberLabel: l.orderNumber(orderNumber),
+    );
+    final reset = TextButton.icon(
+      key: const ValueKey('reset-order-number'),
+      onPressed: onReset,
+      icon: const Icon(Icons.restart_alt_rounded),
+      label: Text(l.reset),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked =
+            reference.isNotEmpty &&
+            (constraints.maxWidth < 360 ||
+                MediaQuery.textScalerOf(context).scale(14) > 20);
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              identity,
+              Align(alignment: AlignmentDirectional.centerEnd, child: reset),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: identity),
+            reset,
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _CompactComposePanel extends StatelessWidget {
   const _CompactComposePanel({
     required this.items,
@@ -384,7 +435,6 @@ class _CompactComposePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final cleanQuery = query.trim().toLowerCase();
     final filtered = items
         .where(
@@ -403,23 +453,10 @@ class _CompactComposePanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l.orderNumber(orderNumber),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                TextButton.icon(
-                  key: const ValueKey('reset-order-number'),
-                  onPressed: busy || orderNumber == 1
-                      ? null
-                      : onResetOrderNumber,
-                  icon: const Icon(Icons.restart_alt_rounded),
-                  label: Text(l.reset),
-                ),
-              ],
+            _ComposeOrderHeading(
+              reference: features.orderReferenceEnabled ? draft.reference : '',
+              orderNumber: orderNumber,
+              onReset: busy || orderNumber == 1 ? null : onResetOrderNumber,
             ),
             if (features.orderReferenceEnabled ||
                 features.orderNotesEnabled) ...[
@@ -825,21 +862,10 @@ class _OrderPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l.orderNumber(orderNumber),
-                  style: theme.textTheme.titleLarge,
-                ),
-              ),
-              TextButton.icon(
-                key: const ValueKey('reset-order-number'),
-                onPressed: busy || orderNumber == 1 ? null : onResetOrderNumber,
-                icon: const Icon(Icons.restart_alt_rounded),
-                label: Text(l.reset),
-              ),
-            ],
+          _ComposeOrderHeading(
+            reference: features.orderReferenceEnabled ? draft.reference : '',
+            orderNumber: orderNumber,
+            onReset: busy || orderNumber == 1 ? null : onResetOrderNumber,
           ),
           if (features.orderReferenceEnabled) ...[
             const SizedBox(height: 16),
@@ -847,6 +873,7 @@ class _OrderPanel extends StatelessWidget {
               key: ValueKey('reference-${draft.id}'),
               initialValue: draft.reference,
               maxLength: 80,
+              textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 labelText: l.orderReference,
                 hintText: l.orderReferenceHint,

@@ -823,14 +823,20 @@ abstract class AppLocalizations {
   /// No description provided for @orderReference.
   ///
   /// In en, this message translates to:
-  /// **'Table or order reference'**
+  /// **'Order title / table'**
   String get orderReference;
 
   /// No description provided for @orderReferenceHint.
   ///
   /// In en, this message translates to:
-  /// **'Optional, for example Table 4'**
+  /// **'Optional, for example Table 4 or Garden'**
   String get orderReferenceHint;
+
+  /// No description provided for @orderReferenceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Give an order a title or table name. Shown on tickets and the Server board. Leave blank for numbered orders.'**
+  String get orderReferenceBody;
 
   /// No description provided for @orderNotes.
   ///

@@ -85,6 +85,8 @@ Edit `lib/l10n/app_en.arb` and `app_it.arb`, then run `flutter gen-l10n`. Region
 
 The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination, with a print action pinned outside the scrolling content. Compact Compose replaces the separate catalogue and selected-order panels with one order card. Every reusable item has a zero-based quantity stepper; reference and order notes use compact edit dialogs. Tests cover phone, landscape, tablet, both languages and doubled text.
 
+Order title / table is the user-facing name of the existing optional reference field. Compose, history and Server details give it prominence while retaining the order number. Saved reference content and the database, archive and protocol formats are unchanged. See the [optional order management roadmap](order-management-plan.md) for subsequent steps.
+
 Generate review images with installed Flutter SDK fonts:
 
 ```sh

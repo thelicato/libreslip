@@ -87,6 +87,9 @@ void main() {
         'Table 4',
       );
       await tester.pump();
+      expect(find.text('Order title / table'), findsOneWidget);
+      expect(find.text('Table 4'), findsWidgets);
+      expect(find.text('Order 1'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('print-ticket')));
       await tester.pumpAndSettle();
 
@@ -97,6 +100,7 @@ void main() {
       expect(orders.tickets.single.reference, 'Table 4');
       expect(orders.tickets.single.lines.single.name, 'Mushroom toastie');
       expect(find.text('Order 2'), findsOneWidget);
+      expect(find.text('Table 4'), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('reset-order-number')));
       await tester.pumpAndSettle();
@@ -115,10 +119,18 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('nav-3')));
       await tester.pumpAndSettle();
       expect(find.text('Ticket 1'), findsOneWidget);
+      expect(find.text('Table 4'), findsOneWidget);
       expect(find.textContaining('Mushroom toastie'), findsOneWidget);
       expect(find.text('Duplicate as draft'), findsNothing);
       await tester.tap(find.text('Ticket 1'));
       await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Table 4'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Saved snapshot'), findsNothing);
       expect(find.text('Duplicate as draft'), findsNothing);
       expect(tester.takeException(), isNull);

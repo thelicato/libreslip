@@ -9,6 +9,7 @@ import '../../printing/presentation/ticket_detail_dialog.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
+import 'order_identity.dart';
 
 class TicketsPage extends StatefulWidget {
   const TicketsPage({
@@ -237,9 +238,9 @@ class _TicketCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              l.ticketNumber(ticket.number),
-                              style: Theme.of(context).textTheme.titleMedium,
+                            OrderIdentity(
+                              reference: ticket.reference,
+                              numberLabel: l.ticketNumber(ticket.number),
                             ),
                             Text(
                               '$date · $time',
@@ -254,13 +255,6 @@ class _TicketCard extends StatelessWidget {
                         ClientDeliveryStatusChip(delivery: delivery!),
                     ],
                   ),
-                  if (ticket.reference.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      ticket.reference,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ],
                   const SizedBox(height: 6),
                   Text(l.itemCount(ticket.itemCount)),
                   const SizedBox(height: 4),

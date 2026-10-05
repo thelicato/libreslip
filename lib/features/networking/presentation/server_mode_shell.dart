@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/widgets/app_version_footer.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../orders/presentation/order_identity.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/personalisation_settings.dart';
 import '../application/network_mode_controller.dart';
@@ -698,18 +699,14 @@ class _OrderCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      l.orderNumber(order.displayNumber),
-                      style: theme.textTheme.titleLarge,
+                    child: OrderIdentity(
+                      reference: order.reference,
+                      numberLabel: l.orderNumber(order.displayNumber),
                     ),
                   ),
                   const Icon(Icons.chevron_right_rounded),
                 ],
               ),
-              if (order.reference.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(order.reference, style: theme.textTheme.titleMedium),
-              ],
               const SizedBox(height: 16),
               for (var index = 0; index < order.lines.length; index++) ...[
                 if (index > 0) const SizedBox(height: 12),
@@ -782,7 +779,10 @@ class _OrderDialog extends StatelessWidget {
         maxWidth: 760,
         maxHeight: size.height - 48,
       ),
-      title: Text(l.orderNumber(order.displayNumber)),
+      title: OrderIdentity(
+        reference: order.reference,
+        numberLabel: l.orderNumber(order.displayNumber),
+      ),
       content: SizedBox(
         width: wide ? 680 : null,
         child: SingleChildScrollView(
@@ -803,8 +803,6 @@ class _OrderDialog extends StatelessWidget {
               ),
               if (order.heading.isNotEmpty)
                 _DetailRow(label: l.heading, value: order.heading),
-              if (order.reference.isNotEmpty)
-                _DetailRow(label: l.orderReference, value: order.reference),
               const Divider(height: 28),
               for (final line in order.lines) ...[
                 Text(

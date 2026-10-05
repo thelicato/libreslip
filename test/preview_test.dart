@@ -71,6 +71,7 @@ void main() {
     await iconLoader.load();
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       ('phone-en', const Size(412, 915), 'en', ThemeMode.light, 0),
@@ -84,6 +85,14 @@ void main() {
       ('item-totals-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 0),
       ('tablet-en', const Size(1440, 1000), 'en', ThemeMode.light, 0),
       ('compose-phone-en', const Size(520, 1200), 'en', ThemeMode.light, 2),
+      ('compose-landscape-en', const Size(915, 412), 'en', ThemeMode.light, 2),
+      (
+        'compose-title-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
       (
         'compose-compact-phone-it',
         const Size(412, 915),
@@ -153,6 +162,8 @@ void main() {
       ),
     ]) {
       tester.view.physicalSize = size;
+      tester.platformDispatcher.textScaleFactorTestValue =
+          name.endsWith('large-text') ? 2 : 1;
       final settingsStore = MemorySettingsRepository()
         ..stored = AppSettings(
           language: language,
@@ -289,7 +300,13 @@ void main() {
       }
       if (page == 2 || page == 3) {
         orders.addCatalogueItem(orders.items.single);
-        orders.setReference(language == 'it' ? 'Tavolo 4' : 'Table 4');
+        orders.setReference(
+          name == 'compose-title-phone-it-large-text'
+              ? 'Tavolo 4, giardino vicino alla terrazza'
+              : language == 'it'
+              ? 'Tavolo 4'
+              : 'Table 4',
+        );
         orders.setOrderNote(
           language == 'it' ? 'Portare insieme' : 'Bring together',
         );
@@ -316,6 +333,13 @@ void main() {
       await tester.pumpAndSettle();
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
+        await tester.pumpAndSettle();
+      }
+      if (name == 'compose-title-phone-it-large-text' ||
+          name == 'compose-landscape-en') {
+        await tester.ensureVisible(
+          find.text(orders.activeDraft!.reference).first,
+        );
         await tester.pumpAndSettle();
       }
       if (name == 'item-totals-phone-en') {

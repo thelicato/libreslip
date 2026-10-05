@@ -178,6 +178,7 @@ void main() {
 
     expect(find.text('Order 17'), findsOneWidget);
     expect(find.text('Order 18'), findsOneWidget);
+    expect(find.text('Table 4'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('outstanding-items-card')),
       findsOneWidget,
@@ -258,6 +259,13 @@ void main() {
     await tester.tap(orderFinder);
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Table 4'),
+      ),
+      findsOneWidget,
+    );
     expect(tester.getSize(find.byType(AlertDialog)).width, greaterThan(680));
     expect(find.text('2×  Soup'), findsOneWidget);
     expect(find.text('No cream'), findsWidgets);
