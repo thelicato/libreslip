@@ -26,6 +26,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Create a reusable catalogue with categories, search and optional item images.
 - Compose tickets with quantities, preparation notes, order notes and an optional order title or table name. Titles appear prominently in Compose, ticket history and the Server board, alongside the order number. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
+- Optionally separate items into named, ordered courses in Compose, Server orders, ticket previews, printed tickets and PDFs.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
 - Browse immutable ticket history and delete individual tickets or clear the history when needed.
@@ -40,6 +41,10 @@ Client mode is the everyday workspace. Add catalogue items, compose an order, co
 A paired LibreSlip Server is optional. If it becomes unavailable, local composition, printing, history, PDF sharing and backups continue normally. Items marked Local only remain on the printed ticket but are not included in the Server copy.
 
 Use **Order title / table** in Compose to name an order, for example Table 4 or Garden. Leave it blank to use the order number alone, or disable the field in Client Settings under Order fields. Existing table references serve as titles and keep their content. Saved titles remain visible even when the field is disabled for new tickets.
+
+Enable **Course groups** in Client Settings under Order fields to organise items into Drinks, First course or other names. Select a course before adding items, or move an existing line using its Course selector. Manage courses to rename, reorder or remove them. Removing a course keeps its items under Ungrouped. The same product in two courses has separate quantities and notes. In Compact Compose, catalogue quantities apply to the selected course; the order summary shows every course.
+
+Course groups are off by default. When enabled, new orders reuse your course names and ordering. Disabling them preserves the current order and saved tickets; the next order uses the ordinary layout. Grouped delivery requires an updated Server; an older Server leaves the delivery available for explicit retry after updating. Groups provide visual separation, with order updates and per-item delivery planned in [later steps](docs/order-management-plan.md).
 
 ## Server mode
 

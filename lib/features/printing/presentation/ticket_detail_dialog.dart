@@ -193,6 +193,7 @@ class TicketDetailDialog extends StatelessWidget {
           '${material.formatFullDate(local)} · '
           '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}',
       referenceLabel: l.orderReference,
+      ungroupedLabel: l.ungrouped,
       orderNotesLabel: l.orderNotes,
       lineNotePrefix: l.lineNoteLabel,
       footer: settings.footer,

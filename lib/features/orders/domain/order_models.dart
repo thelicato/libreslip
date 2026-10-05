@@ -1,5 +1,8 @@
 import 'dart:math';
 
+import 'course_groups.dart';
+export 'course_groups.dart';
+
 String createLocalId() {
   final random = Random.secure();
   final time = DateTime.now().microsecondsSinceEpoch.toRadixString(16);
@@ -53,21 +56,25 @@ class OrderFeatureSettings {
     this.orderReferenceEnabled = true,
     this.preparationNotesEnabled = true,
     this.orderNotesEnabled = true,
+    this.courseGroupsEnabled = false,
   });
 
   final bool orderReferenceEnabled;
   final bool preparationNotesEnabled;
   final bool orderNotesEnabled;
+  final bool courseGroupsEnabled;
 
   OrderFeatureSettings copyWith({
     bool? orderReferenceEnabled,
     bool? preparationNotesEnabled,
     bool? orderNotesEnabled,
+    bool? courseGroupsEnabled,
   }) => OrderFeatureSettings(
     orderReferenceEnabled: orderReferenceEnabled ?? this.orderReferenceEnabled,
     preparationNotesEnabled:
         preparationNotesEnabled ?? this.preparationNotesEnabled,
     orderNotesEnabled: orderNotesEnabled ?? this.orderNotesEnabled,
+    courseGroupsEnabled: courseGroupsEnabled ?? this.courseGroupsEnabled,
   );
 }
 
@@ -78,6 +85,7 @@ class TicketLine {
     required this.quantity,
     this.catalogueItemId,
     this.preparationNote = '',
+    this.courseId,
   });
 
   final String id;
@@ -85,13 +93,20 @@ class TicketLine {
   final String name;
   final int quantity;
   final String preparationNote;
+  final String? courseId;
 
-  TicketLine copyWith({int? quantity, String? preparationNote}) => TicketLine(
+  TicketLine copyWith({
+    int? quantity,
+    String? preparationNote,
+    String? courseId,
+    bool clearCourse = false,
+  }) => TicketLine(
     id: id,
     catalogueItemId: catalogueItemId,
     name: name,
     quantity: quantity ?? this.quantity,
     preparationNote: preparationNote ?? this.preparationNote,
+    courseId: clearCourse ? null : courseId ?? this.courseId,
   );
 }
 
@@ -103,6 +118,8 @@ class OrderDraft {
     this.reference = '',
     this.orderNote = '',
     this.lines = const [],
+    this.courses = const [],
+    this.activeCourseId,
   });
 
   final String id;
@@ -111,6 +128,8 @@ class OrderDraft {
   final String reference;
   final String orderNote;
   final List<TicketLine> lines;
+  final List<OrderCourse> courses;
+  final String? activeCourseId;
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
 
@@ -119,6 +138,9 @@ class OrderDraft {
     String? reference,
     String? orderNote,
     List<TicketLine>? lines,
+    List<OrderCourse>? courses,
+    String? activeCourseId,
+    bool clearActiveCourse = false,
   }) => OrderDraft(
     id: id,
     createdAt: createdAt,
@@ -126,6 +148,10 @@ class OrderDraft {
     reference: reference ?? this.reference,
     orderNote: orderNote ?? this.orderNote,
     lines: lines ?? this.lines,
+    courses: courses ?? this.courses,
+    activeCourseId: clearActiveCourse
+        ? null
+        : activeCourseId ?? this.activeCourseId,
   );
 }
 
@@ -139,6 +165,7 @@ class SavedTicket {
     required this.orderNote,
     required this.lines,
     this.sourceTicketId,
+    this.courses = const [],
   });
 
   final String id;
@@ -149,6 +176,7 @@ class SavedTicket {
   final String orderNote;
   final List<TicketLine> lines;
   final String? sourceTicketId;
+  final List<OrderCourse> courses;
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
 }

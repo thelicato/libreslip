@@ -58,7 +58,10 @@ class ClientDeliveryStatusPanel extends StatelessWidget {
       final body = switch (delivery.status) {
         ClientDeliveryStatus.awaitingPrint => l.deliveryAwaitingPrintBody,
         ClientDeliveryStatus.delivered => l.deliveryDeliveredBody,
-        ClientDeliveryStatus.failed => l.deliveryFailedBody,
+        ClientDeliveryStatus.failed =>
+          delivery.errorCode == 'unsupported_courses'
+              ? l.deliveryCoursesUnsupported
+              : l.deliveryFailedBody,
         _ => l.deliveryPendingBody,
       };
       final local = delivery.updatedAt.toLocal();

@@ -228,6 +228,20 @@ class SettingsPage extends StatelessWidget {
                       ),
               ),
               SwitchListTile(
+                key: const ValueKey('toggle-course-groups'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.courseGroupsEnabled,
+                title: Text(l.courseGroups),
+                subtitle: Text(l.courseGroupsBody),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(
+                          courseGroupsEnabled: value,
+                        ),
+                      ),
+              ),
+              SwitchListTile(
                 key: const ValueKey('toggle-preparation-notes'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.preparationNotesEnabled,

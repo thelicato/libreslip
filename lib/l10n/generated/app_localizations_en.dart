@@ -393,6 +393,62 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add an item to this draft without saving it to your reusable shelf.';
 
   @override
+  String get courseGroups => 'Course groups';
+
+  @override
+  String get courseGroupsBody =>
+      'Separate items into named courses. Off by default. Turning this off applies to new orders; existing groups are preserved.';
+
+  @override
+  String get course => 'Course';
+
+  @override
+  String get ungrouped => 'Ungrouped';
+
+  @override
+  String get addCourse => 'Add course';
+
+  @override
+  String get editCourse => 'Edit course';
+
+  @override
+  String get manageCourses => 'Manage courses';
+
+  @override
+  String get courseName => 'Course name';
+
+  @override
+  String get courseNameHint =>
+      'For example Drinks, First course or Second course';
+
+  @override
+  String get courseNameInvalid =>
+      'Use a unique name of 1 to 40 characters, without line breaks.';
+
+  @override
+  String get courseLimit => 'You can add up to 20 courses to an order.';
+
+  @override
+  String get courseMoveUp => 'Move course earlier';
+
+  @override
+  String get courseMoveDown => 'Move course later';
+
+  @override
+  String get removeCourse => 'Remove course';
+
+  @override
+  String get removeCourseBody =>
+      'Items in this course will move to Ungrouped. Quantities and notes are kept.';
+
+  @override
+  String get groupedOrderSummary => 'Order by course';
+
+  @override
+  String get deliveryCoursesUnsupported =>
+      'This Server does not support course groups. Update the Server, then retry. Your ticket and its groups remain saved on this phone.';
+
+  @override
   String get orderReference => 'Order title / table';
 
   @override

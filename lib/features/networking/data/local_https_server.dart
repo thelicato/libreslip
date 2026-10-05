@@ -87,6 +87,10 @@ class LocalHttpsServer implements ServerHost {
         await _writeJson(request.response, HttpStatus.ok, {
           'protocol': NetworkProtocol.name,
           'version': NetworkProtocol.version,
+          'orderVersions': [
+            NetworkProtocol.version,
+            NetworkProtocol.groupedVersion,
+          ],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,
           'certificateFingerprint': identity.certificateFingerprint,
@@ -258,7 +262,7 @@ class LocalHttpsServer implements ServerHost {
       receipt.wasDuplicate ? HttpStatus.ok : HttpStatus.created,
       {
         'protocol': NetworkProtocol.name,
-        'version': NetworkProtocol.version,
+        'version': envelope.version,
         'deliveryId': envelope.deliveryId,
         'serverOrderId': receipt.order.id,
         'duplicate': receipt.wasDuplicate,

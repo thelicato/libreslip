@@ -1,5 +1,22 @@
 # Validation evidence
 
+## Optional course groups, 5 October 2026
+
+Validated the second optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | Dart formatting passed and `flutter analyze --no-pub` reported no issues. |
+| Automated regression | All 118 active tests passed; the opt-in capture test remained skipped in the normal run. The separate capture run passed. |
+| Composition and persistence | Covered course creation, ordering, renaming, moving and removal, separate quantities and notes for the same product in different courses, restart recovery, saved snapshot preservation and disabling the option for subsequent orders. |
+| Migration and printing recovery | Schema 10 fixtures migrated to schema 11 without changing ordinary tickets or queued print bytes. An interrupted grouped print retained its bytes and recovered as uncertain. Grouped ESC/POS section ordering and PDF generation passed automated checks. |
+| Networking | Real pinned HTTPS tests covered grouped delivery, lost acknowledgements and idempotent receipt. An older Server received no grouped order POST; explicit retry after advertising support succeeded. Local-only group names were excluded from delivery while retained in the local snapshot. |
+| Archives and restore | Configuration and full-backup round trips preserved the course option, inventories and line references, including restore on a fresh installation. Invalid course relationships were rejected both by the repository and during archive preview with valid recomputed checksums, leaving original data usable. Existing rollback and malicious archive tests passed. |
+| Responsive and localised rendering | Twenty-eight render captures completed without framework errors. Inspected grouped standard and Compact Compose, Italian phone composition, the 320-pixel Italian course manager at doubled text, Italian ticket preview, Server phone cards and tablet details, plus the English tablet composition. Course headings, per-line selectors, management actions and notes remained readable. |
+| Android preview APK | Fresh debug APK built with version name 1.6.0, application identifier `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. This is a preview, not a production release. |
+| Platform and hardware checks | No new device installation, offline cold launch, permission-denial, process-death or physical printer verification was performed for this step. Existing historical hardware evidence below does not verify the new course headings on paper. |
+| Compatibility and scope | Ungrouped composition remains the default and plain network envelopes retain version 1. Grouped envelopes require an updated Server supporting version 2. Database schema 11 and configuration document version 2 accept their supported older formats. Active order updates, per-item delivery and optional prices or totals remain planned. |
+
 ## Optional order titles, 5 October 2026
 
 Validated the first optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.

@@ -67,9 +67,9 @@ The generated keystore and properties are ignored by Git. Keep secure offline ba
 
 Simple settings use one versioned JSON document through `SharedPreferencesAsync` and Android DataStore. Settings format version 7 stores locale, appearance, bounded app text scaling, ticket heading, footer, logo, the 25%, 50%, 75% or 100% printed-logo width, bounded printed-ticket typography, the last selected printer address and the Compact Compose preference. Versions 1 through 4 migrate without a remembered printer, version 5 migrates with the standard Compose layout and versions 1 through 6 migrate with a 100% logo width.
 
-Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 10. Migrations are transactional. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
+Catalogue, composition, immutable ticket snapshots, counters, print jobs, optional fields and networking records use app-private SQLite schema 11. Migrations are transactional. Schema 11 adds bounded ordered course inventories, scoped line references, the active composition course and the disabled-by-default course option. Legacy rows migrate to empty inventories and ungrouped lines. The ticket origin identifier prevents accidental duplicate finalisation. Resetting the visible order number starts at 1 without reusing stable identifiers or changing history. Catalogue edits cannot rewrite ticket or delivery snapshots.
 
-Full backups serialise the portable catalogue, composition, ticket and print tables in one read transaction and include referenced item images and the ticket logo. Networking tables and encrypted pairing secrets are excluded by archive format version 1. Portable database schemas 5 through 10 are accepted.
+Full backups serialise the portable catalogue, composition, ticket and print tables in one read transaction and include referenced item images and the ticket logo. Networking tables and encrypted pairing secrets are excluded by archive format version 1. Portable database schemas 5 through 11 are accepted. Course inventories and references are validated before import preview and again before replacement. Configuration document version 2 includes the course option and accepts legacy version 1; the preferences document remains settings format 7.
 
 ## Printing and local networking
 
@@ -86,6 +86,8 @@ Edit `lib/l10n/app_en.arb` and `app_it.arb`, then run `flutter gen-l10n`. Region
 The workspace uses bottom navigation below 760 logical pixels, a compact sidebar from 760 and an expanded sidebar from 1180. Compose is the central destination, with a print action pinned outside the scrolling content. Compact Compose replaces the separate catalogue and selected-order panels with one order card. Every reusable item has a zero-based quantity stepper; reference and order notes use compact edit dialogs. Tests cover phone, landscape, tablet, both languages and doubled text.
 
 Order title / table is the user-facing name of the existing optional reference field. Compose, history and Server details give it prominence while retaining the order number. Saved reference content and the database, archive and protocol formats are unchanged. See the [optional order management roadmap](order-management-plan.md) for subsequent steps.
+
+Course controls appear when enabled or when the current composition already contains courses. Standard Compose groups selected lines; Compact Compose edits quantities for the selected course and renders a complete grouped summary. Course deletion preserves every line, quantity and note. Group names are stored content and language changes do not translate them. The Server and ticket renderers share the ordered section model. Plain envelopes remain version 1 and grouped envelopes use version 2 after a pinned Server capability check.
 
 Generate review images with installed Flutter SDK fonts:
 

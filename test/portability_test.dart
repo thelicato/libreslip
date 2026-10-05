@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
@@ -62,7 +63,10 @@ void main() {
         preferredPrinterAddress: '00:11:22:33:44:55',
       );
       await orders.saveFeatureSettings(
-        const OrderFeatureSettings(orderNotesEnabled: false),
+        const OrderFeatureSettings(
+          orderNotesEnabled: false,
+          courseGroupsEnabled: true,
+        ),
       );
       final item = await orders.saveItem(
         name: 'Toast',
@@ -74,6 +78,7 @@ void main() {
       final ticket = await orders.convertDraftToTicket(
         blank.copyWith(
           reference: 'Table 8',
+          courses: const [OrderCourse(id: 'drinks', name: 'Bevande')],
           updatedAt: DateTime.now().toUtc(),
           lines: [
             TicketLine(
@@ -81,6 +86,7 @@ void main() {
               catalogueItemId: item.id,
               name: item.name,
               quantity: 2,
+              courseId: 'drinks',
             ),
           ],
         ),
@@ -133,10 +139,19 @@ void main() {
       );
       expect((await orders.loadTickets()).single.id, ticket.id);
       expect((await orders.loadTickets()).single.reference, 'Table 8');
+      expect(
+        (await orders.loadTickets()).single.courses.single.name,
+        'Bevande',
+      );
+      expect(
+        (await orders.loadTickets()).single.lines.single.courseId,
+        'drinks',
+      );
       expect(await orders.loadPrintJobs(), hasLength(1));
       expect(await orders.loadDrafts(), hasLength(1));
       expect(await orders.loadNextOrderNumber(), 2);
       expect((await orders.loadFeatureSettings()).orderNotesEnabled, isFalse);
+      expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
     },
   );
 
@@ -148,7 +163,10 @@ void main() {
         language: 'it',
       );
       await orders.saveFeatureSettings(
-        const OrderFeatureSettings(preparationNotesEnabled: false),
+        const OrderFeatureSettings(
+          preparationNotesEnabled: false,
+          courseGroupsEnabled: true,
+        ),
       );
       final archive = await service.createArchive(
         PortableArchiveKind.configuration,
@@ -179,6 +197,7 @@ void main() {
         (await orders.loadFeatureSettings()).preparationNotesEnabled,
         isFalse,
       );
+      expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
     },
   );
 
@@ -188,6 +207,7 @@ void main() {
     final draft = await orders.createDraft();
     final ticket = await orders.convertDraftToTicket(
       draft.copyWith(
+        courses: const [OrderCourse(id: 'first', name: 'Primo')],
         updatedAt: DateTime.now().toUtc(),
         lines: [
           TicketLine(
@@ -195,6 +215,7 @@ void main() {
             catalogueItemId: item.id,
             name: item.name,
             quantity: 3,
+            courseId: 'first',
           ),
         ],
       ),
@@ -224,6 +245,14 @@ void main() {
     expect(destinationSettings.stored!.heading, 'Fresh destination');
     expect((await destination.loadItems()).single.id, item.id);
     expect((await destination.loadTickets()).single.id, ticket.id);
+    expect(
+      (await destination.loadTickets()).single.courses.single.name,
+      'Primo',
+    );
+    expect(
+      (await destination.loadTickets()).single.lines.single.courseId,
+      'first',
+    );
     expect(await destination.loadNextOrderNumber(), 2);
   });
 
@@ -345,6 +374,67 @@ void main() {
       isFalse,
     );
   });
+  test('invalid course metadata fails archive preview without replacing current data', () async {
+    final draft = await orders.createDraft();
+    await orders.saveDraft(
+      draft.copyWith(
+        courses: const [OrderCourse(id: 'first', name: 'First course')],
+        activeCourseId: 'first',
+        lines: const [
+          TicketLine(
+            id: 'soup-line',
+            name: 'Soup',
+            quantity: 2,
+            courseId: 'first',
+          ),
+        ],
+      ),
+    );
+    final bytes = await service.createArchive(PortableArchiveKind.fullBackup);
+    final broken = _rewriteDatabase(bytes, (snapshot) {
+      final tables = snapshot['tables'] as Map<String, dynamic>;
+      (tables['draft_lines'] as List).single['course_id'] = 'missing';
+    });
+    await expectLater(
+      service.inspectArchive(broken),
+      throwsA(isA<PortabilityException>()),
+    );
+    expect((await orders.loadDrafts()).single.lines.single.quantity, 2);
+    expect(
+      (await orders.loadDrafts()).single.courses.single.name,
+      'First course',
+    );
+    expect((await orders.loadDrafts()).single.activeCourseId, 'first');
+  });
+}
+
+Uint8List _rewriteDatabase(
+  Uint8List bytes,
+  void Function(Map<String, dynamic>) update,
+) {
+  final entries = {
+    for (final entry in ZipDecoder().decodeBytes(bytes))
+      entry.name: entry.content as List<int>,
+  };
+  final snapshot = jsonDecode(
+    utf8.decode(entries['database.json']!),
+  ) as Map<String, dynamic>;
+  update(snapshot);
+  entries['database.json'] = utf8.encode(jsonEncode(snapshot));
+  final manifest = jsonDecode(
+    utf8.decode(entries['manifest.json']!),
+  ) as Map<String, dynamic>;
+  for (final row in (manifest['files'] as List).cast<Map<String, dynamic>>()) {
+    final content = entries[row['path']]!;
+    row['size'] = content.length;
+    row['sha256'] = sha256.convert(content).toString();
+  }
+  entries['manifest.json'] = utf8.encode(jsonEncode(manifest));
+  final archive = Archive();
+  for (final entry in entries.entries) {
+    archive.addFile(ArchiveFile(entry.key, entry.value.length, entry.value));
+  }
+  return Uint8List.fromList(ZipEncoder().encode(archive));
 }
 
 class _MemorySettings implements SettingsRepository {

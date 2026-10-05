@@ -7,6 +7,8 @@ import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'test_support.dart';
+
 void main() {
   setUpAll(sqfliteFfiInit);
 
@@ -87,6 +89,7 @@ void main() {
       databasePath,
       options: OpenDatabaseOptions(singleInstance: false),
     );
+    await removeCourseColumnsForLegacyFixture(database);
     await database.execute('PRAGMA user_version = 8');
     await database.close();
 
@@ -148,6 +151,7 @@ void main() {
         options: OpenDatabaseOptions(singleInstance: false),
       );
       await legacy.update('server_delivery_outbox', {'status': 'pending'});
+      await removeCourseColumnsForLegacyFixture(legacy);
       await legacy.execute('PRAGMA user_version = 9');
       await legacy.close();
 

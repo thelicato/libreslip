@@ -6,9 +6,11 @@ Deliver each step as a separate, reviewable change. The existing offline composi
 
 The optional Order title / table field uses the existing persisted order reference, with an 80-character limit. Titles appear above the order number in standard and Compact Compose, ticket history and ticket details, and Server cards and details. Blank titles use the numbered view. Client Settings can hide the field; disabling it preserves the current composition content but omits it from newly saved tickets, matching the existing optional-field behaviour. Saved titles remain visible. Tickets, PDF sharing, local backups and Server delivery retain the same reference field, so existing data and paired devices remain compatible. No database, archive or protocol migration is required.
 
-## 2. Course groups: planned
+## 2. Course groups: implemented
 
-Add an optional order management workflow with named, ordered groups, for example Drinks, First course and Second course. Visually separate groups in Client composition, Server cards and order details, and preparation tickets. Store group identifiers and ordering in versioned SQLite data and saved snapshots, with archive validation and round-trip coverage. Keep ungrouped composition as the default. Require compatible Server protocol support before delivering grouped orders; never silently flatten an order on an older Server.
+Client Settings enables named, ordered courses, for example Drinks, First course and Second course. The option is off by default. Standard and Compact Compose, Server cards and details, previews, 58 mm preparation tickets and PDFs visually separate courses. Select a course for additions or move individual lines; the same item in different courses keeps separate quantities and notes. Manage courses to rename, reorder or remove them, with removal returning items to Ungrouped. Empty courses are omitted from rendered tickets. When enabled, the next composition reuses course definitions; disabling preserves the current order and saved snapshots and returns the next composition to the ordinary layout.
+
+Transactional SQLite schema 11 stores course definitions, line references, active selection and the optional setting. Configuration document version 2 and full backups round-trip the new data, accept older formats and validate course relationships before restore. Plain delivery retains envelope version 1; grouped delivery uses version 2 and checks the pinned Server's advertised support before posting. Unsupported deliveries remain available for explicit retry after updating the Server. Course groups provide visual organisation; they do not yet schedule preparation, update saved orders or track delivery progress.
 
 ## 3. Updates to active orders: planned
 

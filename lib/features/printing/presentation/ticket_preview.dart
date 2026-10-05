@@ -98,46 +98,59 @@ class TicketPreview extends StatelessWidget {
                 ),
               ],
               const _Rule(),
-              for (final line in document.lines)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 42,
-                        child: Text(
-                          '${line.quantity}x',
-                          style: TextStyle(
-                            fontSize: previewSize(typography.items),
-                            fontWeight: FontWeight.w700,
+              for (final section in document.sections) ...[
+                if (document.courses.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    section.course?.name ?? document.ungroupedLabel,
+                    style: TextStyle(
+                      fontSize: previewSize(typography.details),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const _Rule(),
+                ],
+                for (final line in section.lines)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 42,
+                          child: Text(
+                            '${line.quantity}x',
+                            style: TextStyle(
+                              fontSize: previewSize(typography.items),
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              line.name,
-                              style: TextStyle(
-                                fontSize: previewSize(typography.items),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if (line.note.isNotEmpty)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                '${document.lineNotePrefix}: ${line.note}',
+                                line.name,
                                 style: TextStyle(
-                                  fontSize: previewSize(typography.notes),
+                                  fontSize: previewSize(typography.items),
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                          ],
+                              if (line.note.isNotEmpty)
+                                Text(
+                                  '${document.lineNotePrefix}: ${line.note}',
+                                  style: TextStyle(
+                                    fontSize: previewSize(typography.notes),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+              ],
               if (document.orderNote.isNotEmpty) ...[
                 const _Rule(),
                 Text(

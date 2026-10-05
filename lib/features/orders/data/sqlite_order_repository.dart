@@ -21,8 +21,8 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 10;
-  static const portableSchemaVersions = {5, 6, 7, 8, 9, databaseVersion};
+  static const databaseVersion = 11;
+  static const portableSchemaVersions = {5, 6, 7, 8, 9, 10, databaseVersion};
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -420,6 +420,28 @@ class SqliteOrderRepository
         ON server_delivery_outbox(status, created_at)
       ''');
     }
+    if (oldVersion < 11 && newVersion >= 11) {
+      for (final table in ['drafts', 'tickets', 'server_orders']) {
+        await database.execute(
+          "ALTER TABLE $table ADD COLUMN courses_json TEXT NOT NULL "
+          "DEFAULT '[]' CHECK (length(courses_json) <= 16384)",
+        );
+      }
+      for (final table in [
+        'draft_lines',
+        'ticket_lines',
+        'server_order_lines',
+      ]) {
+        await database.execute('ALTER TABLE $table ADD COLUMN course_id TEXT');
+      }
+      await database.execute(
+        'ALTER TABLE drafts ADD COLUMN active_course_id TEXT',
+      );
+      await database.execute(
+        'ALTER TABLE order_feature_settings ADD COLUMN course_groups_enabled '
+        'INTEGER NOT NULL DEFAULT 0 CHECK (course_groups_enabled IN (0, 1))',
+      );
+    }
   }
 
   @override
@@ -786,6 +808,9 @@ class SqliteOrderRepository
           'heading_snapshot': envelope.heading,
           'reference_snapshot': envelope.reference,
           'order_note_snapshot': envelope.orderNote,
+          'courses_json': jsonEncode([
+            for (final course in envelope.courses) course.toJson(),
+          ]),
           'payload_checksum': envelope.payloadChecksum,
           'status': ServerOrderStatus.received.value,
         });
@@ -797,6 +822,7 @@ class SqliteOrderRepository
             'name_snapshot': line.name,
             'quantity': line.quantity,
             'preparation_note': line.preparationNote,
+            'course_id': line.courseId,
             'position': index,
           });
         }
@@ -959,6 +985,7 @@ class SqliteOrderRepository
         orderReferenceEnabled: row['order_reference_enabled'] == 1,
         preparationNotesEnabled: row['preparation_notes_enabled'] == 1,
         orderNotesEnabled: row['order_notes_enabled'] == 1,
+        courseGroupsEnabled: row['course_groups_enabled'] == 1,
       );
     } catch (error) {
       if (error is OrderStorageException) rethrow;
@@ -976,6 +1003,7 @@ class SqliteOrderRepository
         'order_reference_enabled': settings.orderReferenceEnabled ? 1 : 0,
         'preparation_notes_enabled': settings.preparationNotesEnabled ? 1 : 0,
         'order_notes_enabled': settings.orderNotesEnabled ? 1 : 0,
+        'course_groups_enabled': settings.courseGroupsEnabled ? 1 : 0,
       }, where: 'id = 1');
       if (changed != 1) {
         throw const OrderStorageException(
@@ -1190,6 +1218,10 @@ class SqliteOrderRepository
       'id': draft.id,
       'reference': draft.reference.trim(),
       'order_note': draft.orderNote.trim(),
+      'courses_json': jsonEncode([
+        for (final course in draft.courses) course.toJson(),
+      ]),
+      'active_course_id': draft.activeCourseId,
       'created_at': _timestamp(draft.createdAt),
       'updated_at': _timestamp(draft.updatedAt),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -1207,6 +1239,7 @@ class SqliteOrderRepository
         'name_snapshot': line.name,
         'quantity': line.quantity,
         'preparation_note': line.preparationNote.trim(),
+        'course_id': line.courseId,
         'position': index,
       });
     }
@@ -1278,6 +1311,9 @@ class SqliteOrderRepository
           'heading_snapshot': heading.trim(),
           'reference_snapshot': draft.reference.trim(),
           'order_note_snapshot': draft.orderNote.trim(),
+          'courses_json': jsonEncode([
+            for (final course in draft.courses) course.toJson(),
+          ]),
           'created_at': _timestamp(createdAt),
           'source_ticket_id': null,
         });
@@ -1290,6 +1326,7 @@ class SqliteOrderRepository
             'name_snapshot': line.name,
             'quantity': line.quantity,
             'preparation_note': line.preparationNote.trim(),
+            'course_id': line.courseId,
             'position': index,
           });
         }
@@ -1326,6 +1363,7 @@ class SqliteOrderRepository
                   name: line.name,
                   quantity: line.quantity,
                   preparationNote: line.preparationNote.trim(),
+                  courseId: line.courseId,
                 ),
           ];
           if (deliveryLines.isNotEmpty) {
@@ -1353,6 +1391,12 @@ class SqliteOrderRepository
               reference: draft.reference.trim(),
               orderNote: draft.orderNote.trim(),
               lines: deliveryLines,
+              courses: draft.courses
+                  .where(
+                    (course) =>
+                        deliveryLines.any((line) => line.courseId == course.id),
+                  )
+                  .toList(),
             );
             final now = _timestamp(createdAt);
             await transaction.insert('server_delivery_outbox', {
@@ -1492,6 +1536,7 @@ class SqliteOrderRepository
           snapshot['tables'] is! Map<String, dynamic>) {
         throw const FormatException('Unsupported database snapshot');
       }
+      validatePortableCourses(snapshot);
       final tables = snapshot['tables']! as Map<String, dynamic>;
       if (tables.keys.toSet().difference(_portableTables.toSet()).isNotEmpty ||
           _portableTables.any((table) => tables[table] is! List)) {
@@ -1544,6 +1589,62 @@ class SqliteOrderRepository
         'Could not restore the data snapshot.',
         error,
       );
+    }
+  }
+
+  /// Validates JSON-backed course relationships before preview or replacement.
+  static void validatePortableCourses(Map<String, Object?> snapshot) {
+    final tables = snapshot['tables'];
+    if (tables is! Map) throw const FormatException('Invalid course snapshot');
+    final current = snapshot['schemaVersion'] == databaseVersion;
+    for (final (parents, children, parentKey) in [
+      ('drafts', 'draft_lines', 'draft_id'),
+      ('tickets', 'ticket_lines', 'ticket_id'),
+    ]) {
+      final rows = tables[parents];
+      final lines = tables[children];
+      if (rows is! List ||
+          lines is! List ||
+          rows.any((row) => row is! Map) ||
+          lines.any((row) => row is! Map)) {
+        throw const FormatException('Invalid course snapshot');
+      }
+      final lineCourses = <Object?, List<String?>>{};
+      for (final line in lines.cast<Map>()) {
+        final id = line['course_id'];
+        if ((id != null && id is! String) ||
+            (current && !line.containsKey('course_id'))) {
+          throw const FormatException('Invalid course relationship');
+        }
+        lineCourses.putIfAbsent(line[parentKey], () => []).add(id as String?);
+      }
+      for (final row in rows.cast<Map>()) {
+        final courses = decodeCourses(
+          row['courses_json'] ?? (current ? null : '[]'),
+        );
+        final active = row['active_course_id'];
+        if (active != null && active is! String) {
+          throw const FormatException('Invalid active course');
+        }
+        final courseIds = lineCourses[row['id']] ?? const <String?>[];
+        if (!current &&
+            (courses.isNotEmpty ||
+                active != null ||
+                courseIds.any((id) => id != null))) {
+          throw const FormatException('Courses require schema 11');
+        }
+        validateCourses(courses, courseIds, activeCourseId: active as String?);
+      }
+    }
+    final features = tables['order_feature_settings'];
+    if (features is! List || features.length != 1 || features.single is! Map) {
+      throw const FormatException('Invalid course settings');
+    }
+    final enabled = (features.single as Map)['course_groups_enabled'];
+    if ((current && enabled == null) ||
+        (enabled != null && enabled != 0 && enabled != 1) ||
+        (!current && enabled == 1)) {
+      throw const FormatException('Invalid course settings');
     }
   }
 
@@ -1826,6 +1927,7 @@ class SqliteOrderRepository
       heading: row['heading_snapshot']! as String,
       reference: row['reference_snapshot']! as String,
       orderNote: row['order_note_snapshot']! as String,
+      courses: decodeCourses(row['courses_json']),
       payloadChecksum: row['payload_checksum']! as String,
       status: ServerOrderStatusValue.parse(row['status']! as String),
       completedAt: row['completed_at'] == null
@@ -1837,6 +1939,7 @@ class SqliteOrderRepository
             name: line['name_snapshot']! as String,
             quantity: line['quantity']! as int,
             preparationNote: line['preparation_note']! as String,
+            courseId: line['course_id'] as String?,
           ),
       ],
     );
@@ -1875,6 +1978,7 @@ class SqliteOrderRepository
       heading: row['heading_snapshot']! as String,
       reference: row['reference_snapshot']! as String,
       orderNote: row['order_note_snapshot']! as String,
+      courses: decodeCourses(row['courses_json']),
       sourceTicketId: row['source_ticket_id'] as String?,
       lines: lines.map(_lineFromTicketRow).toList(growable: false),
     );
@@ -1894,6 +1998,8 @@ class SqliteOrderRepository
       id: row['id']! as String,
       reference: row['reference']! as String,
       orderNote: row['order_note']! as String,
+      courses: decodeCourses(row['courses_json']),
+      activeCourseId: row['active_course_id'] as String?,
       createdAt: DateTime.parse(row['created_at']! as String),
       updatedAt: DateTime.parse(row['updated_at']! as String),
       lines: lines.map(_lineFromDraftRow).toList(growable: false),
@@ -1906,6 +2012,7 @@ class SqliteOrderRepository
     name: row['name_snapshot']! as String,
     quantity: row['quantity']! as int,
     preparationNote: row['preparation_note']! as String,
+    courseId: row['course_id'] as String?,
   );
 
   static TicketLine _lineFromTicketRow(Map<String, Object?> row) => TicketLine(
@@ -1914,6 +2021,7 @@ class SqliteOrderRepository
     name: row['name_snapshot']! as String,
     quantity: row['quantity']! as int,
     preparationNote: row['preparation_note']! as String,
+    courseId: row['course_id'] as String?,
   );
 
   static ItemCategory _categoryFromRow(Map<String, Object?> row) =>
@@ -1933,6 +2041,11 @@ class SqliteOrderRepository
   );
 
   static void _validateDraft(OrderDraft draft, {bool requireLines = false}) {
+    validateCourses(
+      draft.courses,
+      draft.lines.map((line) => line.courseId),
+      activeCourseId: draft.activeCourseId,
+    );
     if (draft.reference.trim().length > 80 ||
         draft.orderNote.trim().length > 500) {
       throw const OrderStorageException('The draft contains invalid text.');

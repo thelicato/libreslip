@@ -17,6 +17,8 @@ class TicketDocument {
     this.orderNote = '',
     this.logoPath,
     this.logoWidthPercent = 100,
+    this.courses = const [],
+    this.ungroupedLabel = '',
   });
 
   final String heading;
@@ -33,6 +35,13 @@ class TicketDocument {
   final int logoWidthPercent;
   final TicketTypography typography;
   final List<TicketDocumentLine> lines;
+  final List<OrderCourse> courses;
+  final String ungroupedLabel;
+
+  List<CourseSection<TicketDocumentLine>> get sections {
+    validateCourses(courses, lines.map((line) => line.courseId));
+    return courseSections(courses, lines, (line) => line.courseId);
+  }
 
   factory TicketDocument.fromTicket({
     required SavedTicket ticket,
@@ -46,6 +55,7 @@ class TicketDocument {
     String? logoPath,
     int logoWidthPercent = 100,
     TicketTypography typography = const TicketTypography(),
+    String ungroupedLabel = '',
   }) => TicketDocument(
     heading: ticket.heading.isEmpty ? fallbackHeading : ticket.heading,
     ticketLabel: ticketLabel,
@@ -60,12 +70,15 @@ class TicketDocument {
     logoPath: logoPath,
     logoWidthPercent: logoWidthPercent,
     typography: typography,
+    courses: ticket.courses,
+    ungroupedLabel: ungroupedLabel,
     lines: [
       for (final line in ticket.lines)
         TicketDocumentLine(
           quantity: line.quantity,
           name: line.name,
           note: line.preparationNote,
+          courseId: line.courseId,
         ),
     ],
   );
@@ -76,9 +89,11 @@ class TicketDocumentLine {
     required this.quantity,
     required this.name,
     this.note = '',
+    this.courseId,
   });
 
   final int quantity;
   final String name;
   final String note;
+  final String? courseId;
 }

@@ -23,6 +23,20 @@ createMemoryOrderEnvironment() async {
 Future<OrderWorkspaceController> createMemoryOrders() async =>
     (await createMemoryOrderEnvironment()).controller;
 
+/// Removes schema 11 additions before simulating an earlier schema version.
+Future<void> removeCourseColumnsForLegacyFixture(Database database) async {
+  for (final table in ['drafts', 'tickets', 'server_orders']) {
+    await database.execute('ALTER TABLE $table DROP COLUMN courses_json');
+  }
+  for (final table in ['draft_lines', 'ticket_lines', 'server_order_lines']) {
+    await database.execute('ALTER TABLE $table DROP COLUMN course_id');
+  }
+  await database.execute('ALTER TABLE drafts DROP COLUMN active_course_id');
+  await database.execute(
+    'ALTER TABLE order_feature_settings DROP COLUMN course_groups_enabled',
+  );
+}
+
 class MemorySettingsRepository implements SettingsRepository {
   AppSettings? stored;
   bool failLoad = false;

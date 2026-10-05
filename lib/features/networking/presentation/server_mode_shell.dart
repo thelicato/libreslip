@@ -7,6 +7,8 @@ import '../../../core/widgets/app_version_footer.dart';
 import '../../../core/widgets/brand_mark.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../orders/presentation/order_identity.dart';
+import '../../orders/presentation/course_composer.dart';
+import '../../orders/domain/course_groups.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../settings/presentation/personalisation_settings.dart';
 import '../application/network_mode_controller.dart';
@@ -708,36 +710,44 @@ class _OrderCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              for (var index = 0; index < order.lines.length; index++) ...[
-                if (index > 0) const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      child: Text(
-                        '${order.lines[index].quantity}×',
-                        style: theme.textTheme.titleMedium,
+              for (final section in courseSections(
+                order.courses,
+                order.lines,
+                (line) => line.courseId,
+              )) ...[
+                if (order.courses.isNotEmpty)
+                  CourseHeading(name: section.course?.name ?? l.ungrouped),
+                for (var index = 0; index < section.lines.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        child: Text(
+                          '${section.lines[index].quantity}×',
+                          style: theme.textTheme.titleMedium,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        order.lines[index].name,
-                        style: theme.textTheme.titleMedium,
+                      Expanded(
+                        child: Text(
+                          section.lines[index].name,
+                          style: theme.textTheme.titleMedium,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                if (order.lines[index].preparationNote.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 48, top: 3),
-                    child: Text(
-                      order.lines[index].preparationNote,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    ],
                   ),
+                  if (section.lines[index].preparationNote.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 48, top: 3),
+                      child: Text(
+                        section.lines[index].preparationNote,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                ],
               ],
               const SizedBox(height: 16),
               Text(
@@ -804,16 +814,24 @@ class _OrderDialog extends StatelessWidget {
               if (order.heading.isNotEmpty)
                 _DetailRow(label: l.heading, value: order.heading),
               const Divider(height: 28),
-              for (final line in order.lines) ...[
-                Text(
-                  '${line.quantity}×  ${line.name}',
-                  style: theme.textTheme.titleMedium,
-                ),
-                if (line.preparationNote.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(line.preparationNote),
+              for (final section in courseSections(
+                order.courses,
+                order.lines,
+                (line) => line.courseId,
+              )) ...[
+                if (order.courses.isNotEmpty)
+                  CourseHeading(name: section.course?.name ?? l.ungrouped),
+                for (final line in section.lines) ...[
+                  Text(
+                    '${line.quantity}×  ${line.name}',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  if (line.preparationNote.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(line.preparationNote),
+                  ],
+                  const SizedBox(height: 14),
                 ],
-                const SizedBox(height: 14),
               ],
               if (order.orderNote.isNotEmpty) ...[
                 const Divider(),

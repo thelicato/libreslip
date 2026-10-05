@@ -10,6 +10,7 @@ import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'order_identity.dart';
+import 'course_composer.dart';
 
 class ComposePage extends StatefulWidget {
   const ComposePage({
@@ -69,6 +70,13 @@ class ComposePageState extends State<ComposePage> {
               widget.controller.saving ||
               widget.printing.value)
             const SizedBox(height: 18),
+          if (widget.controller.courseControlsAvailable) ...[
+            CourseComposer(
+              controller: widget.controller,
+              busy: widget.controller.saving || widget.printing.value,
+            ),
+            const SizedBox(height: 12),
+          ],
           LayoutBuilder(
             builder: (context, constraints) {
               if (widget.settings.compactCompose) {
@@ -78,6 +86,10 @@ class ComposePageState extends State<ComposePage> {
                   draft: draft,
                   orderNumber: widget.controller.nextOrderNumber,
                   features: widget.controller.featureSettings,
+                  grouped: widget.controller.courseControlsAvailable,
+                  onQuantityChanged: widget.controller.setQuantity,
+                  onRemoveLine: widget.controller.removeLine,
+                  onLineCourseChanged: widget.controller.setLineCourse,
                   busy: widget.controller.saving || widget.printing.value,
                   query: _query,
                   categoryId: _categoryId,
@@ -113,6 +125,8 @@ class ComposePageState extends State<ComposePage> {
                 draft: draft,
                 orderNumber: widget.controller.nextOrderNumber,
                 features: widget.controller.featureSettings,
+                grouped: widget.controller.courseControlsAvailable,
+                onLineCourseChanged: widget.controller.setLineCourse,
                 busy: widget.controller.saving || widget.printing.value,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
@@ -335,6 +349,7 @@ class ComposePageState extends State<ComposePage> {
           '${material.formatFullDate(local)} · '
           '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}',
       referenceLabel: l.orderReference,
+      ungroupedLabel: l.ungrouped,
       orderNotesLabel: l.orderNotes,
       lineNotePrefix: l.lineNoteLabel,
       footer: widget.settings.footer,
@@ -372,9 +387,8 @@ class _ComposeOrderHeading extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final stacked =
-            reference.isNotEmpty &&
-            (constraints.maxWidth < 360 ||
-                MediaQuery.textScalerOf(context).scale(14) > 20);
+            (reference.isNotEmpty && constraints.maxWidth < 360) ||
+            MediaQuery.textScalerOf(context).scale(14) > 20;
         if (stacked) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -402,6 +416,10 @@ class _CompactComposePanel extends StatelessWidget {
     required this.draft,
     required this.orderNumber,
     required this.features,
+    required this.grouped,
+    required this.onQuantityChanged,
+    required this.onRemoveLine,
+    required this.onLineCourseChanged,
     required this.busy,
     required this.query,
     required this.categoryId,
@@ -420,6 +438,10 @@ class _CompactComposePanel extends StatelessWidget {
   final OrderDraft draft;
   final int orderNumber;
   final OrderFeatureSettings features;
+  final bool grouped;
+  final void Function(String, int) onQuantityChanged;
+  final ValueChanged<String> onRemoveLine;
+  final void Function(String, String?) onLineCourseChanged;
   final bool busy;
   final String query;
   final String? categoryId;
@@ -559,7 +581,11 @@ class _CompactComposePanel extends StatelessWidget {
                             item: item,
                             lines: draft.lines
                                 .where(
-                                  (line) => line.catalogueItemId == item.id,
+                                  (line) =>
+                                      line.catalogueItemId == item.id &&
+                                      (!grouped ||
+                                          line.courseId ==
+                                              draft.activeCourseId),
                                 )
                                 .toList(),
                             preparationNotesEnabled:
@@ -573,6 +599,23 @@ class _CompactComposePanel extends StatelessWidget {
                   );
                 },
               ),
+            if (grouped && draft.lines.isNotEmpty) ...[
+              const Divider(height: 28),
+              Text(
+                l.groupedOrderSummary,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              _OrderLines(
+                busy: busy,
+                draft: draft,
+                grouped: true,
+                preparationNotesEnabled: features.preparationNotesEnabled,
+                onQuantityChanged: onQuantityChanged,
+                onEditNote: onEditNote,
+                onRemoveLine: onRemoveLine,
+                onLineCourseChanged: onLineCourseChanged,
+              ),
+            ],
           ],
         ),
       ),
@@ -831,6 +874,8 @@ class _OrderPanel extends StatelessWidget {
     required this.draft,
     required this.orderNumber,
     required this.features,
+    required this.grouped,
+    required this.onLineCourseChanged,
     required this.busy,
     required this.standalone,
     required this.onReferenceChanged,
@@ -844,6 +889,8 @@ class _OrderPanel extends StatelessWidget {
   final OrderDraft draft;
   final int orderNumber;
   final OrderFeatureSettings features;
+  final bool grouped;
+  final void Function(String, String?) onLineCourseChanged;
   final bool busy;
   final bool standalone;
   final ValueChanged<String> onReferenceChanged;
@@ -910,14 +957,16 @@ class _OrderPanel extends StatelessWidget {
               ),
             )
           else
-            for (final line in draft.lines)
-              _OrderLineCard(
-                line: line,
-                preparationNotesEnabled: features.preparationNotesEnabled,
-                onQuantityChanged: (value) => onQuantityChanged(line.id, value),
-                onEditNote: () => onEditNote(line),
-                onRemove: () => onRemoveLine(line.id),
-              ),
+            _OrderLines(
+              busy: busy,
+              draft: draft,
+              grouped: grouped,
+              preparationNotesEnabled: features.preparationNotesEnabled,
+              onQuantityChanged: onQuantityChanged,
+              onEditNote: onEditNote,
+              onRemoveLine: onRemoveLine,
+              onLineCourseChanged: onLineCourseChanged,
+            ),
           if (features.orderNotesEnabled) ...[
             const SizedBox(height: 12),
             TextFormField(
@@ -941,6 +990,67 @@ class _OrderPanel extends StatelessWidget {
   }
 }
 
+class _OrderLines extends StatelessWidget {
+  const _OrderLines({
+    required this.draft,
+    required this.busy,
+    required this.grouped,
+    required this.preparationNotesEnabled,
+    required this.onQuantityChanged,
+    required this.onEditNote,
+    required this.onRemoveLine,
+    required this.onLineCourseChanged,
+  });
+  final OrderDraft draft;
+  final bool busy;
+  final bool grouped;
+  final bool preparationNotesEnabled;
+  final void Function(String, int) onQuantityChanged;
+  final ValueChanged<TicketLine> onEditNote;
+  final ValueChanged<String> onRemoveLine;
+  final void Function(String, String?) onLineCourseChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final section in courseSections(
+        draft.courses,
+        draft.lines,
+        (line) => line.courseId,
+      )) ...[
+        if (grouped)
+          CourseHeading(
+            name:
+                section.course?.name ?? AppLocalizations.of(context).ungrouped,
+          ),
+        for (final line in section.lines)
+          _OrderLineCard(
+            line: line,
+            preparationNotesEnabled: preparationNotesEnabled,
+            coursePicker: grouped
+                ? DropdownButtonFormField<String>(
+                    key: ValueKey('line-course-${line.id}-${line.courseId}'),
+                    initialValue: line.courseId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context).course,
+                    ),
+                    items: courseChoices(context, draft.courses),
+                    onChanged: busy
+                        ? null
+                        : (value) => onLineCourseChanged(line.id, value),
+                  )
+                : null,
+            onQuantityChanged: (value) => onQuantityChanged(line.id, value),
+            onEditNote: () => onEditNote(line),
+            onRemove: () => onRemoveLine(line.id),
+          ),
+      ],
+    ],
+  );
+}
+
 class _OrderLineCard extends StatelessWidget {
   const _OrderLineCard({
     required this.line,
@@ -948,6 +1058,7 @@ class _OrderLineCard extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onEditNote,
     required this.onRemove,
+    this.coursePicker,
   });
 
   final TicketLine line;
@@ -955,6 +1066,7 @@ class _OrderLineCard extends StatelessWidget {
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback onEditNote;
   final VoidCallback onRemove;
+  final Widget? coursePicker;
 
   @override
   Widget build(BuildContext context) {
@@ -983,6 +1095,10 @@ class _OrderLineCard extends StatelessWidget {
               ),
             ],
           ),
+          if (coursePicker != null) ...[
+            coursePicker!,
+            const SizedBox(height: 12),
+          ],
           Material(
             key: ValueKey('quantity-stepper-${line.id}'),
             color: theme.colorScheme.surfaceContainerLow,

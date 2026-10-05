@@ -9,6 +9,7 @@ import 'package:libreslip/features/networking/domain/server_inbox_models.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
+import 'package:libreslip/features/orders/domain/order_models.dart';
 
 import 'test_support.dart';
 
@@ -131,8 +132,18 @@ void main() {
         heading: 'Kitchen',
         reference: 'Table 4',
         orderNote: 'Together',
+        courses: const [
+          OrderCourse(id: 'first', name: 'First course'),
+          OrderCourse(id: 'second', name: 'Second course'),
+        ],
         lines: const [
-          DeliveryLine(name: 'Soup', quantity: 2, preparationNote: 'No cream'),
+          DeliveryLine(
+            name: 'Soup',
+            quantity: 1,
+            preparationNote: 'No cream',
+            courseId: 'first',
+          ),
+          DeliveryLine(name: 'Soup', quantity: 1, courseId: 'second'),
         ],
       ),
       receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
@@ -217,18 +228,26 @@ void main() {
       ValueKey('server-order-${secondOrder.id}'),
     );
     expect(
-      find.descendant(of: orderFinder, matching: find.text('2×')),
-      findsOneWidget,
+      find.descendant(of: orderFinder, matching: find.text('1×')),
+      findsNWidgets(2),
     );
     expect(
       find.descendant(of: orderFinder, matching: find.text('Soup')),
-      findsOneWidget,
+      findsNWidgets(2),
     );
     expect(
       find.descendant(of: orderFinder, matching: find.text('No cream')),
       findsOneWidget,
     );
     expect(find.text('Front counter'), findsNothing);
+    expect(
+      find.descendant(of: orderFinder, matching: find.text('First course')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: orderFinder, matching: find.text('Second course')),
+      findsOneWidget,
+    );
     final firstRect = tester.getRect(orderFinder);
     final secondRect = tester.getRect(secondOrderFinder);
     final summaryRect = tester.getRect(
@@ -267,7 +286,7 @@ void main() {
       findsOneWidget,
     );
     expect(tester.getSize(find.byType(AlertDialog)).width, greaterThan(680));
-    expect(find.text('2×  Soup'), findsOneWidget);
+    expect(find.text('1×  Soup'), findsNWidgets(2));
     expect(find.text('No cream'), findsWidgets);
     expect(find.text('Front counter'), findsNothing);
 

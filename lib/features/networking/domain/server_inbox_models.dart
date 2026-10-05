@@ -1,4 +1,5 @@
 import 'network_protocol.dart';
+import '../../orders/domain/course_groups.dart';
 
 enum ServerOrderStatus { received, done }
 
@@ -33,11 +34,13 @@ class ServerOrderLine {
     required this.name,
     required this.quantity,
     this.preparationNote = '',
+    this.courseId,
   });
 
   final String name;
   final int quantity;
   final String preparationNote;
+  final String? courseId;
 }
 
 class ServerOrder {
@@ -57,6 +60,7 @@ class ServerOrder {
     required this.payloadChecksum,
     required this.status,
     this.completedAt,
+    this.courses = const [],
   });
 
   final String id;
@@ -71,6 +75,7 @@ class ServerOrder {
   final String reference;
   final String orderNote;
   final List<ServerOrderLine> lines;
+  final List<OrderCourse> courses;
   final String payloadChecksum;
   final ServerOrderStatus status;
   final DateTime? completedAt;

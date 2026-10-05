@@ -23,6 +23,8 @@ import 'package:libreslip/features/portability/application/portability_service.d
 import 'package:libreslip/features/printing/application/printer_controller.dart';
 import 'package:libreslip/features/printing/domain/printer_transport.dart';
 import 'package:libreslip/features/printing/domain/ticket_typography.dart';
+import 'package:libreslip/features/orders/domain/order_models.dart';
+import 'package:libreslip/features/orders/presentation/course_composer.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 
@@ -100,6 +102,62 @@ void main() {
         ThemeMode.light,
         2,
       ),
+      (
+        'courses-compose-tablet-en',
+        const Size(1440, 1200),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'courses-compose-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'courses-compact-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'courses-manage-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'courses-ticket-preview-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'courses-server-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'courses-server-tablet-en',
+        const Size(1100, 1100),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'courses-server-dialog-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
@@ -161,6 +219,7 @@ void main() {
         5,
       ),
     ]) {
+      final groupedPreview = name.startsWith('courses-');
       tester.view.physicalSize = size;
       tester.platformDispatcher.textScaleFactorTestValue =
           name.endsWith('large-text') ? 2 : 1;
@@ -177,7 +236,9 @@ void main() {
                   footer: 11,
                 )
               : const TicketTypography(),
-          compactCompose: name == 'compose-compact-phone-it',
+          compactCompose:
+              name == 'compose-compact-phone-it' ||
+              name == 'courses-compact-phone-it',
         );
       final controller = SettingsController(settingsStore);
       await controller.load();
@@ -219,12 +280,25 @@ void main() {
             heading: 'Cucina',
             reference: 'Tavolo 4',
             orderNote: 'Portare insieme',
-            lines: const [
+            courses: groupedPreview
+                ? const [
+                    OrderCourse(id: 'first', name: 'Primo'),
+                    OrderCourse(id: 'second', name: 'Secondo'),
+                  ]
+                : const [],
+            lines: [
               DeliveryLine(
                 name: 'Toast ai funghi',
                 quantity: 2,
                 preparationNote: 'Senza cipolla',
+                courseId: groupedPreview ? 'first' : null,
               ),
+              if (groupedPreview)
+                const DeliveryLine(
+                  name: 'Verdure arrosto',
+                  quantity: 1,
+                  courseId: 'second',
+                ),
             ],
           ),
           receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
@@ -269,7 +343,7 @@ void main() {
       final printer = PrinterController(_PreviewPrinterTransport());
       if (page >= 1 && page <= 3) {
         await orders.saveItem(
-          name: 'Mushroom toastie',
+          name: groupedPreview ? 'Tomato soup' : 'Mushroom toastie',
           categoryName: language == 'it' ? 'Cucina' : 'Kitchen',
           sendToServer: name != 'items-tablet-it',
         );
@@ -299,6 +373,12 @@ void main() {
         await orders.saveActiveTicket(heading: 'Bottega Libertà');
       }
       if (page == 2 || page == 3) {
+        if (groupedPreview) {
+          await orders.updateFeatureSettings(
+            const OrderFeatureSettings(courseGroupsEnabled: true),
+          );
+          orders.saveCourse(language == 'it' ? 'Primo' : 'First course');
+        }
         orders.addCatalogueItem(orders.items.single);
         orders.setReference(
           name == 'compose-title-phone-it-large-text'
@@ -310,6 +390,21 @@ void main() {
         orders.setOrderNote(
           language == 'it' ? 'Portare insieme' : 'Bring together',
         );
+        if (groupedPreview) {
+          orders.setQuantity(orders.activeDraft!.lines.single.id, 2);
+          orders.setPreparationNote(
+            orders.activeDraft!.lines.single.id,
+            language == 'it' ? 'Uno senza pane' : 'One without bread',
+          );
+          orders.saveCourse(language == 'it' ? 'Secondo' : 'Second course');
+          await orders.saveItem(
+            name: language == 'it' ? 'Verdure arrosto' : 'Roast vegetables',
+          );
+          orders.addCatalogueItem(
+            orders.items.singleWhere((item) => item.name != 'Tomato soup'),
+          );
+        }
+
         await orders.flushWrites();
       }
       if (page == 3) {
@@ -342,13 +437,25 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
+      if (groupedPreview && page == 2) {
+        if (name == 'courses-manage-phone-it-large-text') {
+          final manage = find.byKey(const ValueKey('manage-courses'));
+          await tester.ensureVisible(manage);
+          await tester.tap(manage);
+          await tester.pumpAndSettle();
+        } else if (size.width < 760) {
+          await tester.ensureVisible(find.byType(CourseHeading).first);
+          await tester.pumpAndSettle();
+        }
+      }
       if (name == 'item-totals-phone-en') {
         final totalsButton = find.byKey(const ValueKey('view-item-totals'));
         await tester.ensureVisible(totalsButton);
         await tester.tap(totalsButton);
         await tester.pumpAndSettle();
       }
-      if (name == 'server-order-dialog-tablet-en') {
+      if (name == 'server-order-dialog-tablet-en' ||
+          name == 'courses-server-dialog-tablet-en') {
         await tester.tap(find.text('Order 12'));
         await tester.pumpAndSettle();
       }
@@ -368,7 +475,8 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
-      if (name == 'ticket-preview-phone-it') {
+      if (name == 'ticket-preview-phone-it' ||
+          name == 'courses-ticket-preview-phone-it') {
         await tester.tap(find.text('Comanda 1'));
         await tester.pumpAndSettle();
       }

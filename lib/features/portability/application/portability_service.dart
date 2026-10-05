@@ -73,12 +73,13 @@ class PortabilityService {
         'assets/logo',
       );
       final configuration = <String, Object?>{
-        'version': 1,
+        'version': 2,
         'settings': portableSettings,
         'orderFeatures': {
           'orderReferenceEnabled': featureSettings.orderReferenceEnabled,
           'preparationNotesEnabled': featureSettings.preparationNotesEnabled,
           'orderNotesEnabled': featureSettings.orderNotesEnabled,
+          'courseGroupsEnabled': featureSettings.courseGroupsEnabled,
         },
         'printer': {
           'transport': 'bluetoothClassicSpp',
@@ -204,7 +205,7 @@ class PortabilityService {
       final settingsValue = configuration['settings'];
       final features = configuration['orderFeatures'];
       final printer = configuration['printer'];
-      if (configuration['version'] != 1 ||
+      if (![1, 2].contains(configuration['version']) ||
           settingsValue is! Map<String, dynamic> ||
           features is! Map<String, dynamic> ||
           printer is! Map<String, dynamic> ||
@@ -213,6 +214,10 @@ class PortabilityService {
       }
       AppSettings.fromJson(settingsValue);
       _parseFeatures(features);
+      if (configuration['version'] == 2 &&
+          features['courseGroupsEnabled'] is! bool) {
+        throw const PortabilityException('invalidConfiguration');
+      }
       _validateAssetReference(settingsValue['logoPath'], entries);
 
       Map<String, dynamic>? snapshot;
@@ -222,7 +227,8 @@ class PortabilityService {
           throw const PortabilityException('missingDatabase');
         }
         snapshot = _decodeObject(databaseBytes, 'database');
-        _validateSnapshot(snapshot, entries);
+        final candidate = snapshot;
+        await Isolate.run(() => _validateSnapshot(candidate, entries));
       } else if (entries.containsKey('database.json')) {
         throw const PortabilityException('unexpectedDatabase');
       }
@@ -394,6 +400,7 @@ class PortabilityService {
         'orderReferenceEnabled': oldFeatures.orderReferenceEnabled,
         'preparationNotesEnabled': oldFeatures.preparationNotesEnabled,
         'orderNotesEnabled': oldFeatures.orderNotesEnabled,
+        'courseGroupsEnabled': oldFeatures.courseGroupsEnabled,
       },
       'database': oldSnapshot,
       'stagedDirectory': stagedDirectory,
@@ -525,6 +532,11 @@ class PortabilityService {
         required.any((name) => tables[name] is! List)) {
       throw const PortabilityException('invalidDatabase');
     }
+    try {
+      SqliteOrderRepository.validatePortableCourses(snapshot);
+    } on FormatException {
+      throw const PortabilityException('invalidDatabase');
+    }
     var count = 0;
     final ids = <String, Set<Object?>>{};
     for (final name in required) {
@@ -605,13 +617,16 @@ class PortabilityService {
   static OrderFeatureSettings _parseFeatures(Map<String, dynamic> value) {
     if (value['orderReferenceEnabled'] is! bool ||
         value['preparationNotesEnabled'] is! bool ||
-        value['orderNotesEnabled'] is! bool) {
+        value['orderNotesEnabled'] is! bool ||
+        (value.containsKey('courseGroupsEnabled') &&
+            value['courseGroupsEnabled'] is! bool)) {
       throw const PortabilityException('invalidConfiguration');
     }
     return OrderFeatureSettings(
       orderReferenceEnabled: value['orderReferenceEnabled']! as bool,
       preparationNotesEnabled: value['preparationNotesEnabled']! as bool,
       orderNotesEnabled: value['orderNotesEnabled']! as bool,
+      courseGroupsEnabled: value['courseGroupsEnabled'] as bool? ?? false,
     );
   }
 

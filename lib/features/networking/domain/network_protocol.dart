@@ -2,11 +2,14 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import '../../orders/domain/course_groups.dart';
+
 class NetworkProtocol {
   const NetworkProtocol._();
 
   static const name = 'libreslip-order';
   static const version = 1;
+  static const groupedVersion = 2;
   static const defaultPort = 5119;
   static const maxEnvelopeBytes = 64 * 1024;
   static const maxLines = 200;
@@ -24,16 +27,19 @@ class DeliveryLine {
     required this.name,
     required this.quantity,
     this.preparationNote = '',
+    this.courseId,
   });
 
   final String name;
   final int quantity;
   final String preparationNote;
+  final String? courseId;
 
-  Map<String, Object?> toJson() => {
+  Map<String, Object?> toJson({bool includeCourse = false}) => {
     'name': name,
     'quantity': quantity,
     'preparationNote': preparationNote,
+    if (includeCourse) 'courseId': courseId,
   };
 }
 
@@ -48,6 +54,7 @@ class OrderDeliveryEnvelope {
     required this.reference,
     required this.orderNote,
     required this.lines,
+    required this.courses,
     required this.payloadChecksum,
   });
 
@@ -60,6 +67,10 @@ class OrderDeliveryEnvelope {
   final String reference;
   final String orderNote;
   final List<DeliveryLine> lines;
+  final List<OrderCourse> courses;
+  int get version => courses.isEmpty
+      ? NetworkProtocol.version
+      : NetworkProtocol.groupedVersion;
   final String payloadChecksum;
 
   factory OrderDeliveryEnvelope.create({
@@ -72,6 +83,7 @@ class OrderDeliveryEnvelope {
     required String reference,
     required String orderNote,
     required List<DeliveryLine> lines,
+    List<OrderCourse> courses = const [],
   }) {
     final content = _content(
       clientInstallationId: clientInstallationId,
@@ -83,8 +95,9 @@ class OrderDeliveryEnvelope {
       reference: reference,
       orderNote: orderNote,
       lines: lines,
+      courses: courses,
     );
-    _validateContent(content, lines);
+    _validateContent(content, lines, courses);
     final checksum = _checksum(content);
     final envelope = OrderDeliveryEnvelope._(
       clientInstallationId: clientInstallationId,
@@ -96,6 +109,7 @@ class OrderDeliveryEnvelope {
       reference: reference,
       orderNote: orderNote,
       lines: List.unmodifiable(lines),
+      courses: List.unmodifiable(courses),
       payloadChecksum: checksum,
     );
     envelope._validateEncodedSize();
@@ -111,14 +125,20 @@ class OrderDeliveryEnvelope {
         decoded.keys.toSet().difference(_rootKeys).isNotEmpty ||
         !_rootKeys.every(decoded.containsKey) ||
         decoded['protocol'] != NetworkProtocol.name ||
-        decoded['version'] != NetworkProtocol.version ||
+        ![
+          NetworkProtocol.version,
+          NetworkProtocol.groupedVersion,
+        ].contains(decoded['version']) ||
         decoded['checksum'] is! String ||
         decoded['ticket'] is! Map<String, dynamic>) {
       throw const FormatException('Unsupported delivery envelope');
     }
+    final grouped = decoded['version'] == NetworkProtocol.groupedVersion;
+    final ticketKeys = {..._ticketKeys, if (grouped) 'courses'};
+    final lineKeys = {..._lineKeys, if (grouped) 'courseId'};
     final ticket = decoded['ticket']! as Map<String, dynamic>;
-    if (ticket.keys.toSet().difference(_ticketKeys).isNotEmpty ||
-        !_ticketKeys.every(ticket.containsKey) ||
+    if (ticket.keys.toSet().difference(ticketKeys).isNotEmpty ||
+        !ticketKeys.every(ticket.containsKey) ||
         decoded['clientInstallationId'] is! String ||
         decoded['deliveryId'] is! String ||
         ticket['id'] is! String ||
@@ -135,14 +155,23 @@ class OrderDeliveryEnvelope {
     if (createdAt == null || !createdAt.isUtc || !createdAtText.endsWith('Z')) {
       throw const FormatException('Delivery timestamp must be UTC');
     }
+    final courses = grouped
+        ? parseCourses(ticket['courses'])
+        : const <OrderCourse>[];
+    if (grouped && courses.isEmpty) {
+      throw const FormatException('Grouped orders need courses');
+    }
     final lines = <DeliveryLine>[];
     for (final value in ticket['lines']! as List) {
       if (value is! Map<String, dynamic> ||
-          value.keys.toSet().difference(_lineKeys).isNotEmpty ||
-          !_lineKeys.every(value.containsKey) ||
+          value.keys.toSet().difference(lineKeys).isNotEmpty ||
+          !lineKeys.every(value.containsKey) ||
           value['name'] is! String ||
           value['quantity'] is! int ||
-          value['preparationNote'] is! String) {
+          value['preparationNote'] is! String ||
+          (grouped &&
+              value['courseId'] != null &&
+              value['courseId'] is! String)) {
         throw const FormatException('Invalid delivery line');
       }
       lines.add(
@@ -150,6 +179,7 @@ class OrderDeliveryEnvelope {
           name: value['name']! as String,
           quantity: value['quantity']! as int,
           preparationNote: value['preparationNote']! as String,
+          courseId: grouped ? value['courseId'] as String? : null,
         ),
       );
     }
@@ -163,8 +193,9 @@ class OrderDeliveryEnvelope {
       reference: ticket['reference']! as String,
       orderNote: ticket['orderNote']! as String,
       lines: lines,
+      courses: courses,
     );
-    _validateContent(content, lines);
+    _validateContent(content, lines, courses);
     final checksum = decoded['checksum']! as String;
     if (!_checksumPattern.hasMatch(checksum) ||
         checksum != _checksum(content)) {
@@ -180,6 +211,7 @@ class OrderDeliveryEnvelope {
       reference: ticket['reference']! as String,
       orderNote: ticket['orderNote']! as String,
       lines: List.unmodifiable(lines),
+      courses: List.unmodifiable(courses),
       payloadChecksum: checksum,
     );
   }
@@ -195,6 +227,7 @@ class OrderDeliveryEnvelope {
       reference: reference,
       orderNote: orderNote,
       lines: lines,
+      courses: courses,
     ),
     'checksum': payloadChecksum,
   };
@@ -217,9 +250,12 @@ class OrderDeliveryEnvelope {
     required String reference,
     required String orderNote,
     required List<DeliveryLine> lines,
+    required List<OrderCourse> courses,
   }) => {
     'protocol': NetworkProtocol.name,
-    'version': NetworkProtocol.version,
+    'version': courses.isEmpty
+        ? NetworkProtocol.version
+        : NetworkProtocol.groupedVersion,
     'clientInstallationId': clientInstallationId,
     'deliveryId': deliveryId,
     'ticket': {
@@ -229,14 +265,21 @@ class OrderDeliveryEnvelope {
       'heading': heading,
       'reference': reference,
       'orderNote': orderNote,
-      'lines': [for (final line in lines) line.toJson()],
+      if (courses.isNotEmpty)
+        'courses': [for (final course in courses) course.toJson()],
+      'lines': [
+        for (final line in lines)
+          line.toJson(includeCourse: courses.isNotEmpty),
+      ],
     },
   };
 
   static void _validateContent(
     Map<String, Object?> content,
     List<DeliveryLine> lines,
+    List<OrderCourse> courses,
   ) {
+    validateCourses(courses, lines.map((line) => line.courseId));
     final ticket = content['ticket']! as Map<String, Object?>;
     for (final id in [
       content['clientInstallationId'],

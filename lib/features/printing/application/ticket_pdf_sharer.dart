@@ -126,24 +126,37 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
             ),
           ],
           pw.Divider(),
-          for (final line in document.lines)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 5),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text('${line.quantity} x ${line.name}', style: itemsBold),
-                  if (line.note.isNotEmpty)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(left: 10, top: 2),
-                      child: pw.Text(
-                        '${document.lineNotePrefix}: ${line.note}',
-                        style: notes,
-                      ),
-                    ),
-                ],
+          for (final section in document.sections) ...[
+            if (document.courses.isNotEmpty) ...[
+              pw.SizedBox(height: 5),
+              pw.Text(
+                section.course?.name ?? document.ungroupedLabel,
+                style: detailsBold,
               ),
-            ),
+              pw.Divider(),
+            ],
+            for (final line in section.lines)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 5),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      '${line.quantity} x ${line.name}',
+                      style: itemsBold,
+                    ),
+                    if (line.note.isNotEmpty)
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(left: 10, top: 2),
+                        child: pw.Text(
+                          '${document.lineNotePrefix}: ${line.note}',
+                          style: notes,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
           if (document.orderNote.isNotEmpty) ...[
             pw.Divider(),
             pw.Text(document.orderNotesLabel, style: notesBold),

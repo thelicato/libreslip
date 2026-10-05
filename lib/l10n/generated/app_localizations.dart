@@ -820,6 +820,108 @@ abstract class AppLocalizations {
   /// **'Add an item to this draft without saving it to your reusable shelf.'**
   String get adHocItemBody;
 
+  /// No description provided for @courseGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Course groups'**
+  String get courseGroups;
+
+  /// No description provided for @courseGroupsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate items into named courses. Off by default. Turning this off applies to new orders; existing groups are preserved.'**
+  String get courseGroupsBody;
+
+  /// No description provided for @course.
+  ///
+  /// In en, this message translates to:
+  /// **'Course'**
+  String get course;
+
+  /// No description provided for @ungrouped.
+  ///
+  /// In en, this message translates to:
+  /// **'Ungrouped'**
+  String get ungrouped;
+
+  /// No description provided for @addCourse.
+  ///
+  /// In en, this message translates to:
+  /// **'Add course'**
+  String get addCourse;
+
+  /// No description provided for @editCourse.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit course'**
+  String get editCourse;
+
+  /// No description provided for @manageCourses.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage courses'**
+  String get manageCourses;
+
+  /// No description provided for @courseName.
+  ///
+  /// In en, this message translates to:
+  /// **'Course name'**
+  String get courseName;
+
+  /// No description provided for @courseNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example Drinks, First course or Second course'**
+  String get courseNameHint;
+
+  /// No description provided for @courseNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a unique name of 1 to 40 characters, without line breaks.'**
+  String get courseNameInvalid;
+
+  /// No description provided for @courseLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to 20 courses to an order.'**
+  String get courseLimit;
+
+  /// No description provided for @courseMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move course earlier'**
+  String get courseMoveUp;
+
+  /// No description provided for @courseMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move course later'**
+  String get courseMoveDown;
+
+  /// No description provided for @removeCourse.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove course'**
+  String get removeCourse;
+
+  /// No description provided for @removeCourseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Items in this course will move to Ungrouped. Quantities and notes are kept.'**
+  String get removeCourseBody;
+
+  /// No description provided for @groupedOrderSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Order by course'**
+  String get groupedOrderSummary;
+
+  /// No description provided for @deliveryCoursesUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This Server does not support course groups. Update the Server, then retry. Your ticket and its groups remain saved on this phone.'**
+  String get deliveryCoursesUnsupported;
+
   /// No description provided for @orderReference.
   ///
   /// In en, this message translates to:

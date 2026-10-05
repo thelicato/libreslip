@@ -395,6 +395,61 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiungi un articolo a questa bozza senza salvarlo tra quelli riutilizzabili.';
 
   @override
+  String get courseGroups => 'Gruppi di portata';
+
+  @override
+  String get courseGroupsBody =>
+      'Separa gli articoli in portate con un nome. Disattivato inizialmente. La disattivazione vale per i nuovi ordini; i gruppi esistenti restano.';
+
+  @override
+  String get course => 'Portata';
+
+  @override
+  String get ungrouped => 'Senza gruppo';
+
+  @override
+  String get addCourse => 'Aggiungi portata';
+
+  @override
+  String get editCourse => 'Modifica portata';
+
+  @override
+  String get manageCourses => 'Gestisci portate';
+
+  @override
+  String get courseName => 'Nome della portata';
+
+  @override
+  String get courseNameHint => 'Ad esempio Bevande, Primo o Secondo';
+
+  @override
+  String get courseNameInvalid =>
+      'Usa un nome univoco da 1 a 40 caratteri, senza interruzioni di riga.';
+
+  @override
+  String get courseLimit => 'Puoi aggiungere fino a 20 portate a un ordine.';
+
+  @override
+  String get courseMoveUp => 'Anticipa portata';
+
+  @override
+  String get courseMoveDown => 'Posticipa portata';
+
+  @override
+  String get removeCourse => 'Rimuovi portata';
+
+  @override
+  String get removeCourseBody =>
+      'Gli articoli di questa portata passano a Senza gruppo. Quantità e note restano.';
+
+  @override
+  String get groupedOrderSummary => 'Ordine per portata';
+
+  @override
+  String get deliveryCoursesUnsupported =>
+      'Questo Server non supporta i gruppi di portata. Aggiorna il Server e riprova. La comanda e i suoi gruppi restano salvati su questo telefono.';
+
+  @override
   String get orderReference => 'Titolo ordine / tavolo';
 
   @override

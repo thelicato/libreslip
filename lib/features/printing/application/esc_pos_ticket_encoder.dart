@@ -80,21 +80,34 @@ class EscPosTicketEncoder {
     }
     _line(output, '-' * profile.charactersPerLine);
 
-    for (final line in document.lines) {
-      await _writeStyled(
-        output,
-        '${line.quantity} x ${line.name}',
-        bold: true,
-        fontSize: typography.items,
-        nativeFontSize: TicketTypography.defaultItems,
-      );
-      if (line.note.isNotEmpty) {
+    for (final section in document.sections) {
+      if (document.courses.isNotEmpty) {
+        _line(output, '');
         await _writeStyled(
           output,
-          '${document.lineNotePrefix}: ${line.note}',
-          fontSize: typography.notes,
-          nativeFontSize: TicketTypography.defaultNotes,
+          section.course?.name ?? document.ungroupedLabel,
+          bold: true,
+          fontSize: typography.details,
+          nativeFontSize: TicketTypography.defaultDetails,
         );
+        _line(output, '-' * profile.charactersPerLine);
+      }
+      for (final line in section.lines) {
+        await _writeStyled(
+          output,
+          '${line.quantity} x ${line.name}',
+          bold: true,
+          fontSize: typography.items,
+          nativeFontSize: TicketTypography.defaultItems,
+        );
+        if (line.note.isNotEmpty) {
+          await _writeStyled(
+            output,
+            '${document.lineNotePrefix}: ${line.note}',
+            fontSize: typography.notes,
+            nativeFontSize: TicketTypography.defaultNotes,
+          );
+        }
       }
     }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,7 @@ import 'package:libreslip/features/networking/data/local_https_server.dart';
 import 'package:libreslip/features/networking/data/pinned_https_client.dart';
 import 'package:libreslip/features/networking/data/server_identity_service.dart';
 import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
+import 'package:libreslip/features/networking/domain/network_protocol.dart';
 import 'package:libreslip/features/networking/domain/client_security.dart';
 import 'package:libreslip/features/networking/domain/client_transport.dart';
 import 'package:libreslip/features/networking/domain/server_security.dart';
@@ -90,6 +92,7 @@ void main() {
       final draft = await repository.createDraft();
       final completedDraft = draft.copyWith(
         reference: 'Table 4',
+        courses: const [OrderCourse(id: 'first-course', name: 'First course')],
         orderNote: 'Together',
         lines: [
           TicketLine(
@@ -97,6 +100,7 @@ void main() {
             name: 'Soup',
             quantity: 2,
             preparationNote: 'No cream',
+            courseId: 'first-course',
           ),
         ],
       );
@@ -110,6 +114,8 @@ void main() {
       expect(delivery.status, ClientDeliveryStatus.awaitingPrint);
       expect(delivery.envelope.reference, 'Table 4');
       expect(delivery.envelope.lines.single.name, 'Soup');
+      expect(delivery.envelope.version, 2);
+      expect(delivery.envelope.courses.single.name, 'First course');
 
       await controller.load();
       expect(transport.loseAcknowledgement, isTrue);
@@ -158,6 +164,14 @@ void main() {
       expect(delivery.status, ClientDeliveryStatus.failed);
       expect(delivery.errorCode, 'unreachable');
       expect(await repository.loadServerOrders(), hasLength(1));
+      expect(
+        (await repository.loadServerOrders()).single.courses.single.name,
+        'First course',
+      );
+      expect(
+        (await repository.loadServerOrders()).single.lines.single.courseId,
+        'first-course',
+      );
 
       await _waitUntil(
         () =>
@@ -207,6 +221,118 @@ void main() {
     },
   );
 
+  test('grouped delivery sends nothing to an older Server and succeeds after explicit retry on an upgraded Server', () async {
+    final identity = await ServerIdentityService(_MemoryServerSecrets())
+        .loadOrCreate();
+    final context = SecurityContext(withTrustedRoots: false)
+      ..useCertificateChainBytes(utf8.encode(identity.certificatePem))
+      ..usePrivateKeyBytes(utf8.encode(identity.privateKeyPem));
+    final host = await HttpServer.bindSecure(
+      InternetAddress.loopbackIPv4,
+      0,
+      context,
+    );
+    addTearDown(() => host.close(force: true));
+    var supportsCourses = false;
+    var posts = 0;
+    OrderDeliveryEnvelope? accepted;
+    host.listen((request) async {
+      request.response.headers.contentType = ContentType.json;
+      if (request.uri.path == '/v1/status') {
+        request.response.write(
+          jsonEncode({
+            'protocol': NetworkProtocol.name,
+            'version': 1,
+            'serverInstallationId': 'server-1',
+            if (supportsCourses) 'orderVersions': [1, 2],
+          }),
+        );
+      } else {
+        posts++;
+        accepted = OrderDeliveryEnvelope.fromJsonString(
+          await utf8.decoder.bind(request).join(),
+        );
+        request.response.statusCode = HttpStatus.created;
+        request.response.write(
+          jsonEncode({
+            'protocol': NetworkProtocol.name,
+            'version': 2,
+            'deliveryId': accepted!.deliveryId,
+            'serverOrderId': 'received-1',
+            'duplicate': false,
+          }),
+        );
+      }
+      await request.response.close();
+    });
+    final now = DateTime.utc(2026, 10, 5);
+    final envelope = OrderDeliveryEnvelope.create(
+      clientInstallationId: 'client-1',
+      deliveryId: 'delivery-1',
+      ticketId: 'ticket-1',
+      ticketNumber: 1,
+      createdAt: now,
+      heading: 'Kitchen',
+      reference: 'Table 4',
+      orderNote: '',
+      courses: const [
+        OrderCourse(id: 'first', name: 'First course'),
+        OrderCourse(id: 'second', name: 'Second course'),
+      ],
+      lines: const [DeliveryLine(name: 'Soup', quantity: 2, courseId: 'first')],
+    );
+    final delivery = ClientDelivery(
+      id: 'delivery-1',
+      destinationId: 'server-1',
+      clientInstallationId: 'client-1',
+      ticketId: 'ticket-1',
+      ticketNumber: 1,
+      envelope: envelope,
+      status: ClientDeliveryStatus.pending,
+      attemptCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
+    final server = PairedServer(
+      id: 'server-1',
+      displayName: 'Kitchen',
+      baseUrl: Uri.parse('https://127.0.0.1:${host.port}'),
+      certificateFingerprint: identity.certificateFingerprint,
+      createdAt: now,
+      updatedAt: now,
+    );
+    const transport = PinnedHttpsClient();
+    await expectLater(
+      transport.deliver(
+        server: server,
+        accessToken: 'preview-token',
+        delivery: delivery,
+      ),
+      throwsA(
+        isA<ClientTransportException>().having(
+          (error) => error.code,
+          'code',
+          'unsupported_courses',
+        ),
+      ),
+    );
+    expect(posts, 0);
+    expect(delivery.envelope.courses, hasLength(2));
+    supportsCourses = true;
+    final result = await transport.deliver(
+      server: server,
+      accessToken: 'preview-token',
+      delivery: delivery,
+    );
+    expect(result.serverOrderId, 'received-1');
+    expect(posts, 1);
+    expect(accepted!.lines.single.courseId, 'first');
+    expect(accepted!.courses.map((course) => course.name), [
+      'First course',
+      'Second course',
+    ]);
+  });
+
   test('local-only items are omitted without changing the local ticket', () async {
     final now = DateTime.utc(2026, 9, 25, 12);
     await repository.savePairedServer(
@@ -228,18 +354,24 @@ void main() {
     final draft = await repository.createDraft();
     final ticket = await repository.convertDraftToTicket(
       draft.copyWith(
+        courses: const [
+          OrderCourse(id: 'first', name: 'First course'),
+          OrderCourse(id: 'local', name: 'Private local group'),
+        ],
         lines: [
           TicketLine(
             id: createLocalId(),
             catalogueItemId: included.id,
             name: included.name,
             quantity: 2,
+            courseId: 'first',
           ),
           TicketLine(
             id: createLocalId(),
             catalogueItemId: excluded.id,
             name: excluded.name,
             quantity: 1,
+            courseId: 'local',
           ),
         ],
       ),
@@ -250,6 +382,10 @@ void main() {
     final firstDelivery = (await repository.loadClientDeliveries()).single;
     expect(firstDelivery.envelope.lines, hasLength(1));
     expect(firstDelivery.envelope.lines.single.name, 'Soup');
+    expect(firstDelivery.envelope.courses.map((course) => course.name), [
+      'First course',
+    ]);
+    expect(ticket.courses, hasLength(2));
 
     await repository.saveItem(
       id: excluded.id,

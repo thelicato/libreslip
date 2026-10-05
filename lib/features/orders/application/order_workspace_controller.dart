@@ -150,7 +150,9 @@ class OrderWorkspaceController extends ChangeNotifier {
     if (draft == null) return;
     final lines = [...draft.lines];
     final existingIndex = lines.indexWhere(
-      (line) => line.catalogueItemId == item.id,
+      (line) =>
+          line.catalogueItemId == item.id &&
+          line.courseId == draft.activeCourseId,
     );
     if (existingIndex >= 0) {
       final existing = lines[existingIndex];
@@ -163,6 +165,7 @@ class OrderWorkspaceController extends ChangeNotifier {
           catalogueItemId: item.id,
           name: item.name,
           quantity: 1,
+          courseId: draft.activeCourseId,
         ),
       );
     }
@@ -181,6 +184,110 @@ class OrderWorkspaceController extends ChangeNotifier {
           for (final line in draft.lines)
             if (line.id == lineId) line.copyWith(quantity: quantity) else line,
         ],
+      ),
+    );
+  }
+
+  bool get courseControlsAvailable =>
+      featureSettings.courseGroupsEnabled ||
+      (activeDraft?.courses.isNotEmpty ?? false);
+
+  void selectCourse(String? id) {
+    final draft = activeDraft;
+    if (draft == null ||
+        !courseControlsAvailable ||
+        (id != null && !draft.courses.any((course) => course.id == id))) {
+      return;
+    }
+    _replaceActive(
+      draft.copyWith(
+        activeCourseId: id,
+        clearActiveCourse: id == null,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
+  bool saveCourse(String name, {String? id}) {
+    final draft = activeDraft;
+    if (draft == null || !courseControlsAvailable) return false;
+    final course = OrderCourse(id: id ?? createLocalId(), name: name.trim());
+    if (id != null && !draft.courses.any((value) => value.id == id)) {
+      return false;
+    }
+    final courses = id == null
+        ? [...draft.courses, course]
+        : [
+            for (final value in draft.courses)
+              if (value.id == id) course else value,
+          ];
+    try {
+      validateCourses(courses, draft.lines.map((line) => line.courseId));
+    } on FormatException {
+      return false;
+    }
+    _replaceActive(
+      draft.copyWith(
+        courses: courses,
+        activeCourseId: id == null ? course.id : draft.activeCourseId,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+    return true;
+  }
+
+  void moveCourse(String id, int direction) {
+    final draft = activeDraft;
+    if (draft == null ||
+        !courseControlsAvailable ||
+        ![-1, 1].contains(direction)) {
+      return;
+    }
+    final courses = [...draft.courses];
+    final index = courses.indexWhere((course) => course.id == id);
+    final destination = index + direction;
+    if (index < 0 || destination < 0 || destination >= courses.length) return;
+    final course = courses.removeAt(index);
+    courses.insert(destination, course);
+    _replaceActive(
+      draft.copyWith(courses: courses, updatedAt: DateTime.now().toUtc()),
+    );
+  }
+
+  void removeCourse(String id) {
+    final draft = activeDraft;
+    if (draft == null || !courseControlsAvailable) return;
+    _replaceActive(
+      draft.copyWith(
+        courses: draft.courses.where((course) => course.id != id).toList(),
+        clearActiveCourse: draft.activeCourseId == id,
+        lines: [
+          for (final line in draft.lines)
+            if (line.courseId == id) line.copyWith(clearCourse: true) else line,
+        ],
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
+  void setLineCourse(String lineId, String? courseId) {
+    final draft = activeDraft;
+    if (draft == null ||
+        !courseControlsAvailable ||
+        (courseId != null &&
+            !draft.courses.any((course) => course.id == courseId))) {
+      return;
+    }
+    _replaceActive(
+      draft.copyWith(
+        lines: [
+          for (final line in draft.lines)
+            if (line.id == lineId)
+              line.copyWith(courseId: courseId, clearCourse: courseId == null)
+            else
+              line,
+        ],
+        updatedAt: DateTime.now().toUtc(),
       ),
     );
   }
@@ -284,6 +391,7 @@ class OrderWorkspaceController extends ChangeNotifier {
     }
     final features = featureSettings;
     final ticketDraft = draft.copyWith(
+      clearActiveCourse: true,
       reference: features.orderReferenceEnabled ? draft.reference : '',
       orderNote: features.orderNotesEnabled ? draft.orderNote : '',
       lines: [
@@ -303,7 +411,11 @@ class OrderWorkspaceController extends ChangeNotifier {
       tickets = await _repository.loadTickets();
       nextOrderNumber = await _repository.loadNextOrderNumber();
       if (drafts.isEmpty) {
-        final replacement = await _repository.createDraft();
+        var replacement = await _repository.createDraft();
+        if (features.courseGroupsEnabled && draft.courses.isNotEmpty) {
+          replacement = replacement.copyWith(courses: draft.courses);
+          await _repository.saveDraft(replacement);
+        }
         drafts = [replacement];
       }
       activeDraftId = drafts.first.id;
