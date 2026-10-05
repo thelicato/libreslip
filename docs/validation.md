@@ -1,5 +1,19 @@
 # Validation evidence
 
+## Current-section preparation overview, 5 October 2026
+
+Validated step 11 with `VERSION` unchanged at 1.8.0. No database or protocol changes.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 109 Dart files passed formatting checks; `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 229 active tests passed; normal execution skipped only opt-in workspace capture. Existing persistence, migration, shared delivery, printing and restore checks passed. |
+| Preparation totals | Each updatable order contributes only remaining quantities from its first unfinished section. Tests cover partial delivery, advancement, empty and completed sections, undo, independent orders, ungrouped items, ordinary grouped orders and completed orders. Revision and lost-acknowledgement recovery retain delivery counts and advance correctly. |
+| Actual Server controls | Delivery and undo workflows passed on an English tablet, Italian 320-pixel phone with doubled text and English landscape. Later-section items stay out of the overview until preceding items are delivered; undo restores the earlier section. |
+| Render inspection | Eighty-four captures passed framework and missed-tap checks. Inspected the overview and concise description in English tablet and Italian enlarged-text phone renders. Review images: [English overview](previews/current-section-server-en.png) and [Italian enlarged text](previews/current-section-server-it-large-text.png). |
+| Android preview APK | Fresh 1.8.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched; the APK contains both updated descriptions. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device, multi-phone LAN or physical printer verification was performed. Automated checks do not establish physical-device behaviour or paper output. |
+
 ## Order card density and spacing, 5 October 2026
 
 Validated step 10 with `VERSION` unchanged at 1.8.0.

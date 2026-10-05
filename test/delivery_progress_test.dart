@@ -241,7 +241,7 @@ void main() {
     expect(revised.order.lines.map((line) => line.deliveredQuantity), [2, 0]);
     expect(
       summariseOutstandingItems([revised.order]).map((line) => line.quantity),
-      [1, 2],
+      [1],
     );
     final retry = await repository.receiveServerOrder(
       _envelope(1),
@@ -249,6 +249,14 @@ void main() {
     );
     expect(retry.wasDuplicate, isTrue);
     expect(retry.order.lines.first.deliveredQuantity, 2);
+    final next = await repository.setServerLineDelivered(
+      receipt.order.id,
+      'soup',
+      3,
+      expectedQuantity: 2,
+    );
+    expect(summariseOutstandingItems([next]).single.name, 'Water');
+    expect(summariseOutstandingItems([next]).single.quantity, 2);
     final done = await repository.markServerOrderDone(
       receipt.order.id,
       completedAt: _now,

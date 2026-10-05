@@ -126,6 +126,20 @@ void main() {
         2,
       ),
       (
+        'managed-current-sections-server-tablet-en',
+        const Size(1100, 1100),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-current-sections-server-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
         'managed-spaced-active-tablet-en',
         const Size(1100, 1000),
         'en',
@@ -649,10 +663,12 @@ void main() {
         if (managedPreview) {
           final previous =
               (await environment.repository.loadServerOrders()).single;
-          await environment.repository.markServerOrderDone(
-            previous.id,
-            completedAt: DateTime.utc(2026, 9, 24, 18, 34),
-          );
+          if (!name.contains('current-sections')) {
+            await environment.repository.markServerOrderDone(
+              previous.id,
+              completedAt: DateTime.utc(2026, 9, 24, 18, 34),
+            );
+          }
           await environment.repository.receiveServerOrder(
             OrderDeliveryEnvelope.create(
               clientInstallationId: 'preview-client',
@@ -940,6 +956,23 @@ void main() {
       if (page >= 1 && page <= 4) {
         await tester.tap(find.byKey(ValueKey('nav-$page')));
         await tester.pumpAndSettle();
+      }
+      if (name.contains('current-sections')) {
+        final overview = find.byKey(const ValueKey('outstanding-items-card'));
+        await tester.ensureVisible(overview);
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(of: overview, matching: find.text('Toast ai funghi')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: overview, matching: find.text('Verdure arrosto')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: overview, matching: find.text('Acqua naturale')),
+          findsNothing,
+        );
       }
       if (name.startsWith('printer-') && page == 4) {
         await tester.ensureVisible(

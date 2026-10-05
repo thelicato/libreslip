@@ -1332,7 +1332,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get outstandingItemsBody =>
-      'Item totals across all orders currently in Received.';
+      'Received totals. Updatable orders count only the first unfinished section.';
 
   @override
   String get noOutstandingItems => 'Nothing is waiting to be prepared.';

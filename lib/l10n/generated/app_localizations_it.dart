@@ -1344,7 +1344,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get outstandingItemsBody =>
-      'Totali degli articoli in tutti gli ordini attualmente tra i Ricevuti.';
+      'Totali dei Ricevuti. Per gli ordini aggiornabili, solo la prima sezione da completare.';
 
   @override
   String get noOutstandingItems =>

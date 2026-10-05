@@ -2455,7 +2455,7 @@ abstract class AppLocalizations {
   /// No description provided for @outstandingItemsBody.
   ///
   /// In en, this message translates to:
-  /// **'Item totals across all orders currently in Received.'**
+  /// **'Received totals. Updatable orders count only the first unfinished section.'**
   String get outstandingItemsBody;
 
   /// No description provided for @noOutstandingItems.

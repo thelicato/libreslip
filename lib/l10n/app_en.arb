@@ -519,7 +519,7 @@
   "serverSettingsTab": "Settings",
   "serverSettingsTitle": "Settings",
   "outstandingItems": "Still to prepare",
-  "outstandingItemsBody": "Item totals across all orders currently in Received.",
+  "outstandingItemsBody": "Received totals. Updatable orders count only the first unfinished section.",
   "noOutstandingItems": "Nothing is waiting to be prepared.",
   "appVersion": "Version {version}",
   "@appVersion": {

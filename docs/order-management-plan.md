@@ -73,3 +73,7 @@ Schema 17 migrates the previous active destination to the selected destination a
 ## 10. Order card density and spacing: implemented
 
 Divider arrows and quantity controls share one row in item overview cards, with wrapping when enlarged text and three-digit quantities need more width. Controls retain touch targets of at least 48 logical pixels. Compact Compose adds space below the order-summary heading, gives catalogue names their own row on narrow displays and lets counters grow with their text. Narrow phones use smaller Compose panel insets. Active orders has explicit spacing between cards, consistent title and content padding at larger text sizes, and room around metadata, expanded progress and actions. No persistence, protocol, setting or version changes are required.
+
+## 11. Current-section preparation overview: implemented
+
+Still to prepare aggregates only the first unfinished section of each updatable order, including ungrouped items before any divider. Empty and completed sections are skipped. Delivering the current section advances the overview; undoing an earlier delivery returns to it. Partial deliveries contribute only outstanding quantities. Ordinary tickets retain their complete Received totals. The overview has a concise English and Italian explanation; no stored state, protocol or version changes are required.

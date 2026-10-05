@@ -116,7 +116,18 @@ List<OutstandingItemTotal> summariseOutstandingItems(
   final totals = <String, ({String name, int quantity})>{};
   for (final order in orders) {
     if (order.status != ServerOrderStatus.received) continue;
-    for (final line in order.lines) {
+    final lines = order.managedOrderId == null
+        ? order.lines
+        : courseSections(order.courses, order.lines, (line) => line.courseId)
+                  .where(
+                    (section) => section.lines.any(
+                      (line) => line.outstandingQuantity > 0,
+                    ),
+                  )
+                  .firstOrNull
+                  ?.lines ??
+              const <ServerOrderLine>[];
+    for (final line in lines) {
       final outstanding = order.managedOrderId == null
           ? line.quantity
           : line.outstandingQuantity;

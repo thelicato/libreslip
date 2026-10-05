@@ -55,6 +55,118 @@ void main() {
     expect(totals.map((total) => total.quantity), [5, 1]);
   });
 
+  test('managed preparation advances by section, skips empty sections and returns to an earlier section after undo', () {
+    final courses = [
+      OrderCourse.divider(id: 'empty', ordinal: 1),
+      OrderCourse.divider(id: 'vegetables', ordinal: 2),
+      OrderCourse.divider(id: 'empty-later', ordinal: 3),
+      OrderCourse.divider(id: 'dessert', ordinal: 4),
+    ];
+    for (final (delivered, expected) in <(Map<String, int>, Map<String, int>)>[
+      ({'soup': 1}, {'Soup': 1}),
+      ({'soup': 2}, {'Vegetables': 3}),
+      ({'soup': 2, 'vegetables': 1, 'dessert': 1}, {'Vegetables': 2}),
+      ({'soup': 2, 'vegetables': 3}, {'Dessert': 1}),
+      ({'soup': 2, 'vegetables': 3, 'dessert': 1}, {}),
+      ({'soup': 1, 'vegetables': 3, 'dessert': 1}, {'Soup': 1}),
+    ]) {
+      final order = _summaryOrder(
+        'managed',
+        courses: courses,
+        lines: [
+          ServerOrderLine(
+            id: 'dessert',
+            name: 'Dessert',
+            quantity: 1,
+            courseId: courses.last.id,
+            deliveredQuantity: delivered['dessert'] ?? 0,
+          ),
+          ServerOrderLine(
+            id: 'soup',
+            name: 'Soup',
+            quantity: 2,
+            deliveredQuantity: delivered['soup'] ?? 0,
+          ),
+          ServerOrderLine(
+            id: 'vegetables',
+            name: 'Vegetables',
+            quantity: 3,
+            courseId: courses[1].id,
+            deliveredQuantity: delivered['vegetables'] ?? 0,
+          ),
+        ],
+      );
+      expect({
+        for (final total in summariseOutstandingItems([order]))
+          total.name: total.quantity,
+      }, expected);
+    }
+  });
+
+  test('each managed order contributes its own current section while ordinary grouped orders retain every item', () {
+    const courses = [
+      OrderCourse(id: 'first', name: 'First'),
+      OrderCourse(id: 'later', name: 'Later'),
+    ];
+    final totals = summariseOutstandingItems([
+      _summaryOrder(
+        'one',
+        courses: courses,
+        lines: const [
+          ServerOrderLine(
+            name: 'Soup',
+            quantity: 3,
+            deliveredQuantity: 1,
+            courseId: 'first',
+          ),
+          ServerOrderLine(name: 'Tea', quantity: 9, courseId: 'later'),
+        ],
+      ),
+      _summaryOrder(
+        'two',
+        courses: courses,
+        lines: const [
+          ServerOrderLine(
+            name: 'Soup',
+            quantity: 1,
+            deliveredQuantity: 1,
+            courseId: 'first',
+          ),
+          ServerOrderLine(
+            name: 'Water',
+            quantity: 2,
+            deliveredQuantity: 1,
+            courseId: 'later',
+          ),
+        ],
+      ),
+      _summaryOrder(
+        'ordinary',
+        managed: false,
+        courses: courses,
+        lines: const [
+          ServerOrderLine(name: 'soup', quantity: 1, courseId: 'first'),
+          ServerOrderLine(name: 'Tea', quantity: 2, courseId: 'later'),
+        ],
+      ),
+      _summaryOrder(
+        'ungrouped',
+        lines: const [
+          ServerOrderLine(name: 'Bread', quantity: 2, deliveredQuantity: 1),
+        ],
+      ),
+      _summaryOrder(
+        'done',
+        status: ServerOrderStatus.done,
+        lines: const [ServerOrderLine(name: 'Soup', quantity: 100)],
+      ),
+    ]);
+    expect(
+      {for (final total in totals) total.name: total.quantity},
+      {'Bread': 1, 'Soup': 3, 'Tea': 2, 'Water': 1},
+    );
+  });
+
   for (final (language, size, scale) in [
     ('en', const Size(1100, 900), 1.0),
     ('it', const Size(320, 740), 2.0),
@@ -89,13 +201,22 @@ void main() {
           heading: 'Kitchen',
           reference: 'Table 4',
           orderNote: '',
-          courses: const [OrderCourse(id: 'first', name: 'First course')],
+          courses: const [
+            OrderCourse(id: 'first', name: 'First course'),
+            OrderCourse(id: 'later', name: 'Next section'),
+          ],
           lines: const [
             DeliveryLine(
               id: 'soup',
               name: 'Soup',
               quantity: 2,
               courseId: 'first',
+            ),
+            DeliveryLine(
+              id: 'water',
+              name: 'Water',
+              quantity: 1,
+              courseId: 'later',
             ),
           ],
         ),
@@ -127,6 +248,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      final summary = find.byKey(const ValueKey('outstanding-items-card'));
+      expect(
+        find.descendant(of: summary, matching: find.text('Soup')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: summary, matching: find.text('Water')),
+        findsNothing,
+      );
       final card = find.byKey(ValueKey('server-order-${received.order.id}'));
       await tester.scrollUntilVisible(
         card,
@@ -134,19 +264,38 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(card);
+      final cardTitle = find.descendant(
+        of: card,
+        matching: find.text('Table 4'),
+      );
+      await tester.ensureVisible(cardTitle);
+      await tester.pumpAndSettle();
+      await tester.tap(cardTitle);
       await tester.pumpAndSettle();
       final deliver = find.byKey(const ValueKey('deliver-one-soup'));
       await tester.ensureVisible(deliver);
       await tester.pumpAndSettle();
       await tester.tap(deliver);
       await tester.pumpAndSettle();
-      expect(inbox.orders.single.lines.single.deliveredQuantity, 1);
+      expect(
+        inbox.orders.single.lines
+            .firstWhere((line) => line.id == 'soup')
+            .deliveredQuantity,
+        1,
+      );
       expect(inbox.receivedOrders, hasLength(1));
       final all = find.byKey(const ValueKey('deliver-all-soup'));
       await tester.ensureVisible(all);
       await tester.pumpAndSettle();
       await tester.tap(all);
+      await tester.pumpAndSettle();
+      expect(inbox.receivedOrders, hasLength(1));
+      expect(summariseOutstandingItems(inbox.orders).single.name, 'Water');
+      expect(summariseOutstandingItems(inbox.orders).single.quantity, 1);
+      final next = find.byKey(const ValueKey('deliver-all-water'));
+      await tester.ensureVisible(next);
+      await tester.pumpAndSettle();
+      await tester.tap(next);
       await tester.pumpAndSettle();
       expect(inbox.completedOrders, hasLength(1));
       final undo = find.byKey(const ValueKey('undo-delivery-soup'));
@@ -154,9 +303,33 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(undo);
       await tester.pumpAndSettle();
-      expect(inbox.orders.single.lines.single.deliveredQuantity, 1);
+      expect(
+        inbox.orders.single.lines
+            .firstWhere((line) => line.id == 'soup')
+            .deliveredQuantity,
+        1,
+      );
       expect(inbox.receivedOrders, hasLength(1));
       expect(inbox.completedOrders, isEmpty);
+      final close = find.text(language == 'it' ? 'Chiudi' : 'Close');
+      await tester.ensureVisible(close);
+      await tester.pumpAndSettle();
+      await tester.tap(close);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        summary,
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: summary, matching: find.text('Soup')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: summary, matching: find.text('Water')),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
     });
   }
@@ -507,3 +680,29 @@ class _FakeServerHost implements ServerHost {
   @override
   Future<void> stop() async {}
 }
+
+ServerOrder _summaryOrder(
+  String id, {
+  List<OrderCourse> courses = const [],
+  required List<ServerOrderLine> lines,
+  bool managed = true,
+  ServerOrderStatus status = ServerOrderStatus.received,
+}) => ServerOrder(
+  id: id,
+  clientInstallationId: 'client',
+  clientDisplayName: 'Client',
+  deliveryId: 'delivery-$id',
+  clientTicketId: 'ticket-$id',
+  displayNumber: 1,
+  sourceCreatedAt: DateTime.utc(2026, 10, 5),
+  receivedAt: DateTime.utc(2026, 10, 5),
+  heading: 'Kitchen',
+  reference: '',
+  orderNote: '',
+  lines: lines,
+  courses: courses,
+  managedOrderId: managed ? id : null,
+  revision: managed ? 1 : 0,
+  payloadChecksum: 'a' * 64,
+  status: status,
+);
