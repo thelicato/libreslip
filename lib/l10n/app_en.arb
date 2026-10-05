@@ -528,5 +528,44 @@
         "type": "String"
       }
     }
-  }
+  },
+  "managedOrders": "Keep orders open",
+  "managedOrdersBody": "Keep new orders available for later additions. Existing orders remain available when this option is disabled.",
+  "activeOrders": "Active orders",
+  "activeOrdersEmpty": "Print an order with Keep orders open enabled to start.",
+  "newOrderKeptOpen": "This order will stay open for later additions.",
+  "addToOrder": "Add items",
+  "additionEditing": "Adding to an active order",
+  "additionBody": "Add new items below. Previously submitted items, titles, notes and course names stay fixed.",
+  "previouslyOrdered": "Previously ordered",
+  "orderAdditions": "Additions",
+  "fullOrderSnapshot": "Full order at this revision",
+  "printAdditions": "Print additions",
+  "finishCompositionFirst": "Print or finish the current composition before selecting an active order.",
+  "closeActiveOrder": "Close order",
+  "closeActiveOrderBody": "Stop adding to this order? Its saved tickets stay in history. This does not mark the Server order Done.",
+  "cancelAddition": "Cancel additions",
+  "cancelAdditionBody": "Discard the current additions? Previously saved items remain in the active order.",
+  "deliveryUpdatesUnsupported": "Update the Server to receive active orders and their additions, then retry this delivery.",
+  "latestAdditions": "Added in this revision",
+  "orderRevision": "Revision {revision}",
+  "@orderRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
+  "additionsRevision": "Additions · revision {revision}",
+  "@additionsRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
+  "managedHistoryPending": "Deliver pending revisions before deleting their saved tickets.",
+  "activeOrderLocal": "This order stays on this phone.",
+  "previouslyCompleted": "Previously completed",
+  "deliveryWaitingForRevision": "Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery."
 }

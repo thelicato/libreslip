@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
@@ -66,6 +67,7 @@ void main() {
         const OrderFeatureSettings(
           orderNotesEnabled: false,
           courseGroupsEnabled: true,
+          managedOrdersEnabled: true,
         ),
       );
       final item = await orders.saveItem(
@@ -91,6 +93,7 @@ void main() {
           ],
         ),
         heading: 'Caffè Libertà',
+        keepOpen: true,
       );
       await orders.createPrintJob(
         requestId: 'backup-job',
@@ -152,6 +155,7 @@ void main() {
       expect(await orders.loadNextOrderNumber(), 2);
       expect((await orders.loadFeatureSettings()).orderNotesEnabled, isFalse);
       expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
+      expect((await orders.loadFeatureSettings()).managedOrdersEnabled, isTrue);
     },
   );
 
@@ -166,6 +170,7 @@ void main() {
         const OrderFeatureSettings(
           preparationNotesEnabled: false,
           courseGroupsEnabled: true,
+          managedOrdersEnabled: true,
         ),
       );
       final archive = await service.createArchive(
@@ -198,11 +203,23 @@ void main() {
         isFalse,
       );
       expect((await orders.loadFeatureSettings()).courseGroupsEnabled, isTrue);
+      expect((await orders.loadFeatureSettings()).managedOrdersEnabled, isTrue);
     },
   );
 
   test('full backup restores onto a fresh installation', () async {
     settings.stored = const AppSettings(heading: 'Fresh destination');
+    final pairedAt = DateTime.now().toUtc();
+    await orders.savePairedServer(
+      PairedServer(
+        id: 'original-server',
+        displayName: 'Kitchen',
+        baseUrl: Uri.parse('https://127.0.0.1:5119'),
+        certificateFingerprint: 'a' * 64,
+        createdAt: pairedAt,
+        updatedAt: pairedAt,
+      ),
+    );
     final item = await orders.saveItem(name: 'Soup');
     final draft = await orders.createDraft();
     final ticket = await orders.convertDraftToTicket(
@@ -220,6 +237,20 @@ void main() {
         ],
       ),
       heading: 'Fresh destination',
+      keepOpen: true,
+    );
+    final managed = (await orders.loadManagedOrders()).single;
+    final blankAddition = await orders.createDraft();
+    final addition = await orders.beginOrderAddition(
+      managed.id,
+      blankAddition.id,
+    );
+    await orders.saveDraft(
+      addition.copyWith(
+        lines: const [
+          TicketLine(id: 'fresh-water', name: 'Water', quantity: 1),
+        ],
+      ),
     );
     final bytes = await service.createArchive(PortableArchiveKind.fullBackup);
 
@@ -254,6 +285,22 @@ void main() {
       'first',
     );
     expect(await destination.loadNextOrderNumber(), 2);
+    expect((await destination.loadManagedOrders()).single.id, managed.id);
+    expect(
+      (await destination.loadManagedOrders()).single.destinationId,
+      isNull,
+    );
+    expect(await destination.loadClientDeliveries(), isEmpty);
+    expect((await destination.loadDrafts()).single.managedOrderId, managed.id);
+    final restoredAddition = (await destination.loadDrafts()).single;
+    final revised = await destination.convertDraftToTicket(
+      restoredAddition,
+      heading: 'Ignored',
+    );
+    expect(revised.revision, 2);
+    expect(revised.number, ticket.number);
+    expect(revised.printLines.single.name, 'Water');
+    expect(await destination.loadClientDeliveries(), isEmpty);
   });
 
   test(
@@ -374,6 +421,31 @@ void main() {
       isFalse,
     );
   });
+  test('invalid managed revision metadata fails preview before replacing current data', () async {
+    final draft = await orders.createDraft();
+    await orders.convertDraftToTicket(
+      draft.copyWith(
+        lines: const [
+          TicketLine(id: 'managed-soup', name: 'Soup', quantity: 1),
+        ],
+      ),
+      heading: 'Kitchen',
+      keepOpen: true,
+    );
+    final bytes = await service.createArchive(PortableArchiveKind.fullBackup);
+    final broken = _rewriteDatabase(bytes, (snapshot) {
+      ((snapshot['tables'] as Map)['tickets'] as List)
+              .single['addition_line_ids'] =
+          '["missing"]';
+    });
+    await expectLater(
+      service.inspectArchive(broken),
+      throwsA(isA<PortabilityException>()),
+    );
+    expect((await orders.loadManagedOrders()).single.lines.single.quantity, 1);
+    expect((await orders.loadTickets()).single.revision, 1);
+  });
+
   test('invalid course metadata fails archive preview without replacing current data', () async {
     final draft = await orders.createDraft();
     await orders.saveDraft(

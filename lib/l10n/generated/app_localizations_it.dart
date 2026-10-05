@@ -1354,6 +1354,95 @@ class AppLocalizationsIt extends AppLocalizations {
   String appVersion(String version) {
     return 'Versione $version';
   }
+
+  @override
+  String get managedOrders => 'Mantieni aperti gli ordini';
+
+  @override
+  String get managedOrdersBody =>
+      'Mantieni disponibili i nuovi ordini per aggiunte successive. Gli ordini esistenti restano disponibili quando disattivi questa opzione.';
+
+  @override
+  String get activeOrders => 'Ordini aperti';
+
+  @override
+  String get activeOrdersEmpty =>
+      'Stampa un ordine con Mantieni aperti gli ordini attivo per iniziare.';
+
+  @override
+  String get newOrderKeptOpen =>
+      'Questo ordine resterà aperto per aggiunte successive.';
+
+  @override
+  String get addToOrder => 'Aggiungi articoli';
+
+  @override
+  String get additionEditing => 'Aggiunta a un ordine aperto';
+
+  @override
+  String get additionBody =>
+      'Aggiungi nuovi articoli qui sotto. Articoli già inviati, titoli, note e nomi delle portate restano invariati.';
+
+  @override
+  String get previouslyOrdered => 'Già ordinato';
+
+  @override
+  String get orderAdditions => 'Aggiunte';
+
+  @override
+  String get fullOrderSnapshot => 'Ordine completo a questa revisione';
+
+  @override
+  String get printAdditions => 'Stampa aggiunte';
+
+  @override
+  String get finishCompositionFirst =>
+      'Stampa o termina la composizione attuale prima di scegliere un ordine aperto.';
+
+  @override
+  String get closeActiveOrder => 'Chiudi ordine';
+
+  @override
+  String get closeActiveOrderBody =>
+      'Vuoi terminare le aggiunte a questo ordine? Le comande salvate restano nello storico. L’ordine sul Server non viene segnato come completato.';
+
+  @override
+  String get cancelAddition => 'Annulla aggiunte';
+
+  @override
+  String get cancelAdditionBody =>
+      'Vuoi scartare le aggiunte attuali? Gli articoli già salvati restano nell’ordine aperto.';
+
+  @override
+  String get deliveryUpdatesUnsupported =>
+      'Aggiorna il Server per ricevere ordini aperti e aggiunte, poi riprova questo invio.';
+
+  @override
+  String get latestAdditions => 'Aggiunto in questa revisione';
+
+  @override
+  String orderRevision(int revision) {
+    return 'Revisione $revision';
+  }
+
+  @override
+  String additionsRevision(int revision) {
+    return 'Aggiunte · revisione $revision';
+  }
+
+  @override
+  String get managedHistoryPending =>
+      'Invia le revisioni in attesa prima di eliminare le comande salvate.';
+
+  @override
+  String get activeOrderLocal => 'Questo ordine resta su questo telefono.';
+
+  @override
+  String get previouslyCompleted => 'Già completato';
+
+  @override
+  String get deliveryWaitingForRevision =>
+      'In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

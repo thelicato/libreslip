@@ -1341,6 +1341,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String appVersion(String version) {
     return 'Version $version';
   }
+
+  @override
+  String get managedOrders => 'Keep orders open';
+
+  @override
+  String get managedOrdersBody =>
+      'Keep new orders available for later additions. Existing orders remain available when this option is disabled.';
+
+  @override
+  String get activeOrders => 'Active orders';
+
+  @override
+  String get activeOrdersEmpty =>
+      'Print an order with Keep orders open enabled to start.';
+
+  @override
+  String get newOrderKeptOpen =>
+      'This order will stay open for later additions.';
+
+  @override
+  String get addToOrder => 'Add items';
+
+  @override
+  String get additionEditing => 'Adding to an active order';
+
+  @override
+  String get additionBody =>
+      'Add new items below. Previously submitted items, titles, notes and course names stay fixed.';
+
+  @override
+  String get previouslyOrdered => 'Previously ordered';
+
+  @override
+  String get orderAdditions => 'Additions';
+
+  @override
+  String get fullOrderSnapshot => 'Full order at this revision';
+
+  @override
+  String get printAdditions => 'Print additions';
+
+  @override
+  String get finishCompositionFirst =>
+      'Print or finish the current composition before selecting an active order.';
+
+  @override
+  String get closeActiveOrder => 'Close order';
+
+  @override
+  String get closeActiveOrderBody =>
+      'Stop adding to this order? Its saved tickets stay in history. This does not mark the Server order Done.';
+
+  @override
+  String get cancelAddition => 'Cancel additions';
+
+  @override
+  String get cancelAdditionBody =>
+      'Discard the current additions? Previously saved items remain in the active order.';
+
+  @override
+  String get deliveryUpdatesUnsupported =>
+      'Update the Server to receive active orders and their additions, then retry this delivery.';
+
+  @override
+  String get latestAdditions => 'Added in this revision';
+
+  @override
+  String orderRevision(int revision) {
+    return 'Revision $revision';
+  }
+
+  @override
+  String additionsRevision(int revision) {
+    return 'Additions · revision $revision';
+  }
+
+  @override
+  String get managedHistoryPending =>
+      'Deliver pending revisions before deleting their saved tickets.';
+
+  @override
+  String get activeOrderLocal => 'This order stays on this phone.';
+
+  @override
+  String get previouslyCompleted => 'Previously completed';
+
+  @override
+  String get deliveryWaitingForRevision =>
+      'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

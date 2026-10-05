@@ -90,6 +90,7 @@ class LocalHttpsServer implements ServerHost {
           'orderVersions': [
             NetworkProtocol.version,
             NetworkProtocol.groupedVersion,
+            NetworkProtocol.managedVersion,
           ],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,

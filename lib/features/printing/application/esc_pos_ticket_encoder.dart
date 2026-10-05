@@ -68,6 +68,16 @@ class EscPosTicketEncoder {
       fontSize: typography.details,
       nativeFontSize: TicketTypography.defaultDetails,
     );
+    if (document.revisionLabel.isNotEmpty) {
+      await _writeStyled(
+        output,
+        document.revisionLabel,
+        align: TextAlign.center,
+        bold: true,
+        fontSize: typography.details,
+        nativeFontSize: TicketTypography.defaultDetails,
+      );
+    }
     _line(output, '');
     if (document.reference.isNotEmpty) {
       await _writeStyled(

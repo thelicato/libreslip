@@ -73,13 +73,14 @@ class PortabilityService {
         'assets/logo',
       );
       final configuration = <String, Object?>{
-        'version': 2,
+        'version': 3,
         'settings': portableSettings,
         'orderFeatures': {
           'orderReferenceEnabled': featureSettings.orderReferenceEnabled,
           'preparationNotesEnabled': featureSettings.preparationNotesEnabled,
           'orderNotesEnabled': featureSettings.orderNotesEnabled,
           'courseGroupsEnabled': featureSettings.courseGroupsEnabled,
+          'managedOrdersEnabled': featureSettings.managedOrdersEnabled,
         },
         'printer': {
           'transport': 'bluetoothClassicSpp',
@@ -205,7 +206,7 @@ class PortabilityService {
       final settingsValue = configuration['settings'];
       final features = configuration['orderFeatures'];
       final printer = configuration['printer'];
-      if (![1, 2].contains(configuration['version']) ||
+      if (![1, 2, 3].contains(configuration['version']) ||
           settingsValue is! Map<String, dynamic> ||
           features is! Map<String, dynamic> ||
           printer is! Map<String, dynamic> ||
@@ -214,8 +215,12 @@ class PortabilityService {
       }
       AppSettings.fromJson(settingsValue);
       _parseFeatures(features);
-      if (configuration['version'] == 2 &&
+      if ((configuration['version'] as int) >= 2 &&
           features['courseGroupsEnabled'] is! bool) {
+        throw const PortabilityException('invalidConfiguration');
+      }
+      if (configuration['version'] == 3 &&
+          features['managedOrdersEnabled'] is! bool) {
         throw const PortabilityException('invalidConfiguration');
       }
       _validateAssetReference(settingsValue['logoPath'], entries);
@@ -401,6 +406,7 @@ class PortabilityService {
         'preparationNotesEnabled': oldFeatures.preparationNotesEnabled,
         'orderNotesEnabled': oldFeatures.orderNotesEnabled,
         'courseGroupsEnabled': oldFeatures.courseGroupsEnabled,
+        'managedOrdersEnabled': oldFeatures.managedOrdersEnabled,
       },
       'database': oldSnapshot,
       'stagedDirectory': stagedDirectory,
@@ -517,7 +523,8 @@ class PortabilityService {
       throw const PortabilityException('unsupportedDatabase');
     }
     final tables = snapshot['tables']! as Map<String, dynamic>;
-    const required = {
+    final required = {
+      if ((snapshot['schemaVersion'] as int) >= 12) 'managed_orders',
       'categories',
       'items',
       'drafts',
@@ -534,6 +541,7 @@ class PortabilityService {
     }
     try {
       SqliteOrderRepository.validatePortableCourses(snapshot);
+      SqliteOrderRepository.validatePortableManagedOrders(snapshot);
     } on FormatException {
       throw const PortabilityException('invalidDatabase');
     }
@@ -618,6 +626,8 @@ class PortabilityService {
     if (value['orderReferenceEnabled'] is! bool ||
         value['preparationNotesEnabled'] is! bool ||
         value['orderNotesEnabled'] is! bool ||
+        (value.containsKey('managedOrdersEnabled') &&
+            value['managedOrdersEnabled'] is! bool) ||
         (value.containsKey('courseGroupsEnabled') &&
             value['courseGroupsEnabled'] is! bool)) {
       throw const PortabilityException('invalidConfiguration');
@@ -627,6 +637,7 @@ class PortabilityService {
       preparationNotesEnabled: value['preparationNotesEnabled']! as bool,
       orderNotesEnabled: value['orderNotesEnabled']! as bool,
       courseGroupsEnabled: value['courseGroupsEnabled'] as bool? ?? false,
+      managedOrdersEnabled: value['managedOrdersEnabled'] as bool? ?? false,
     );
   }
 

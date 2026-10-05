@@ -228,6 +228,20 @@ class SettingsPage extends StatelessWidget {
                       ),
               ),
               SwitchListTile(
+                key: const ValueKey('toggle-managed-orders'),
+                contentPadding: EdgeInsets.zero,
+                value: orders.featureSettings.managedOrdersEnabled,
+                title: Text(l.managedOrders),
+                subtitle: Text(l.managedOrdersBody),
+                onChanged: orders.saving
+                    ? null
+                    : (value) => orders.updateFeatureSettings(
+                        orders.featureSettings.copyWith(
+                          managedOrdersEnabled: value,
+                        ),
+                      ),
+              ),
+              SwitchListTile(
                 key: const ValueKey('toggle-course-groups'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.courseGroupsEnabled,

@@ -160,17 +160,26 @@ class ClientDeliveryController extends ChangeNotifier {
   Future<void> ticketPrinted(String ticketId) async {
     await _refresh();
     final delivery = deliveryForTicket(ticketId);
-    if (delivery?.status == ClientDeliveryStatus.pending) {
-      await _send(delivery!);
+    if (delivery?.status == ClientDeliveryStatus.pending &&
+        !waitingForEarlierRevision(delivery!)) {
+      if (await _send(delivery)) await _drainRecoverableDeliveries();
+    } else if (delivery?.status == ClientDeliveryStatus.pending) {
+      await _drainRecoverableDeliveries();
     }
   }
 
   Future<bool> retry(String deliveryId) async {
-    if (_sendingIds.contains(deliveryId)) return false;
+    final existing = deliveries.where((delivery) => delivery.id == deliveryId);
+    if (_sendingIds.contains(deliveryId) ||
+        (existing.isNotEmpty && waitingForEarlierRevision(existing.single))) {
+      return false;
+    }
     try {
       final pending = await _store.resetClientDeliveryForRetry(deliveryId);
       await _refresh();
-      return await _send(pending);
+      final result = await _send(pending);
+      if (result) await _drainRecoverableDeliveries();
+      return result;
     } catch (_) {
       await _refreshSafely();
       return false;
@@ -183,7 +192,19 @@ class ClientDeliveryController extends ChangeNotifier {
     _retryTimer?.cancel();
     _retryTimer = null;
     try {
-      for (var delivery in List<ClientDelivery>.from(deliveries)) {
+      final ordered = List<ClientDelivery>.from(deliveries)
+        ..sort((a, b) {
+          final created = a.envelope.createdAt.compareTo(b.envelope.createdAt);
+          if (created != 0) return created;
+          final order = (a.envelope.managedOrderId ?? a.id).compareTo(
+            b.envelope.managedOrderId ?? b.id,
+          );
+          return order != 0
+              ? order
+              : a.envelope.revision.compareTo(b.envelope.revision);
+        });
+      for (var delivery in ordered) {
+        if (waitingForEarlierRevision(delivery)) continue;
         if (_disposed) return;
         if (delivery.status == ClientDeliveryStatus.failed &&
             _isAutomaticallyRetryable(delivery)) {
@@ -227,6 +248,18 @@ class ClientDeliveryController extends ChangeNotifier {
       _retryTimer = null;
       unawaited(_drainRecoverableDeliveries());
     });
+  }
+
+  bool waitingForEarlierRevision(ClientDelivery delivery) {
+    final orderId = delivery.envelope.managedOrderId;
+    return orderId != null &&
+        deliveries.any(
+          (other) =>
+              other.destinationId == delivery.destinationId &&
+              other.envelope.managedOrderId == orderId &&
+              other.envelope.revision < delivery.envelope.revision &&
+              other.status != ClientDeliveryStatus.delivered,
+        );
   }
 
   Future<bool> _send(ClientDelivery delivery) async {

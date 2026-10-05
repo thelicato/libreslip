@@ -210,7 +210,7 @@ class _CoursesDialog extends StatelessWidget {
                     children: [
                       IconButton(
                         key: ValueKey('course-up-${courses[index].id}'),
-                        onPressed: index == 0
+                        onPressed: controller.editingOrder != null || index == 0
                             ? null
                             : () =>
                                   controller.moveCourse(courses[index].id, -1),
@@ -219,21 +219,38 @@ class _CoursesDialog extends StatelessWidget {
                       ),
                       IconButton(
                         key: ValueKey('course-down-${courses[index].id}'),
-                        onPressed: index == courses.length - 1
+                        onPressed:
+                            controller.editingOrder != null ||
+                                index == courses.length - 1
                             ? null
                             : () => controller.moveCourse(courses[index].id, 1),
                         tooltip: l.courseMoveDown,
                         icon: const Icon(Icons.arrow_downward_rounded),
                       ),
                       IconButton(
-                        onPressed: () =>
-                            _editCourse(context, controller, courses[index]),
+                        onPressed:
+                            controller.editingOrder?.courses.any(
+                                  (course) => course.id == courses[index].id,
+                                ) ==
+                                true
+                            ? null
+                            : () => _editCourse(
+                                context,
+                                controller,
+                                courses[index],
+                              ),
                         tooltip: l.editCourse,
                         icon: const Icon(Icons.edit_outlined),
                       ),
                       IconButton(
                         key: ValueKey('remove-course-${courses[index].id}'),
-                        onPressed: () => _remove(context, courses[index]),
+                        onPressed:
+                            controller.editingOrder?.courses.any(
+                                  (course) => course.id == courses[index].id,
+                                ) ==
+                                true
+                            ? null
+                            : () => _remove(context, courses[index]),
                         tooltip: l.removeCourse,
                         icon: const Icon(Icons.delete_outline_rounded),
                       ),

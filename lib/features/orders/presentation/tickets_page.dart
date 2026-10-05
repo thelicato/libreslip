@@ -54,6 +54,16 @@ class _TicketsPageState extends State<TicketsPage> {
                 ),
           )
           .toList();
+      final pendingManaged =
+          widget.delivery?.deliveries.any(
+            (delivery) =>
+                delivery.envelope.managedOrderId != null &&
+                delivery.status != ClientDeliveryStatus.delivered &&
+                widget.controller.tickets.any(
+                  (ticket) => ticket.id == delivery.ticketId,
+                ),
+          ) ??
+          false;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -71,7 +81,9 @@ class _TicketsPageState extends State<TicketsPage> {
               alignment: AlignmentDirectional.centerEnd,
               child: TextButton.icon(
                 key: const ValueKey('delete-all-tickets'),
-                onPressed: widget.controller.saving ? null : _deleteAllTickets,
+                onPressed: widget.controller.saving || pendingManaged
+                    ? null
+                    : _deleteAllTickets,
                 icon: const Icon(Icons.delete_sweep_outlined),
                 label: Text(l.deleteAllTickets),
                 style: TextButton.styleFrom(
@@ -79,6 +91,7 @@ class _TicketsPageState extends State<TicketsPage> {
                 ),
               ),
             ),
+            if (pendingManaged) Text(l.managedHistoryPending),
             const SizedBox(height: 18),
           ],
           if (widget.controller.tickets.isEmpty)
@@ -256,6 +269,15 @@ class _TicketCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
+                  if (ticket.managedOrderId != null &&
+                      delivery != null &&
+                      delivery!.status != ClientDeliveryStatus.delivered)
+                    Text(
+                      l.managedHistoryPending,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  if (ticket.revision > 0)
+                    Text(l.orderRevision(ticket.revision)),
                   Text(l.itemCount(ticket.itemCount)),
                   const SizedBox(height: 4),
                   Text(
@@ -281,7 +303,14 @@ class _TicketCard extends StatelessWidget {
                   ),
                   TextButton.icon(
                     key: ValueKey('delete-ticket-${ticket.id}'),
-                    onPressed: enabled ? onDelete : null,
+                    onPressed:
+                        enabled &&
+                            !(ticket.managedOrderId != null &&
+                                delivery != null &&
+                                delivery!.status !=
+                                    ClientDeliveryStatus.delivered)
+                        ? onDelete
+                        : null,
                     icon: const Icon(Icons.delete_outline_rounded),
                     label: Text(l.deleteTicket),
                     style: TextButton.styleFrom(

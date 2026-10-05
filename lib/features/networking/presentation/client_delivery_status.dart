@@ -55,15 +55,20 @@ class ClientDeliveryStatusPanel extends StatelessWidget {
       final working =
           delivery.status == ClientDeliveryStatus.sending ||
           controller.isSending(delivery.id);
-      final body = switch (delivery.status) {
-        ClientDeliveryStatus.awaitingPrint => l.deliveryAwaitingPrintBody,
-        ClientDeliveryStatus.delivered => l.deliveryDeliveredBody,
-        ClientDeliveryStatus.failed =>
-          delivery.errorCode == 'unsupported_courses'
-              ? l.deliveryCoursesUnsupported
-              : l.deliveryFailedBody,
-        _ => l.deliveryPendingBody,
-      };
+      final waiting = controller.waitingForEarlierRevision(delivery);
+      final body = waiting
+          ? l.deliveryWaitingForRevision
+          : switch (delivery.status) {
+              ClientDeliveryStatus.awaitingPrint => l.deliveryAwaitingPrintBody,
+              ClientDeliveryStatus.delivered => l.deliveryDeliveredBody,
+              ClientDeliveryStatus.failed =>
+                delivery.errorCode == 'unsupported_updates'
+                    ? l.deliveryUpdatesUnsupported
+                    : delivery.errorCode == 'unsupported_courses'
+                    ? l.deliveryCoursesUnsupported
+                    : l.deliveryFailedBody,
+              _ => l.deliveryPendingBody,
+            };
       final local = delivery.updatedAt.toLocal();
       final material = MaterialLocalizations.of(context);
       return Column(
@@ -95,7 +100,9 @@ class ClientDeliveryStatusPanel extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               key: ValueKey('retry-delivery-${delivery.id}'),
-              onPressed: working ? null : () => controller.retry(delivery.id),
+              onPressed: working || waiting
+                  ? null
+                  : () => controller.retry(delivery.id),
               icon: working
                   ? const SizedBox(
                       width: 18,

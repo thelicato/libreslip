@@ -25,6 +25,7 @@ Future<OrderWorkspaceController> createMemoryOrders() async =>
 
 /// Removes schema 11 additions before simulating an earlier schema version.
 Future<void> removeCourseColumnsForLegacyFixture(Database database) async {
+  await removeManagedColumnsForLegacyFixture(database);
   for (final table in ['drafts', 'tickets', 'server_orders']) {
     await database.execute('ALTER TABLE $table DROP COLUMN courses_json');
   }
@@ -56,5 +57,27 @@ class MemorySettingsRepository implements SettingsRepository {
     if (failSave) throw StateError('Storage unavailable');
     stored = settings;
     writes++;
+  }
+}
+
+Future<void> removeManagedColumnsForLegacyFixture(Database database) async {
+  await database.execute('DROP INDEX server_managed_order_unique');
+  await database.execute('DROP TABLE managed_orders');
+  await database.execute('DROP TABLE server_order_revisions');
+  for (final table in ['drafts', 'tickets', 'server_orders']) {
+    await database.execute('ALTER TABLE $table DROP COLUMN managed_order_id');
+  }
+  for (final (table, column) in [
+    ('drafts', 'base_revision'),
+    ('tickets', 'revision'),
+    ('tickets', 'addition_line_ids'),
+    ('ticket_lines', 'order_line_id'),
+    ('server_orders', 'revision'),
+    ('server_orders', 'completed_revision'),
+    ('server_order_lines', 'order_line_id'),
+    ('server_order_lines', 'added_revision'),
+    ('order_feature_settings', 'managed_orders_enabled'),
+  ]) {
+    await database.execute('ALTER TABLE $table DROP COLUMN $column');
   }
 }

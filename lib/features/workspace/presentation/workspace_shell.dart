@@ -354,7 +354,11 @@ class _ComposeActionBar extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.print_rounded),
-                      label: Text(l.printTicket),
+                      label: Text(
+                        controller.activeDraft?.managedOrderId != null
+                            ? l.printAdditions
+                            : l.printTicket,
+                      ),
                     );
                     if (constraints.maxWidth < 520) {
                       return Column(

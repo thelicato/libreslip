@@ -11,6 +11,7 @@ import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'order_identity.dart';
 import 'course_composer.dart';
+import 'managed_order_composer.dart';
 
 class ComposePage extends StatefulWidget {
   const ComposePage({
@@ -70,6 +71,15 @@ class ComposePageState extends State<ComposePage> {
               widget.controller.saving ||
               widget.printing.value)
             const SizedBox(height: 18),
+          if (widget.controller.featureSettings.managedOrdersEnabled ||
+              widget.controller.managedOrders.isNotEmpty ||
+              draft.managedOrderId != null) ...[
+            ManagedOrderComposer(
+              controller: widget.controller,
+              busy: widget.printing.value || widget.controller.saving,
+            ),
+            const SizedBox(height: 12),
+          ],
           if (widget.controller.courseControlsAvailable) ...[
             CourseComposer(
               controller: widget.controller,
@@ -84,8 +94,13 @@ class ComposePageState extends State<ComposePage> {
                   items: widget.controller.items,
                   categories: widget.controller.categories,
                   draft: draft,
-                  orderNumber: widget.controller.nextOrderNumber,
-                  features: widget.controller.featureSettings,
+                  orderNumber: widget.controller.compositionNumber,
+                  features: draft.managedOrderId == null
+                      ? widget.controller.featureSettings
+                      : widget.controller.featureSettings.copyWith(
+                          orderReferenceEnabled: true,
+                          orderNotesEnabled: true,
+                        ),
                   grouped: widget.controller.courseControlsAvailable,
                   onQuantityChanged: widget.controller.setQuantity,
                   onRemoveLine: widget.controller.removeLine,
@@ -123,8 +138,13 @@ class ComposePageState extends State<ComposePage> {
               );
               final order = _OrderPanel(
                 draft: draft,
-                orderNumber: widget.controller.nextOrderNumber,
-                features: widget.controller.featureSettings,
+                orderNumber: widget.controller.compositionNumber,
+                features: draft.managedOrderId == null
+                    ? widget.controller.featureSettings
+                    : widget.controller.featureSettings.copyWith(
+                        orderReferenceEnabled: true,
+                        orderNotesEnabled: true,
+                      ),
                 grouped: widget.controller.courseControlsAvailable,
                 onLineCourseChanged: widget.controller.setLineCourse,
                 busy: widget.controller.saving || widget.printing.value,
@@ -356,6 +376,11 @@ class ComposePageState extends State<ComposePage> {
       logoPath: widget.settings.logoPath,
       logoWidthPercent: widget.settings.logoWidthPercent,
       typography: widget.settings.typography,
+      revisionLabel: ticket.revision > 1
+          ? l.additionsRevision(ticket.revision)
+          : ticket.revision == 1
+          ? l.orderRevision(1)
+          : '',
     );
   }
 }
@@ -476,9 +501,14 @@ class _CompactComposePanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _ComposeOrderHeading(
-              reference: features.orderReferenceEnabled ? draft.reference : '',
+              reference:
+                  features.orderReferenceEnabled || draft.managedOrderId != null
+                  ? draft.reference
+                  : '',
               orderNumber: orderNumber,
-              onReset: busy || orderNumber == 1 ? null : onResetOrderNumber,
+              onReset: busy || draft.managedOrderId != null || orderNumber == 1
+                  ? null
+                  : onResetOrderNumber,
             ),
             if (features.orderReferenceEnabled ||
                 features.orderNotesEnabled) ...[
@@ -490,7 +520,9 @@ class _CompactComposePanel extends StatelessWidget {
                   if (features.orderReferenceEnabled)
                     OutlinedButton.icon(
                       key: const ValueKey('compact-edit-reference'),
-                      onPressed: busy ? null : onEditReference,
+                      onPressed: busy || draft.managedOrderId != null
+                          ? null
+                          : onEditReference,
                       icon: const Icon(Icons.tag_rounded),
                       label: Text(
                         draft.reference.isEmpty
@@ -503,7 +535,9 @@ class _CompactComposePanel extends StatelessWidget {
                   if (features.orderNotesEnabled)
                     OutlinedButton.icon(
                       key: const ValueKey('compact-edit-order-note'),
-                      onPressed: busy ? null : onEditOrderNote,
+                      onPressed: busy || draft.managedOrderId != null
+                          ? null
+                          : onEditOrderNote,
                       icon: const Icon(Icons.notes_rounded),
                       label: Text(
                         draft.orderNote.isEmpty
@@ -910,15 +944,21 @@ class _OrderPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ComposeOrderHeading(
-            reference: features.orderReferenceEnabled ? draft.reference : '',
+            reference:
+                features.orderReferenceEnabled || draft.managedOrderId != null
+                ? draft.reference
+                : '',
             orderNumber: orderNumber,
-            onReset: busy || orderNumber == 1 ? null : onResetOrderNumber,
+            onReset: busy || draft.managedOrderId != null || orderNumber == 1
+                ? null
+                : onResetOrderNumber,
           ),
           if (features.orderReferenceEnabled) ...[
             const SizedBox(height: 16),
             TextFormField(
               key: ValueKey('reference-${draft.id}'),
               initialValue: draft.reference,
+              readOnly: busy || draft.managedOrderId != null,
               maxLength: 80,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
@@ -972,6 +1012,7 @@ class _OrderPanel extends StatelessWidget {
             TextFormField(
               key: ValueKey('order-note-${draft.id}'),
               initialValue: draft.orderNote,
+              readOnly: busy || draft.managedOrderId != null,
               maxLength: 500,
               minLines: 2,
               maxLines: 5,

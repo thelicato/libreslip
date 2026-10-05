@@ -10,6 +10,7 @@ class NetworkProtocol {
   static const name = 'libreslip-order';
   static const version = 1;
   static const groupedVersion = 2;
+  static const managedVersion = 3;
   static const defaultPort = 5119;
   static const maxEnvelopeBytes = 64 * 1024;
   static const maxLines = 200;
@@ -28,18 +29,24 @@ class DeliveryLine {
     required this.quantity,
     this.preparationNote = '',
     this.courseId,
+    this.id,
   });
 
   final String name;
   final int quantity;
   final String preparationNote;
   final String? courseId;
+  final String? id;
 
-  Map<String, Object?> toJson({bool includeCourse = false}) => {
+  Map<String, Object?> toJson({
+    bool includeCourse = false,
+    bool includeId = false,
+  }) => {
     'name': name,
     'quantity': quantity,
     'preparationNote': preparationNote,
     if (includeCourse) 'courseId': courseId,
+    if (includeId) 'id': id,
   };
 }
 
@@ -55,6 +62,8 @@ class OrderDeliveryEnvelope {
     required this.orderNote,
     required this.lines,
     required this.courses,
+    required this.managedOrderId,
+    required this.revision,
     required this.payloadChecksum,
   });
 
@@ -68,7 +77,11 @@ class OrderDeliveryEnvelope {
   final String orderNote;
   final List<DeliveryLine> lines;
   final List<OrderCourse> courses;
-  int get version => courses.isEmpty
+  final String? managedOrderId;
+  final int revision;
+  int get version => managedOrderId != null
+      ? NetworkProtocol.managedVersion
+      : courses.isEmpty
       ? NetworkProtocol.version
       : NetworkProtocol.groupedVersion;
   final String payloadChecksum;
@@ -84,6 +97,8 @@ class OrderDeliveryEnvelope {
     required String orderNote,
     required List<DeliveryLine> lines,
     List<OrderCourse> courses = const [],
+    String? managedOrderId,
+    int revision = 0,
   }) {
     final content = _content(
       clientInstallationId: clientInstallationId,
@@ -96,7 +111,12 @@ class OrderDeliveryEnvelope {
       orderNote: orderNote,
       lines: lines,
       courses: courses,
+      managedOrderId: managedOrderId,
+      revision: revision,
     );
+    if (managedOrderId == null && revision != 0) {
+      throw const FormatException('Invalid revision');
+    }
     _validateContent(content, lines, courses);
     final checksum = _checksum(content);
     final envelope = OrderDeliveryEnvelope._(
@@ -110,6 +130,8 @@ class OrderDeliveryEnvelope {
       orderNote: orderNote,
       lines: List.unmodifiable(lines),
       courses: List.unmodifiable(courses),
+      managedOrderId: managedOrderId,
+      revision: revision,
       payloadChecksum: checksum,
     );
     envelope._validateEncodedSize();
@@ -128,14 +150,21 @@ class OrderDeliveryEnvelope {
         ![
           NetworkProtocol.version,
           NetworkProtocol.groupedVersion,
+          NetworkProtocol.managedVersion,
         ].contains(decoded['version']) ||
         decoded['checksum'] is! String ||
         decoded['ticket'] is! Map<String, dynamic>) {
       throw const FormatException('Unsupported delivery envelope');
     }
-    final grouped = decoded['version'] == NetworkProtocol.groupedVersion;
-    final ticketKeys = {..._ticketKeys, if (grouped) 'courses'};
-    final lineKeys = {..._lineKeys, if (grouped) 'courseId'};
+    final managed = decoded['version'] == NetworkProtocol.managedVersion;
+    final grouped =
+        managed || decoded['version'] == NetworkProtocol.groupedVersion;
+    final ticketKeys = {
+      ..._ticketKeys,
+      if (grouped) 'courses',
+      if (managed) ...{'orderId', 'revision'},
+    };
+    final lineKeys = {..._lineKeys, if (grouped) 'courseId', if (managed) 'id'};
     final ticket = decoded['ticket']! as Map<String, dynamic>;
     if (ticket.keys.toSet().difference(ticketKeys).isNotEmpty ||
         !ticketKeys.every(ticket.containsKey) ||
@@ -158,8 +187,17 @@ class OrderDeliveryEnvelope {
     final courses = grouped
         ? parseCourses(ticket['courses'])
         : const <OrderCourse>[];
-    if (grouped && courses.isEmpty) {
+    if (grouped && !managed && courses.isEmpty) {
       throw const FormatException('Grouped orders need courses');
+    }
+    final managedOrderId = managed && ticket['orderId'] is String
+        ? ticket['orderId'] as String
+        : null;
+    final revision = managed && ticket['revision'] is int
+        ? ticket['revision'] as int
+        : 0;
+    if (managed && (managedOrderId == null || revision < 1)) {
+      throw const FormatException('Invalid managed revision');
     }
     final lines = <DeliveryLine>[];
     for (final value in ticket['lines']! as List) {
@@ -169,6 +207,7 @@ class OrderDeliveryEnvelope {
           value['name'] is! String ||
           value['quantity'] is! int ||
           value['preparationNote'] is! String ||
+          (managed && value['id'] is! String) ||
           (grouped &&
               value['courseId'] != null &&
               value['courseId'] is! String)) {
@@ -180,6 +219,7 @@ class OrderDeliveryEnvelope {
           quantity: value['quantity']! as int,
           preparationNote: value['preparationNote']! as String,
           courseId: grouped ? value['courseId'] as String? : null,
+          id: managed ? value['id'] as String : null,
         ),
       );
     }
@@ -194,6 +234,8 @@ class OrderDeliveryEnvelope {
       orderNote: ticket['orderNote']! as String,
       lines: lines,
       courses: courses,
+      managedOrderId: managedOrderId,
+      revision: revision,
     );
     _validateContent(content, lines, courses);
     final checksum = decoded['checksum']! as String;
@@ -212,6 +254,8 @@ class OrderDeliveryEnvelope {
       orderNote: ticket['orderNote']! as String,
       lines: List.unmodifiable(lines),
       courses: List.unmodifiable(courses),
+      managedOrderId: managedOrderId,
+      revision: revision,
       payloadChecksum: checksum,
     );
   }
@@ -228,6 +272,8 @@ class OrderDeliveryEnvelope {
       orderNote: orderNote,
       lines: lines,
       courses: courses,
+      managedOrderId: managedOrderId,
+      revision: revision,
     ),
     'checksum': payloadChecksum,
   };
@@ -251,9 +297,13 @@ class OrderDeliveryEnvelope {
     required String orderNote,
     required List<DeliveryLine> lines,
     required List<OrderCourse> courses,
+    required String? managedOrderId,
+    required int revision,
   }) => {
     'protocol': NetworkProtocol.name,
-    'version': courses.isEmpty
+    'version': managedOrderId != null
+        ? NetworkProtocol.managedVersion
+        : courses.isEmpty
         ? NetworkProtocol.version
         : NetworkProtocol.groupedVersion,
     'clientInstallationId': clientInstallationId,
@@ -265,11 +315,16 @@ class OrderDeliveryEnvelope {
       'heading': heading,
       'reference': reference,
       'orderNote': orderNote,
-      if (courses.isNotEmpty)
+      'orderId': ?managedOrderId,
+      if (managedOrderId != null) 'revision': revision,
+      if (courses.isNotEmpty || managedOrderId != null)
         'courses': [for (final course in courses) course.toJson()],
       'lines': [
         for (final line in lines)
-          line.toJson(includeCourse: courses.isNotEmpty),
+          line.toJson(
+            includeCourse: courses.isNotEmpty || managedOrderId != null,
+            includeId: managedOrderId != null,
+          ),
       ],
     },
   };
@@ -281,6 +336,21 @@ class OrderDeliveryEnvelope {
   ) {
     validateCourses(courses, lines.map((line) => line.courseId));
     final ticket = content['ticket']! as Map<String, Object?>;
+    if (content['version'] == NetworkProtocol.managedVersion) {
+      if (ticket['orderId'] is! String ||
+          !_identifierPattern.hasMatch(ticket['orderId'] as String) ||
+          ticket['revision'] is! int ||
+          (ticket['revision'] as int) < 1 ||
+          (ticket['revision'] as int) > 100000 ||
+          lines.any(
+            (line) => line.id == null || !_identifierPattern.hasMatch(line.id!),
+          ) ||
+          lines.map((line) => line.id).toSet().length != lines.length) {
+        throw const FormatException('Invalid managed order');
+      }
+    } else if (lines.any((line) => line.id != null)) {
+      throw const FormatException('Line identifiers require managed orders');
+    }
     for (final id in [
       content['clientInstallationId'],
       content['deliveryId'],

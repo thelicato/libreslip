@@ -35,12 +35,16 @@ class ServerOrderLine {
     required this.quantity,
     this.preparationNote = '',
     this.courseId,
+    this.id,
+    this.addedRevision = 0,
   });
 
   final String name;
   final int quantity;
   final String preparationNote;
   final String? courseId;
+  final String? id;
+  final int addedRevision;
 }
 
 class ServerOrder {
@@ -61,6 +65,9 @@ class ServerOrder {
     required this.status,
     this.completedAt,
     this.courses = const [],
+    this.managedOrderId,
+    this.revision = 0,
+    this.completedRevision = 0,
   });
 
   final String id;
@@ -76,6 +83,9 @@ class ServerOrder {
   final String orderNote;
   final List<ServerOrderLine> lines;
   final List<OrderCourse> courses;
+  final String? managedOrderId;
+  final int revision;
+  final int completedRevision;
   final String payloadChecksum;
   final ServerOrderStatus status;
   final DateTime? completedAt;
@@ -102,6 +112,10 @@ List<OutstandingItemTotal> summariseOutstandingItems(
   for (final order in orders) {
     if (order.status != ServerOrderStatus.received) continue;
     for (final line in order.lines) {
+      if (order.managedOrderId != null &&
+          line.addedRevision <= order.completedRevision) {
+        continue;
+      }
       final name = line.name.trim();
       final key = name.toLowerCase();
       final current = totals[key];

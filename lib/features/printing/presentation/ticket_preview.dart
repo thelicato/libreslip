@@ -82,6 +82,15 @@ class TicketPreview extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (document.revisionLabel.isNotEmpty)
+                Text(
+                  document.revisionLabel,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: previewSize(typography.details),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               Text(
                 document.createdAt,
                 textAlign: TextAlign.center,

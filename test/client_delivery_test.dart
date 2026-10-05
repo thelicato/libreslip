@@ -107,6 +107,7 @@ void main() {
       final ticket = await repository.convertDraftToTicket(
         completedDraft,
         heading: 'Kitchen',
+        keepOpen: true,
       );
 
       var delivery = (await repository.loadClientDeliveries()).single;
@@ -114,7 +115,7 @@ void main() {
       expect(delivery.status, ClientDeliveryStatus.awaitingPrint);
       expect(delivery.envelope.reference, 'Table 4');
       expect(delivery.envelope.lines.single.name, 'Soup');
-      expect(delivery.envelope.version, 2);
+      expect(delivery.envelope.version, 3);
       expect(delivery.envelope.courses.single.name, 'First course');
 
       await controller.load();
@@ -184,6 +185,55 @@ void main() {
       expect(delivery.serverOrderId, isNotEmpty);
       expect(await repository.loadServerOrders(), hasLength(1));
 
+      final managed = (await repository.loadManagedOrders()).single;
+      final received = (await repository.loadServerOrders()).single;
+      await repository.markServerOrderDone(
+        received.id,
+        completedAt: DateTime.now().toUtc(),
+      );
+      final blankAddition = await repository.createDraft();
+      final addition = await repository.beginOrderAddition(
+        managed.id,
+        blankAddition.id,
+      );
+      final additionsTicket = await repository.convertDraftToTicket(
+        addition.copyWith(
+          lines: const [
+            TicketLine(
+              id: 'water-addition',
+              name: 'Water',
+              quantity: 2,
+              courseId: 'first-course',
+            ),
+          ],
+        ),
+        heading: 'Kitchen',
+      );
+      final addedPrint = await repository.createPrintJob(
+        requestId: 'additions-print',
+        ticketId: additionsTicket.id,
+        payload: Uint8List.fromList([27, 64]),
+      );
+      await repository.markPrintJobSending(
+        addedPrint.id,
+        printerAddress: '00:11',
+        printerName: 'NETUM',
+      );
+      await repository.markPrintJobOutcome(
+        addedPrint.id,
+        status: PrintJobStatus.transmitted,
+      );
+      await controller.ticketPrinted(additionsTicket.id);
+      expect(
+        controller.deliveryForTicket(additionsTicket.id)!.serverOrderId,
+        received.id,
+      );
+      final updatedOrder = (await repository.loadServerOrders()).single;
+      expect(updatedOrder.id, received.id);
+      expect(updatedOrder.revision, 2);
+      expect(updatedOrder.lines.map((line) => line.name), ['Soup', 'Water']);
+      expect(updatedOrder.lines.last.addedRevision, 2);
+
       final pairedServer = controller.activeServer!;
       await expectLater(
         const PinnedHttpsClient().deliver(
@@ -208,130 +258,249 @@ void main() {
       );
 
       await repository.deleteTicket(ticket.id);
-      expect(await repository.loadTickets(), isEmpty);
+      expect(await repository.loadTickets(), hasLength(1));
       expect(
-        (await repository.loadClientDeliveries()).single.status,
+        (await repository.loadClientDeliveries()).first.status,
         ClientDeliveryStatus.delivered,
       );
       await repository.deleteAllTickets();
       expect(
-        (await repository.loadClientDeliveries()).single.status,
+        (await repository.loadClientDeliveries()).first.status,
         ClientDeliveryStatus.delivered,
       );
     },
   );
 
-  test('grouped delivery sends nothing to an older Server and succeeds after explicit retry on an upgraded Server', () async {
-    final identity = await ServerIdentityService(_MemoryServerSecrets())
-        .loadOrCreate();
-    final context = SecurityContext(withTrustedRoots: false)
-      ..useCertificateChainBytes(utf8.encode(identity.certificatePem))
-      ..usePrivateKeyBytes(utf8.encode(identity.privateKeyPem));
-    final host = await HttpServer.bindSecure(
-      InternetAddress.loopbackIPv4,
-      0,
-      context,
+  test('later revisions wait for uncertain earlier printing and lost acknowledgements, then drain in order', () async {
+    final configuration = await repository.loadNetworkConfiguration();
+    final secrets = _MemoryServerSecrets();
+    final identity = await ServerIdentityService(secrets).loadOrCreate();
+    final host = LocalHttpsServer(repository, secrets, port: 0);
+    addTearDown(host.stop);
+    final running = await host.start(
+      identity: identity,
+      configuration: configuration,
+      requestPairingApproval: (_) async => true,
+      onOrderReceived: () {},
     );
-    addTearDown(() => host.close(force: true));
-    var supportsCourses = false;
-    var posts = 0;
-    OrderDeliveryEnvelope? accepted;
-    host.listen((request) async {
-      request.response.headers.contentType = ContentType.json;
-      if (request.uri.path == '/v1/status') {
-        request.response.write(
-          jsonEncode({
-            'protocol': NetworkProtocol.name,
-            'version': 1,
-            'serverInstallationId': 'server-1',
-            if (supportsCourses) 'orderVersions': [1, 2],
-          }),
-        );
-      } else {
-        posts++;
-        accepted = OrderDeliveryEnvelope.fromJsonString(
-          await utf8.decoder.bind(request).join(),
-        );
-        request.response.statusCode = HttpStatus.created;
-        request.response.write(
-          jsonEncode({
-            'protocol': NetworkProtocol.name,
-            'version': 2,
-            'deliveryId': accepted!.deliveryId,
-            'serverOrderId': 'received-1',
-            'duplicate': false,
-          }),
-        );
-      }
-      await request.response.close();
-    });
-    final now = DateTime.utc(2026, 10, 5);
-    final envelope = OrderDeliveryEnvelope.create(
-      clientInstallationId: 'client-1',
-      deliveryId: 'delivery-1',
-      ticketId: 'ticket-1',
-      ticketNumber: 1,
-      createdAt: now,
+    final transport = _LoseFirstAcknowledgementTransport(
+      const PinnedHttpsClient(),
+    );
+    final controller = ClientDeliveryController(
+      repository,
+      _MemoryClientSecrets(),
+      transport,
+      retryDelay: const Duration(days: 1),
+    );
+    addTearDown(controller.dispose);
+    await controller.load();
+    expect(
+      await controller.pair(
+        configuration: configuration,
+        address: '127.0.0.1:${running.port}',
+        clientName: 'Client',
+      ),
+      isTrue,
+    );
+    final draft = await repository.createDraft();
+    final first = await repository.convertDraftToTicket(
+      draft.copyWith(
+        lines: const [TicketLine(id: 'soup', name: 'Soup', quantity: 1)],
+      ),
       heading: 'Kitchen',
-      reference: 'Table 4',
-      orderNote: '',
-      courses: const [
-        OrderCourse(id: 'first', name: 'First course'),
-        OrderCourse(id: 'second', name: 'Second course'),
-      ],
-      lines: const [DeliveryLine(name: 'Soup', quantity: 2, courseId: 'first')],
+      keepOpen: true,
     );
-    final delivery = ClientDelivery(
-      id: 'delivery-1',
-      destinationId: 'server-1',
-      clientInstallationId: 'client-1',
-      ticketId: 'ticket-1',
-      ticketNumber: 1,
-      envelope: envelope,
-      status: ClientDeliveryStatus.pending,
-      attemptCount: 0,
-      createdAt: now,
-      updatedAt: now,
+    final blank = await repository.createDraft();
+    final addition = await repository.beginOrderAddition(
+      (await repository.loadManagedOrders()).single.id,
+      blank.id,
     );
-    final server = PairedServer(
-      id: 'server-1',
-      displayName: 'Kitchen',
-      baseUrl: Uri.parse('https://127.0.0.1:${host.port}'),
-      certificateFingerprint: identity.certificateFingerprint,
-      createdAt: now,
-      updatedAt: now,
-    );
-    const transport = PinnedHttpsClient();
-    await expectLater(
-      transport.deliver(
-        server: server,
-        accessToken: 'preview-token',
-        delivery: delivery,
+    final second = await repository.convertDraftToTicket(
+      addition.copyWith(
+        lines: const [TicketLine(id: 'water', name: 'Water', quantity: 2)],
       ),
-      throwsA(
-        isA<ClientTransportException>().having(
-          (error) => error.code,
-          'code',
-          'unsupported_courses',
-        ),
-      ),
+      heading: 'Kitchen',
     );
-    expect(posts, 0);
-    expect(delivery.envelope.courses, hasLength(2));
-    supportsCourses = true;
-    final result = await transport.deliver(
-      server: server,
-      accessToken: 'preview-token',
-      delivery: delivery,
+    Future<void> finishPrint(
+      SavedTicket ticket,
+      String requestId,
+      PrintJobStatus status,
+    ) async {
+      final job = await repository.createPrintJob(
+        requestId: requestId,
+        ticketId: ticket.id,
+        payload: Uint8List.fromList([27, 64]),
+      );
+      await repository.markPrintJobSending(
+        job.id,
+        printerAddress: '00:11',
+        printerName: 'NETUM',
+      );
+      await repository.markPrintJobOutcome(job.id, status: status);
+      await controller.ticketPrinted(ticket.id);
+    }
+
+    await finishPrint(second, 'print-second', PrintJobStatus.transmitted);
+    expect(transport.attemptedRevisions, isEmpty);
+    await finishPrint(first, 'print-first-uncertain', PrintJobStatus.uncertain);
+    expect(transport.attemptedRevisions, isEmpty);
+    await finishPrint(
+      first,
+      'explicit-reprint-first',
+      PrintJobStatus.transmitted,
     );
-    expect(result.serverOrderId, 'received-1');
-    expect(posts, 1);
-    expect(accepted!.lines.single.courseId, 'first');
-    expect(accepted!.courses.map((course) => course.name), [
-      'First course',
-      'Second course',
-    ]);
+    expect(transport.attemptedRevisions, [1]);
+    expect(controller.deliveryForTicket(first.id)!.errorCode, 'unreachable');
+    expect(
+      await controller.retry(controller.deliveryForTicket(second.id)!.id),
+      isFalse,
+    );
+    expect(transport.attemptedRevisions, [1]);
+    expect(
+      await controller.retry(controller.deliveryForTicket(first.id)!.id),
+      isTrue,
+    );
+    expect(transport.attemptedRevisions, [1, 1, 2]);
+    expect(
+      controller.deliveryForTicket(second.id)!.status,
+      ClientDeliveryStatus.delivered,
+    );
+    expect((await repository.loadServerOrders()).single.revision, 2);
+    expect(
+      controller.deliveryForTicket(second.id)!.serverOrderId,
+      controller.deliveryForTicket(first.id)!.serverOrderId,
+    );
   });
+
+  for (final managed in [false, true]) {
+    test(
+      'version ${managed ? 3 : 2} delivery sends nothing to an older Server and succeeds after explicit retry',
+      () async {
+        final identity = await ServerIdentityService(_MemoryServerSecrets())
+            .loadOrCreate();
+        final context = SecurityContext(withTrustedRoots: false)
+          ..useCertificateChainBytes(utf8.encode(identity.certificatePem))
+          ..usePrivateKeyBytes(utf8.encode(identity.privateKeyPem));
+        final host = await HttpServer.bindSecure(
+          InternetAddress.loopbackIPv4,
+          0,
+          context,
+        );
+        addTearDown(() => host.close(force: true));
+        var supportsCourses = false;
+        var posts = 0;
+        OrderDeliveryEnvelope? accepted;
+        host.listen((request) async {
+          request.response.headers.contentType = ContentType.json;
+          if (request.uri.path == '/v1/status') {
+            request.response.write(
+              jsonEncode({
+                'protocol': NetworkProtocol.name,
+                'version': 1,
+                'serverInstallationId': 'server-1',
+                'orderVersions': supportsCourses
+                    ? [1, 2, 3]
+                    : managed
+                    ? [1, 2]
+                    : [1],
+              }),
+            );
+          } else {
+            posts++;
+            accepted = OrderDeliveryEnvelope.fromJsonString(
+              await utf8.decoder.bind(request).join(),
+            );
+            request.response.statusCode = HttpStatus.created;
+            request.response.write(
+              jsonEncode({
+                'protocol': NetworkProtocol.name,
+                'version': accepted!.version,
+                'deliveryId': accepted!.deliveryId,
+                'serverOrderId': 'received-1',
+                'duplicate': false,
+              }),
+            );
+          }
+          await request.response.close();
+        });
+        final now = DateTime.utc(2026, 10, 5);
+        final envelope = OrderDeliveryEnvelope.create(
+          managedOrderId: managed ? 'active-order' : null,
+          revision: managed ? 1 : 0,
+          clientInstallationId: 'client-1',
+          deliveryId: 'delivery-1',
+          ticketId: 'ticket-1',
+          ticketNumber: 1,
+          createdAt: now,
+          heading: 'Kitchen',
+          reference: 'Table 4',
+          orderNote: '',
+          courses: const [
+            OrderCourse(id: 'first', name: 'First course'),
+            OrderCourse(id: 'second', name: 'Second course'),
+          ],
+          lines: [
+            DeliveryLine(
+              id: managed ? 'soup-line' : null,
+              name: 'Soup',
+              quantity: 2,
+              courseId: 'first',
+            ),
+          ],
+        );
+        final delivery = ClientDelivery(
+          id: 'delivery-1',
+          destinationId: 'server-1',
+          clientInstallationId: 'client-1',
+          ticketId: 'ticket-1',
+          ticketNumber: 1,
+          envelope: envelope,
+          status: ClientDeliveryStatus.pending,
+          attemptCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        );
+        final server = PairedServer(
+          id: 'server-1',
+          displayName: 'Kitchen',
+          baseUrl: Uri.parse('https://127.0.0.1:${host.port}'),
+          certificateFingerprint: identity.certificateFingerprint,
+          createdAt: now,
+          updatedAt: now,
+        );
+        const transport = PinnedHttpsClient();
+        await expectLater(
+          transport.deliver(
+            server: server,
+            accessToken: 'preview-token',
+            delivery: delivery,
+          ),
+          throwsA(
+            isA<ClientTransportException>().having(
+              (error) => error.code,
+              'code',
+              managed ? 'unsupported_updates' : 'unsupported_courses',
+            ),
+          ),
+        );
+        expect(posts, 0);
+        expect(delivery.envelope.courses, hasLength(2));
+        supportsCourses = true;
+        final result = await transport.deliver(
+          server: server,
+          accessToken: 'preview-token',
+          delivery: delivery,
+        );
+        expect(result.serverOrderId, 'received-1');
+        expect(posts, 1);
+        expect(accepted!.lines.single.courseId, 'first');
+        expect(accepted!.courses.map((course) => course.name), [
+          'First course',
+          'Second course',
+        ]);
+      },
+    );
+  }
 
   test('local-only items are omitted without changing the local ticket', () async {
     final now = DateTime.utc(2026, 9, 25, 12);
@@ -489,6 +658,7 @@ class _LoseFirstAcknowledgementTransport implements ClientServerTransport {
 
   final ClientServerTransport delegate;
   var loseAcknowledgement = true;
+  final attemptedRevisions = <int>[];
 
   @override
   Future<PairServerResult> pair(PairServerRequest request) =>
@@ -500,6 +670,7 @@ class _LoseFirstAcknowledgementTransport implements ClientServerTransport {
     required String accessToken,
     required ClientDelivery delivery,
   }) async {
+    attemptedRevisions.add(delivery.envelope.revision);
     final acknowledgement = await delegate.deliver(
       server: server,
       accessToken: accessToken,

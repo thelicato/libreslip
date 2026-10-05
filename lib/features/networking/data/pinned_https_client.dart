@@ -127,7 +127,7 @@ class PinnedHttpsClient implements ClientServerTransport {
             delivery.clientInstallationId) {
       throw const ClientTransportException('credentials');
     }
-    if (delivery.envelope.courses.isNotEmpty) {
+    if (delivery.envelope.version >= NetworkProtocol.groupedVersion) {
       final status = await _request(
         server.baseUrl.resolve('/v1/status'),
         fingerprint: server.certificateFingerprint,
@@ -137,8 +137,12 @@ class PinnedHttpsClient implements ClientServerTransport {
           status.body['protocol'] != NetworkProtocol.name ||
           status.body['serverInstallationId'] != server.id ||
           versions is! List ||
-          !versions.contains(NetworkProtocol.groupedVersion)) {
-        throw const ClientTransportException('unsupported_courses');
+          !versions.contains(delivery.envelope.version)) {
+        throw ClientTransportException(
+          delivery.envelope.managedOrderId == null
+              ? 'unsupported_courses'
+              : 'unsupported_updates',
+        );
       }
     }
     final response = await _request(

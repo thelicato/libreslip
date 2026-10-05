@@ -158,6 +158,55 @@ void main() {
         ThemeMode.light,
         5,
       ),
+      (
+        'managed-compose-tablet-en',
+        const Size(1440, 1200),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-compact-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-compose-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-active-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-ticket-preview-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'managed-server-phone-it',
+        const Size(520, 1400),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-server-dialog-tablet-en',
+        const Size(1100, 1200),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
@@ -219,7 +268,8 @@ void main() {
         5,
       ),
     ]) {
-      final groupedPreview = name.startsWith('courses-');
+      final managedPreview = name.startsWith('managed-');
+      final groupedPreview = name.startsWith('courses-') || managedPreview;
       tester.view.physicalSize = size;
       tester.platformDispatcher.textScaleFactorTestValue =
           name.endsWith('large-text') ? 2 : 1;
@@ -238,7 +288,8 @@ void main() {
               : const TicketTypography(),
           compactCompose:
               name == 'compose-compact-phone-it' ||
-              name == 'courses-compact-phone-it',
+              name == 'courses-compact-phone-it' ||
+              name == 'managed-compact-phone-it',
         );
       final controller = SettingsController(settingsStore);
       await controller.load();
@@ -274,6 +325,8 @@ void main() {
           OrderDeliveryEnvelope.create(
             clientInstallationId: 'preview-client',
             deliveryId: 'preview-delivery',
+            managedOrderId: managedPreview ? 'preview-managed' : null,
+            revision: managedPreview ? 1 : 0,
             ticketId: 'preview-ticket',
             ticketNumber: 12,
             createdAt: DateTime.utc(2026, 9, 24, 18, 30),
@@ -288,13 +341,15 @@ void main() {
                 : const [],
             lines: [
               DeliveryLine(
+                id: managedPreview ? 'toast-line' : null,
                 name: 'Toast ai funghi',
                 quantity: 2,
                 preparationNote: 'Senza cipolla',
                 courseId: groupedPreview ? 'first' : null,
               ),
               if (groupedPreview)
-                const DeliveryLine(
+                DeliveryLine(
+                  id: managedPreview ? 'vegetables-line' : null,
                   name: 'Verdure arrosto',
                   quantity: 1,
                   courseId: 'second',
@@ -303,6 +358,55 @@ void main() {
           ),
           receivedAt: DateTime.utc(2026, 9, 24, 18, 31),
         );
+        if (managedPreview) {
+          final previous =
+              (await environment.repository.loadServerOrders()).single;
+          await environment.repository.markServerOrderDone(
+            previous.id,
+            completedAt: DateTime.utc(2026, 9, 24, 18, 34),
+          );
+          await environment.repository.receiveServerOrder(
+            OrderDeliveryEnvelope.create(
+              clientInstallationId: 'preview-client',
+              deliveryId: 'preview-managed-addition',
+              ticketId: 'preview-ticket-addition',
+              ticketNumber: 12,
+              createdAt: DateTime.utc(2026, 9, 24, 18, 30),
+              heading: 'Cucina',
+              reference: 'Tavolo 4',
+              orderNote: 'Portare insieme',
+              managedOrderId: 'preview-managed',
+              revision: 2,
+              courses: const [
+                OrderCourse(id: 'first', name: 'Primo'),
+                OrderCourse(id: 'second', name: 'Secondo'),
+                OrderCourse(id: 'drinks', name: 'Bevande'),
+              ],
+              lines: const [
+                DeliveryLine(
+                  id: 'toast-line',
+                  name: 'Toast ai funghi',
+                  quantity: 2,
+                  preparationNote: 'Senza cipolla',
+                  courseId: 'first',
+                ),
+                DeliveryLine(
+                  id: 'vegetables-line',
+                  name: 'Verdure arrosto',
+                  quantity: 1,
+                  courseId: 'second',
+                ),
+                DeliveryLine(
+                  id: 'water-line',
+                  name: 'Acqua naturale',
+                  quantity: 2,
+                  courseId: 'drinks',
+                ),
+              ],
+            ),
+            receivedAt: DateTime.utc(2026, 9, 24, 18, 35),
+          );
+        }
         await environment.repository.receiveServerOrder(
           OrderDeliveryEnvelope.create(
             clientInstallationId: 'preview-client',
@@ -375,7 +479,10 @@ void main() {
       if (page == 2 || page == 3) {
         if (groupedPreview) {
           await orders.updateFeatureSettings(
-            const OrderFeatureSettings(courseGroupsEnabled: true),
+            OrderFeatureSettings(
+              courseGroupsEnabled: true,
+              managedOrdersEnabled: managedPreview,
+            ),
           );
           orders.saveCourse(language == 'it' ? 'Primo' : 'First course');
         }
@@ -407,6 +514,25 @@ void main() {
 
         await orders.flushWrites();
       }
+      if (managedPreview && (page == 2 || page == 3)) {
+        await orders.saveActiveTicket(heading: 'Corner & Co.');
+        if (name != 'managed-active-phone-it-large-text') {
+          await orders.beginAddition(orders.managedOrders.single.id);
+          orders.saveCourse(language == 'it' ? 'Bevande' : 'Drinks');
+          await orders.saveItem(
+            name: language == 'it' ? 'Acqua naturale' : 'Still water',
+          );
+          orders.addCatalogueItem(
+            orders.items.singleWhere(
+              (item) =>
+                  item.name ==
+                  (language == 'it' ? 'Acqua naturale' : 'Still water'),
+            ),
+          );
+          orders.setQuantity(orders.activeDraft!.lines.single.id, 2);
+          await orders.flushWrites();
+        }
+      }
       if (page == 3) {
         await orders.saveActiveTicket(heading: 'Corner & Co.');
       }
@@ -437,7 +563,15 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
-      if (groupedPreview && page == 2) {
+      if (managedPreview && page == 2) {
+        if (name == 'managed-active-phone-it-large-text') {
+          final active = find.byKey(const ValueKey('active-orders'));
+          await tester.ensureVisible(active);
+          await tester.pumpAndSettle();
+          await tester.tap(active);
+          await tester.pumpAndSettle();
+        }
+      } else if (groupedPreview && page == 2) {
         if (name == 'courses-manage-phone-it-large-text') {
           final manage = find.byKey(const ValueKey('manage-courses'));
           await tester.ensureVisible(manage);
@@ -455,7 +589,8 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (name == 'server-order-dialog-tablet-en' ||
-          name == 'courses-server-dialog-tablet-en') {
+          name == 'courses-server-dialog-tablet-en' ||
+          name == 'managed-server-dialog-tablet-en') {
         await tester.tap(find.text('Order 12'));
         await tester.pumpAndSettle();
       }
@@ -476,8 +611,9 @@ void main() {
         await tester.pumpAndSettle();
       }
       if (name == 'ticket-preview-phone-it' ||
-          name == 'courses-ticket-preview-phone-it') {
-        await tester.tap(find.text('Comanda 1'));
+          name == 'courses-ticket-preview-phone-it' ||
+          name == 'managed-ticket-preview-phone-it') {
+        await tester.tap(find.text('Comanda 1').first);
         await tester.pumpAndSettle();
       }
       if (name == 'overview-dashboard-phone-it') {

@@ -1,5 +1,23 @@
 # Validation evidence
 
+## Optional active-order additions, 5 October 2026
+
+Validated the third optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | Dart formatting passed and final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 132 active tests passed; the normal run skipped only the opt-in render capture. Relevant delivery, composition, migration, restore and cleanup tests passed again after final recovery and lifecycle refinements. |
+| Persistence and revisions | Covered schema 11 migration preserving grouped history and queued print bytes, disabled defaults, restart during additions, fixed original content, stable numbering and line identities, immutable full revision snapshots, idempotent finalisation, stale or closed additions and independent active-order state after history deletion. Closing an order without remaining history removes its current snapshot. |
+| Printing recovery and counts | The additions document contains only the new lines and a revision label. ESC/POS bytes exclude earlier preparation notes. Interrupted additions printing preserves the exact payload and becomes Uncertain. Client item statistics count additions rather than every repeated full snapshot. Connected-printer guards and existing explicit recovery tests passed. |
+| Real pinned HTTPS | Tested initial managed receipt, lost acknowledgement retry, an update to the same completed Server order, stable acknowledgements and new-line revision metadata. A later printed revision waited for an earlier uncertain print and lost acknowledgement; explicit recovery sent revisions in order. Older Servers supporting versions 1 or 2 received no unsupported order POST; retry after advertising support succeeded. |
+| Server integrity | Covered one board entry per managed order, consecutive revisions, unchanged prior lines, stale and conflicting update rejection, duplicate older acknowledgements preserving completion, preparation totals excluding earlier completed lines and rejection of retries or additions after deletion. |
+| Archives and rollback | Configuration and full backups round-trip the option and active-order state. A fresh-install restore recovered interrupted additions and continued them locally without rebuilding networking state. Invalid base revisions, missing addition references and malformed archive metadata were rejected before replacement or preview with current data intact. Existing interrupted restore, rollback and malicious archive checks passed. |
+| Responsive and localised rendering | Thirty-five captures completed without framework errors. Inspected English tablet and landscape additions, Italian Compact Compose, the 320-pixel Italian active-order selector at doubled text, the Italian additions ticket with full-snapshot expansion, Italian Server cards and English tablet Server details. The additions print action stays pinned and longer dialogs scroll. |
+| Android preview APK | Final debug APK built with version name 1.6.0, application identifier `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. This is a preview, not a production release. |
+| Platform and hardware checks | No new device installation, offline cold launch, permission-denial, device process-death or physical printer verification was performed for this step. Database reopen tests and rendered or encoded output do not verify Android lifecycle behaviour or additions on paper. |
+| Compatibility and scope | Keep orders open is disabled by default; existing ordinary and course-group workflows remain available. Database schema 12 and configuration document version 3 accept their supported legacy formats. Managed delivery requires a version 3 Server. This step adds items to active orders; editing submitted content, per-item delivery and prices remain outside this step. Client closing and Server Done remain separate. |
+
 ## Optional course groups, 5 October 2026
 
 Validated the second optional order management step with the unchanged LibreSlip `VERSION` value 1.6.0.

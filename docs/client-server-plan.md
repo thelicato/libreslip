@@ -17,6 +17,8 @@ Local printing runs independently from Server delivery. A Server outage cannot d
 
 Deleting one or all local tickets does not remotely delete an order already accepted by the Server. The durable delivery record remains locally, but its per-ticket status is no longer available from history after the ticket is deleted. Server Received or Done status is not synchronised back to the Client. Marking a Server order Done does not edit or delete the Client snapshot.
 
+The optional Keep orders open workflow creates immutable Client revision snapshots and updates the same Server order through validated additions. Select an active order from Compose after finishing the current composition. Print additions uses the original number and a revision label, with explicit reprint recovery from history. Each Server-bound revision requires its own Transmitted print and delivery of every earlier revision before sending. History tickets with unfinished managed delivery cannot be deleted. Active orders keep their original Server destination; orders started unpaired stay local, including after pairing later. Existing paired ordinary tickets continue using their original protocol format.
+
 ## Pairing
 
 Both Android devices must be on a local network that permits device-to-device traffic. Client mode needs only the Server IPv4 address and port. The Server displays each pending request with its source address and must explicitly accept it within two minutes. Rejection, timeout or leaving Server mode fails the request without pairing.
@@ -30,6 +32,8 @@ Manual IPv4 address entry is the supported connection method. An Android foregro
 The Orders tab lists oldest orders first. Wider layouts show two order cards per row within the same content width as Still to prepare. Each card includes item quantities and preparation notes, while the larger detail dialog contains the immutable order details and actions to mark an order Done or move it back to Received. Completed orders can be deleted individually or together; Received orders cannot be deleted. Origin device names are not displayed. The summary appears before the order list and uses compact quantity tiles with two columns on wider screens for quantities still outstanding across Received orders. Settings contains listener state, local addresses, pending Client approval, mode selection, language, appearance, app text size and the installed version.
 
 Server orders preserve the Client ticket heading, reference, order note, item names, quantities, preparation notes and creation time. They contain no prices, taxes, payments or financial totals. Server mode has no catalogue editing, ticket composition, printing or reporting.
+
+Managed additions require a Server advertising envelope version 3. They preserve stable order and line identifiers and update one board entry. The board displays the revision, labels new lines and keeps previously completed lines visible. A new revision moves a Done order back to Received; the outstanding summary includes only lines added after the last completed revision. Explicitly moving a Completed order back to Received resets that completion marker. Client Close order and Server Done are independent. Deleting a completed managed order retains identifiers and checksums to reject subsequent retries or updates without resurrecting its content.
 
 ## Reliability and persistence
 

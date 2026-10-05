@@ -709,6 +709,7 @@ class _OrderCard extends StatelessWidget {
                   const Icon(Icons.chevron_right_rounded),
                 ],
               ),
+              if (order.revision > 0) Text(l.orderRevision(order.revision)),
               const SizedBox(height: 16),
               for (final section in courseSections(
                 order.courses,
@@ -737,6 +738,23 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (order.managedOrderId != null &&
+                      section.lines[index].addedRevision <=
+                          order.completedRevision)
+                    Text(
+                      l.previouslyCompleted,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (order.revision > 1 &&
+                      section.lines[index].addedRevision == order.revision)
+                    Text(
+                      l.latestAdditions,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   if (section.lines[index].preparationNote.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(left: 48, top: 3),
@@ -799,6 +817,7 @@ class _OrderDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (order.revision > 0) Text(l.orderRevision(order.revision)),
               _DetailRow(
                 label: l.receivedAt,
                 value: DateFormat.yMMMd(locale)
@@ -826,6 +845,22 @@ class _OrderDialog extends StatelessWidget {
                     '${line.quantity}×  ${line.name}',
                     style: theme.textTheme.titleMedium,
                   ),
+                  if (order.managedOrderId != null &&
+                      line.addedRevision <= order.completedRevision)
+                    Text(
+                      l.previouslyCompleted,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (order.revision > 1 &&
+                      line.addedRevision == order.revision)
+                    Text(
+                      l.latestAdditions,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
                   if (line.preparationNote.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(line.preparationNote),

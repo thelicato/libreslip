@@ -2469,6 +2469,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version {version}'**
   String appVersion(String version);
+
+  /// No description provided for @managedOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep orders open'**
+  String get managedOrders;
+
+  /// No description provided for @managedOrdersBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep new orders available for later additions. Existing orders remain available when this option is disabled.'**
+  String get managedOrdersBody;
+
+  /// No description provided for @activeOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Active orders'**
+  String get activeOrders;
+
+  /// No description provided for @activeOrdersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Print an order with Keep orders open enabled to start.'**
+  String get activeOrdersEmpty;
+
+  /// No description provided for @newOrderKeptOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'This order will stay open for later additions.'**
+  String get newOrderKeptOpen;
+
+  /// No description provided for @addToOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items'**
+  String get addToOrder;
+
+  /// No description provided for @additionEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding to an active order'**
+  String get additionEditing;
+
+  /// No description provided for @additionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new items below. Previously submitted items, titles, notes and course names stay fixed.'**
+  String get additionBody;
+
+  /// No description provided for @previouslyOrdered.
+  ///
+  /// In en, this message translates to:
+  /// **'Previously ordered'**
+  String get previouslyOrdered;
+
+  /// No description provided for @orderAdditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Additions'**
+  String get orderAdditions;
+
+  /// No description provided for @fullOrderSnapshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Full order at this revision'**
+  String get fullOrderSnapshot;
+
+  /// No description provided for @printAdditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Print additions'**
+  String get printAdditions;
+
+  /// No description provided for @finishCompositionFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Print or finish the current composition before selecting an active order.'**
+  String get finishCompositionFirst;
+
+  /// No description provided for @closeActiveOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Close order'**
+  String get closeActiveOrder;
+
+  /// No description provided for @closeActiveOrderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop adding to this order? Its saved tickets stay in history. This does not mark the Server order Done.'**
+  String get closeActiveOrderBody;
+
+  /// No description provided for @cancelAddition.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel additions'**
+  String get cancelAddition;
+
+  /// No description provided for @cancelAdditionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard the current additions? Previously saved items remain in the active order.'**
+  String get cancelAdditionBody;
+
+  /// No description provided for @deliveryUpdatesUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the Server to receive active orders and their additions, then retry this delivery.'**
+  String get deliveryUpdatesUnsupported;
+
+  /// No description provided for @latestAdditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Added in this revision'**
+  String get latestAdditions;
+
+  /// No description provided for @orderRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Revision {revision}'**
+  String orderRevision(int revision);
+
+  /// No description provided for @additionsRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Additions · revision {revision}'**
+  String additionsRevision(int revision);
+
+  /// No description provided for @managedHistoryPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver pending revisions before deleting their saved tickets.'**
+  String get managedHistoryPending;
+
+  /// No description provided for @activeOrderLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'This order stays on this phone.'**
+  String get activeOrderLocal;
+
+  /// No description provided for @previouslyCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Previously completed'**
+  String get previouslyCompleted;
+
+  /// No description provided for @deliveryWaitingForRevision.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.'**
+  String get deliveryWaitingForRevision;
 }
 
 class _AppLocalizationsDelegate

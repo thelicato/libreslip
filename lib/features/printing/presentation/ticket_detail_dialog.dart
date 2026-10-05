@@ -60,6 +60,30 @@ class TicketDetailDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(child: TicketPreview(document: document)),
+              if (ticket.revision > 1)
+                ExpansionTile(
+                  title: Text(l.fullOrderSnapshot),
+                  children: [
+                    for (final section in courseSections(
+                      ticket.courses,
+                      ticket.lines,
+                      (line) => line.courseId,
+                    )) ...[
+                      if (ticket.courses.isNotEmpty)
+                        Text(
+                          section.course?.name ?? l.ungrouped,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      for (final line in section.lines)
+                        ListTile(
+                          title: Text('${line.quantity} × ${line.name}'),
+                          subtitle: line.preparationNote.isEmpty
+                              ? null
+                              : Text(line.preparationNote),
+                        ),
+                    ],
+                  ],
+                ),
               if (delivery != null)
                 ClientDeliveryStatusPanel(
                   controller: delivery!,
@@ -200,6 +224,11 @@ class TicketDetailDialog extends StatelessWidget {
       logoPath: settings.logoPath,
       logoWidthPercent: settings.logoWidthPercent,
       typography: settings.typography,
+      revisionLabel: ticket.revision > 1
+          ? l.additionsRevision(ticket.revision)
+          : ticket.revision == 1
+          ? l.orderRevision(1)
+          : '',
     );
   }
 }

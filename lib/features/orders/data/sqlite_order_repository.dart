@@ -21,8 +21,17 @@ class SqliteOrderRepository
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 11;
-  static const portableSchemaVersions = {5, 6, 7, 8, 9, 10, databaseVersion};
+  static const databaseVersion = 12;
+  static const portableSchemaVersions = {
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    databaseVersion,
+  };
   static const databaseFileName = 'libreslip.sqlite3';
 
   final DatabaseFactory _factory;
@@ -442,6 +451,80 @@ class SqliteOrderRepository
         'INTEGER NOT NULL DEFAULT 0 CHECK (course_groups_enabled IN (0, 1))',
       );
     }
+    if (oldVersion < 12 && newVersion >= 12) {
+      await database.execute(
+        "ALTER TABLE order_feature_settings ADD COLUMN managed_orders_enabled INTEGER NOT NULL DEFAULT 0 CHECK (managed_orders_enabled IN (0, 1))",
+      );
+      await database.execute(
+        "ALTER TABLE drafts ADD COLUMN managed_order_id TEXT",
+      );
+      await database.execute(
+        "ALTER TABLE drafts ADD COLUMN base_revision INTEGER NOT NULL DEFAULT 0 CHECK (base_revision >= 0)",
+      );
+      await database.execute(
+        "ALTER TABLE tickets ADD COLUMN managed_order_id TEXT",
+      );
+      await database.execute(
+        "ALTER TABLE tickets ADD COLUMN revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)",
+      );
+      await database.execute(
+        "ALTER TABLE tickets ADD COLUMN addition_line_ids TEXT NOT NULL DEFAULT '[]'",
+      );
+      await database.execute(
+        "ALTER TABLE ticket_lines ADD COLUMN order_line_id TEXT",
+      );
+      await database.execute(
+        "ALTER TABLE server_orders ADD COLUMN managed_order_id TEXT",
+      );
+      await database.execute(
+        "ALTER TABLE server_orders ADD COLUMN revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)",
+      );
+      await database.execute(
+        "ALTER TABLE server_order_lines ADD COLUMN order_line_id TEXT",
+      );
+      await database.execute(
+        "ALTER TABLE server_order_lines ADD COLUMN added_revision INTEGER NOT NULL DEFAULT 0",
+      );
+      await database.execute(
+        'ALTER TABLE server_orders ADD COLUMN completed_revision INTEGER NOT NULL DEFAULT 0 CHECK (completed_revision >= 0)',
+      );
+      await database.execute(
+        "CREATE UNIQUE INDEX server_managed_order_unique ON server_orders(client_installation_id, managed_order_id) WHERE managed_order_id IS NOT NULL",
+      );
+      await database.execute('''
+        CREATE TABLE server_order_revisions (
+          client_installation_id TEXT NOT NULL,
+          delivery_id TEXT NOT NULL,
+          managed_order_id TEXT NOT NULL,
+          revision INTEGER NOT NULL CHECK (revision > 0),
+          order_id TEXT NOT NULL,
+          payload_checksum TEXT NOT NULL,
+          PRIMARY KEY(client_installation_id,
+          delivery_id),
+          UNIQUE(client_installation_id,
+          managed_order_id,
+          revision)
+        )
+      ''');
+      await database.execute('''
+        CREATE TABLE managed_orders (
+          id TEXT PRIMARY KEY,
+          display_number INTEGER NOT NULL CHECK (display_number > 0),
+          revision INTEGER NOT NULL CHECK (revision > 0),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          closed_at TEXT,
+          heading_snapshot TEXT NOT NULL,
+          reference_snapshot TEXT NOT NULL,
+          order_note_snapshot TEXT NOT NULL,
+          courses_json TEXT NOT NULL CHECK (length(courses_json) <= 16384),
+          lines_json TEXT NOT NULL CHECK (length(lines_json) <= 262144),
+          destination_id TEXT,
+          client_installation_id TEXT,
+          server_revision INTEGER NOT NULL DEFAULT 0 CHECK (server_revision >= 0)
+        )
+      ''');
+    }
   }
 
   @override
@@ -573,6 +656,25 @@ class SqliteOrderRepository
   Future<ClientDelivery> markClientDeliverySending(String id) async {
     try {
       final database = await _db;
+      final delivery = await _loadClientDelivery(database, id);
+      if (delivery.envelope.managedOrderId != null) {
+        final rows = await database.query(
+          'server_delivery_outbox',
+          where: "destination_id = ? AND status != 'delivered' AND id != ?",
+          whereArgs: [delivery.destinationId, id],
+        );
+        for (final row in rows) {
+          final earlier = OrderDeliveryEnvelope.fromJsonString(
+            row['payload_json'] as String,
+          );
+          if (earlier.managedOrderId == delivery.envelope.managedOrderId &&
+              earlier.revision < delivery.envelope.revision) {
+            throw const OrderStorageException(
+              'An earlier revision must be delivered first.',
+            );
+          }
+        }
+      }
       final changed = await database.rawUpdate(
         '''
         UPDATE server_delivery_outbox
@@ -764,9 +866,21 @@ class SqliteOrderRepository
   }) async {
     try {
       final database = await _db;
+      if (envelope.managedOrderId != null) {
+        return await _receiveManagedOrder(database, envelope, receivedAt);
+      }
       final result = await database.transaction<({String id, bool duplicate})>((
         transaction,
       ) async {
+        final managedReceipt = await transaction.query(
+          'server_order_revisions',
+          columns: ['delivery_id'],
+          where: 'client_installation_id = ? AND delivery_id = ?',
+          whereArgs: [envelope.clientInstallationId, envelope.deliveryId],
+        );
+        if (managedReceipt.isNotEmpty) {
+          throw const ServerOrderConflictException();
+        }
         final existing = await transaction.query(
           'server_orders',
           columns: ['id', 'payload_checksum'],
@@ -844,6 +958,187 @@ class SqliteOrderRepository
     }
   }
 
+  static Future<ServerOrderReceipt> _receiveManagedOrder(
+    Database database,
+    OrderDeliveryEnvelope envelope,
+    DateTime receivedAt,
+  ) async {
+    final result = await database.transaction<({String id, bool duplicate})>((
+      tx,
+    ) async {
+      final ordinary = await tx.query(
+        'server_orders',
+        columns: ['id'],
+        where: 'client_installation_id = ? AND delivery_id = ? AND managed_order_id IS NULL',
+        whereArgs: [envelope.clientInstallationId, envelope.deliveryId],
+      );
+      if (ordinary.isNotEmpty) throw const ServerOrderConflictException();
+      final receipts = await tx.query(
+        'server_order_revisions',
+        where: 'client_installation_id = ? AND delivery_id = ?',
+        whereArgs: [envelope.clientInstallationId, envelope.deliveryId],
+      );
+      if (receipts.isNotEmpty) {
+        final receipt = receipts.single;
+        if (receipt['payload_checksum'] != envelope.payloadChecksum) {
+          throw const ServerOrderConflictException();
+        }
+        final order = await tx.query(
+          'server_orders',
+          columns: ['id'],
+          where: 'id = ?',
+          whereArgs: [receipt['order_id']],
+        );
+        if (order.isEmpty) throw const ServerOrderConflictException();
+        return (id: receipt['order_id'] as String, duplicate: true);
+      }
+      final clients = await tx.query(
+        'server_clients',
+        columns: ['installation_id'],
+        where: 'installation_id = ?',
+        whereArgs: [envelope.clientInstallationId],
+      );
+      if (clients.isEmpty) {
+        throw const OrderStorageException('The client is not paired.');
+      }
+      final current = await tx.query(
+        'server_orders',
+        where: 'client_installation_id = ? AND managed_order_id = ?',
+        whereArgs: [envelope.clientInstallationId, envelope.managedOrderId],
+      );
+      String id;
+      final oldRevisions = <String, int>{};
+      if (current.isEmpty) {
+        final deleted = await tx.query(
+          'server_order_revisions',
+          columns: ['order_id'],
+          where: 'client_installation_id = ? AND managed_order_id = ?',
+          whereArgs: [envelope.clientInstallationId, envelope.managedOrderId],
+          limit: 1,
+        );
+        if (envelope.revision != 1 || deleted.isNotEmpty) {
+          throw const ServerOrderConflictException();
+        }
+        id = createLocalId();
+      } else {
+        final row = current.single;
+        id = row['id'] as String;
+        if (envelope.revision != (row['revision'] as int) + 1 ||
+            row['display_number'] != envelope.ticketNumber ||
+            row['source_created_at'] != _timestamp(envelope.createdAt) ||
+            row['heading_snapshot'] != envelope.heading ||
+            row['reference_snapshot'] != envelope.reference ||
+            row['order_note_snapshot'] != envelope.orderNote) {
+          throw const ServerOrderConflictException();
+        }
+        final oldCourses = decodeCourses(row['courses_json']);
+        final retained = envelope.courses
+            .where((course) => oldCourses.any((old) => old.id == course.id))
+            .toList();
+        if (retained.length != oldCourses.length ||
+            List.generate(
+              oldCourses.length,
+              (i) =>
+                  retained[i].id != oldCourses[i].id ||
+                  retained[i].name != oldCourses[i].name,
+            ).contains(true)) {
+          throw const ServerOrderConflictException();
+        }
+        final oldLines = await tx.query(
+          'server_order_lines',
+          where: 'order_id = ?',
+          whereArgs: [id],
+          orderBy: 'position',
+        );
+        if (envelope.lines.length <= oldLines.length) {
+          throw const ServerOrderConflictException();
+        }
+        for (var i = 0; i < oldLines.length; i++) {
+          final old = oldLines[i];
+          final line = envelope.lines[i];
+          if (old['order_line_id'] != line.id ||
+              old['name_snapshot'] != line.name ||
+              old['quantity'] != line.quantity ||
+              old['preparation_note'] != line.preparationNote ||
+              old['course_id'] != line.courseId) {
+            throw const ServerOrderConflictException();
+          }
+          oldRevisions[line.id!] = old['added_revision'] as int;
+        }
+      }
+      final values = <String, Object?>{
+        'delivery_id': envelope.deliveryId,
+        'client_ticket_id': envelope.ticketId,
+        'display_number': envelope.ticketNumber,
+        'source_created_at': _timestamp(envelope.createdAt),
+        'received_at': _timestamp(receivedAt),
+        'heading_snapshot': envelope.heading,
+        'reference_snapshot': envelope.reference,
+        'order_note_snapshot': envelope.orderNote,
+        'courses_json': jsonEncode([
+          for (final course in envelope.courses) course.toJson(),
+        ]),
+        'payload_checksum': envelope.payloadChecksum,
+        'status': ServerOrderStatus.received.value,
+        'completed_at': null,
+        'managed_order_id': envelope.managedOrderId,
+        'revision': envelope.revision,
+      };
+      if (current.isEmpty) {
+        await tx.insert('server_orders', {
+          'id': id,
+          'client_installation_id': envelope.clientInstallationId,
+          ...values,
+        });
+      } else {
+        await tx.update(
+          'server_orders',
+          values,
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        await tx.delete(
+          'server_order_lines',
+          where: 'order_id = ?',
+          whereArgs: [id],
+        );
+      }
+      for (var i = 0; i < envelope.lines.length; i++) {
+        final line = envelope.lines[i];
+        await tx.insert('server_order_lines', {
+          'id': createLocalId(),
+          'order_id': id,
+          'order_line_id': line.id,
+          'added_revision': oldRevisions[line.id] ?? envelope.revision,
+          'name_snapshot': line.name,
+          'quantity': line.quantity,
+          'preparation_note': line.preparationNote,
+          'course_id': line.courseId,
+          'position': i,
+        });
+      }
+      await tx.insert('server_order_revisions', {
+        'client_installation_id': envelope.clientInstallationId,
+        'delivery_id': envelope.deliveryId,
+        'managed_order_id': envelope.managedOrderId,
+        'revision': envelope.revision,
+        'order_id': id,
+        'payload_checksum': envelope.payloadChecksum,
+      });
+      await tx.update(
+        'server_clients',
+        {'last_seen_at': _timestamp(receivedAt)},
+        where: 'installation_id = ?',
+        whereArgs: [envelope.clientInstallationId],
+      );
+      return (id: id, duplicate: false);
+    });
+    return ServerOrderReceipt(
+      order: await _loadServerOrder(database, result.id),
+      wasDuplicate: result.duplicate,
+    );
+  }
+
   @override
   Future<ServerOrder> markServerOrderDone(
     String id, {
@@ -854,7 +1149,7 @@ class SqliteOrderRepository
       await database.transaction((transaction) async {
         final rows = await transaction.query(
           'server_orders',
-          columns: ['status'],
+          columns: ['status', 'revision'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -870,6 +1165,7 @@ class SqliteOrderRepository
             {
               'status': ServerOrderStatus.done.value,
               'completed_at': _timestamp(completedAt),
+              'completed_revision': rows.single['revision'],
             },
             where: 'id = ? AND status = ?',
             whereArgs: [id, ServerOrderStatus.received.value],
@@ -903,7 +1199,11 @@ class SqliteOrderRepository
         if (rows.single['status'] == ServerOrderStatus.done.value) {
           await transaction.update(
             'server_orders',
-            {'status': ServerOrderStatus.received.value, 'completed_at': null},
+            {
+              'status': ServerOrderStatus.received.value,
+              'completed_at': null,
+              'completed_revision': 0,
+            },
             where: 'id = ? AND status = ?',
             whereArgs: [id, ServerOrderStatus.done.value],
           );
@@ -986,6 +1286,7 @@ class SqliteOrderRepository
         preparationNotesEnabled: row['preparation_notes_enabled'] == 1,
         orderNotesEnabled: row['order_notes_enabled'] == 1,
         courseGroupsEnabled: row['course_groups_enabled'] == 1,
+        managedOrdersEnabled: row['managed_orders_enabled'] == 1,
       );
     } catch (error) {
       if (error is OrderStorageException) rethrow;
@@ -1004,6 +1305,7 @@ class SqliteOrderRepository
         'preparation_notes_enabled': settings.preparationNotesEnabled ? 1 : 0,
         'order_notes_enabled': settings.orderNotesEnabled ? 1 : 0,
         'course_groups_enabled': settings.courseGroupsEnabled ? 1 : 0,
+        'managed_orders_enabled': settings.managedOrdersEnabled ? 1 : 0,
       }, where: 'id = 1');
       if (changed != 1) {
         throw const OrderStorageException(
@@ -1222,6 +1524,8 @@ class SqliteOrderRepository
         for (final course in draft.courses) course.toJson(),
       ]),
       'active_course_id': draft.activeCourseId,
+      'managed_order_id': draft.managedOrderId,
+      'base_revision': draft.baseRevision,
       'created_at': _timestamp(draft.createdAt),
       'updated_at': _timestamp(draft.updatedAt),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
@@ -1258,6 +1562,7 @@ class SqliteOrderRepository
   Future<SavedTicket> convertDraftToTicket(
     OrderDraft draft, {
     required String heading,
+    bool keepOpen = false,
   }) async {
     _validateDraft(draft, requireLines: true);
     final database = await _db;
@@ -1272,6 +1577,64 @@ class SqliteOrderRepository
         );
         if (existing.isNotEmpty) return existing.single['id']! as String;
 
+        ManagedOrder? previous;
+        if (draft.managedOrderId != null) {
+          final rows = await transaction.query(
+            'managed_orders',
+            where: 'id = ? AND closed_at IS NULL',
+            whereArgs: [draft.managedOrderId],
+          );
+          if (rows.length != 1) {
+            throw const OrderStorageException('The order is no longer open.');
+          }
+          previous = _managedFromRow(rows.single);
+          if (draft.baseRevision != previous.revision ||
+              draft.reference.trim() != previous.reference ||
+              draft.orderNote.trim() != previous.orderNote ||
+              draft.courses.length < previous.courses.length ||
+              List.generate(
+                previous.courses.length,
+                (i) =>
+                    draft.courses[i].id != previous!.courses[i].id ||
+                    draft.courses[i].name != previous.courses[i].name,
+              ).contains(true) ||
+              draft.lines.any(
+                (line) => previous!.lines.any((old) => old.id == line.id),
+              )) {
+            throw const OrderStorageException(
+              'The addition conflicts with the current order.',
+            );
+          }
+        }
+        final managedId = previous?.id ?? (keepOpen ? draft.id : null);
+        final revision = managedId == null ? 0 : (previous?.revision ?? 0) + 1;
+        final cleanHeading = previous?.heading ?? heading.trim();
+        final additionLines = <TicketLine>[];
+        for (final line in draft.lines) {
+          var send = true;
+          if (line.catalogueItemId != null) {
+            final rows = await transaction.query(
+              'items',
+              columns: ['send_to_server'],
+              where: 'id = ?',
+              whereArgs: [line.catalogueItemId],
+            );
+            if (rows.isNotEmpty) send = rows.single['send_to_server'] == 1;
+          }
+          additionLines.add(
+            TicketLine(
+              id: line.id,
+              catalogueItemId: line.catalogueItemId,
+              name: line.name,
+              quantity: line.quantity,
+              preparationNote: line.preparationNote.trim(),
+              courseId: line.courseId,
+              sendToServer: send,
+            ),
+          );
+        }
+        final allLines = [...?previous?.lines, ...additionLines];
+        _validateDraft(draft.copyWith(lines: allLines), requireLines: true);
         await _writeDraft(transaction, draft);
         final ticketCounter = await transaction.query(
           'counters',
@@ -1288,19 +1651,22 @@ class SqliteOrderRepository
           whereArgs: ['order'],
           limit: 1,
         );
-        final orderNumber = orderCounter.single['next_value']! as int;
+        final orderNumber =
+            previous?.number ?? orderCounter.single['next_value']! as int;
         await transaction.update(
           'counters',
           {'next_value': ticketNumber + 1},
           where: 'name = ?',
           whereArgs: ['ticket'],
         );
-        await transaction.update(
-          'counters',
-          {'next_value': orderNumber + 1},
-          where: 'name = ?',
-          whereArgs: ['order'],
-        );
+        if (previous == null) {
+          await transaction.update(
+            'counters',
+            {'next_value': orderNumber + 1},
+            where: 'name = ?',
+            whereArgs: ['order'],
+          );
+        }
         final id = createLocalId();
         final createdAt = DateTime.now().toUtc();
         await transaction.insert('tickets', {
@@ -1308,7 +1674,7 @@ class SqliteOrderRepository
           'ticket_number': ticketNumber,
           'display_number': orderNumber,
           'origin_draft_id': draft.id,
-          'heading_snapshot': heading.trim(),
+          'heading_snapshot': cleanHeading,
           'reference_snapshot': draft.reference.trim(),
           'order_note_snapshot': draft.orderNote.trim(),
           'courses_json': jsonEncode([
@@ -1316,12 +1682,20 @@ class SqliteOrderRepository
           ]),
           'created_at': _timestamp(createdAt),
           'source_ticket_id': null,
+          'managed_order_id': managedId,
+          'revision': revision,
+          'addition_line_ids': jsonEncode(
+            managedId == null
+                ? <String>[]
+                : additionLines.map((line) => line.id).toList(),
+          ),
         });
-        for (var index = 0; index < draft.lines.length; index++) {
-          final line = draft.lines[index];
+        for (var index = 0; index < allLines.length; index++) {
+          final line = allLines[index];
           await transaction.insert('ticket_lines', {
             'id': createLocalId(),
             'ticket_id': id,
+            'order_line_id': managedId == null ? null : line.id,
             'catalogue_item_id': line.catalogueItemId,
             'name_snapshot': line.name,
             'quantity': line.quantity,
@@ -1330,87 +1704,103 @@ class SqliteOrderRepository
             'position': index,
           });
         }
+        final configuration = (await transaction.query(
+          'network_settings',
+          where: 'id = 1',
+        )).single;
+        final installationId = configuration['installation_id'] as String;
         final destinations = await transaction.query(
           'network_destinations',
           columns: ['id'],
           where: 'is_active = 1',
           limit: 1,
         );
-        if (destinations.isNotEmpty) {
-          final catalogueIds = draft.lines
-              .map((line) => line.catalogueItemId)
-              .whereType<String>()
-              .toSet();
-          final excludedIds = <String>{};
-          if (catalogueIds.isNotEmpty) {
-            final placeholders = List.filled(
-              catalogueIds.length,
-              '?',
-            ).join(',');
-            final excluded = await transaction.query(
-              'items',
-              columns: ['id'],
-              where: 'send_to_server = 0 AND id IN ($placeholders)',
-              whereArgs: catalogueIds.toList(growable: false),
-            );
-            excludedIds.addAll(excluded.map((row) => row['id']! as String));
-          }
-          final deliveryLines = [
-            for (final line in draft.lines)
-              if (line.catalogueItemId == null ||
-                  !excludedIds.contains(line.catalogueItemId))
+        final destinationId = previous == null
+            ? (destinations.isEmpty
+                  ? null
+                  : destinations.single['id'] as String)
+            : (previous.clientInstallationId == installationId
+                  ? previous.destinationId
+                  : null);
+        final eligible = allLines.where((line) => line.sendToServer).toList();
+        final hasNewEligible = additionLines.any((line) => line.sendToServer);
+        var serverRevision = previous?.serverRevision ?? 0;
+        if (destinationId != null && eligible.isNotEmpty && hasNewEligible) {
+          if (managedId != null) serverRevision++;
+          final deliveryId = createLocalId();
+          final envelope = OrderDeliveryEnvelope.create(
+            clientInstallationId: installationId,
+            deliveryId: deliveryId,
+            ticketId: id,
+            ticketNumber: orderNumber,
+            createdAt: previous?.createdAt ?? createdAt,
+            heading: cleanHeading,
+            reference: draft.reference.trim(),
+            orderNote: draft.orderNote.trim(),
+            managedOrderId: managedId,
+            revision: serverRevision,
+            lines: [
+              for (final line in eligible)
                 DeliveryLine(
                   name: line.name,
                   quantity: line.quantity,
-                  preparationNote: line.preparationNote.trim(),
+                  preparationNote: line.preparationNote,
                   courseId: line.courseId,
+                  id: managedId == null ? null : line.id,
                 ),
-          ];
-          if (deliveryLines.isNotEmpty) {
-            final settings = await transaction.query(
-              'network_settings',
-              columns: ['installation_id'],
-              where: 'id = 1',
-              limit: 1,
-            );
-            if (settings.length != 1) {
-              throw const OrderStorageException(
-                'The client installation identity could not be found.',
-              );
-            }
-            final deliveryId = createLocalId();
-            final clientInstallationId =
-                settings.single['installation_id']! as String;
-            final envelope = OrderDeliveryEnvelope.create(
-              clientInstallationId: clientInstallationId,
-              deliveryId: deliveryId,
-              ticketId: id,
-              ticketNumber: orderNumber,
-              createdAt: createdAt,
-              heading: heading.trim(),
-              reference: draft.reference.trim(),
-              orderNote: draft.orderNote.trim(),
-              lines: deliveryLines,
-              courses: draft.courses
-                  .where(
-                    (course) =>
-                        deliveryLines.any((line) => line.courseId == course.id),
-                  )
-                  .toList(),
-            );
-            final now = _timestamp(createdAt);
-            await transaction.insert('server_delivery_outbox', {
-              'id': deliveryId,
-              'destination_id': destinations.single['id']! as String,
-              'client_installation_id': clientInstallationId,
-              'ticket_id': id,
-              'payload_json': envelope.toJsonString(),
-              'payload_checksum': envelope.payloadChecksum,
-              'status': ClientDeliveryStatus.awaitingPrint.value,
-              'attempt_count': 0,
-              'created_at': now,
-              'updated_at': now,
+            ],
+            courses: draft.courses
+                .where(
+                  (course) =>
+                      eligible.any((line) => line.courseId == course.id),
+                )
+                .toList(),
+          );
+          final now = _timestamp(createdAt);
+          await transaction.insert('server_delivery_outbox', {
+            'id': deliveryId,
+            'destination_id': destinationId,
+            'client_installation_id': installationId,
+            'ticket_id': id,
+            'payload_json': envelope.toJsonString(),
+            'payload_checksum': envelope.payloadChecksum,
+            'status': ClientDeliveryStatus.awaitingPrint.value,
+            'attempt_count': 0,
+            'created_at': now,
+            'updated_at': now,
+          });
+        }
+        if (managedId != null) {
+          final values = <String, Object?>{
+            'display_number': orderNumber,
+            'revision': revision,
+            'updated_at': _timestamp(createdAt),
+            'heading_snapshot': cleanHeading,
+            'reference_snapshot': draft.reference.trim(),
+            'order_note_snapshot': draft.orderNote.trim(),
+            'courses_json': jsonEncode([
+              for (final course in draft.courses) course.toJson(),
+            ]),
+            'lines_json': encodeOrderLines(allLines),
+            'server_revision': destinationId == null ? 0 : serverRevision,
+            'destination_id': destinationId,
+            'client_installation_id': destinationId == null
+                ? null
+                : installationId,
+          };
+          if (previous == null) {
+            await transaction.insert('managed_orders', {
+              'id': managedId,
+              'created_at': _timestamp(createdAt),
+              ...values,
             });
+          } else {
+            await transaction.update(
+              'managed_orders',
+              values,
+              where: 'id = ? AND revision = ?',
+              whereArgs: [managedId, previous.revision],
+            );
           }
         }
         await transaction.delete(
@@ -1424,6 +1814,290 @@ class SqliteOrderRepository
     } catch (error) {
       if (error is OrderStorageException) rethrow;
       throw OrderStorageException('Could not save the ticket.', error);
+    }
+  }
+
+  @override
+  Future<List<ManagedOrder>> loadManagedOrders() async {
+    final rows = await (await _db).query(
+      'managed_orders',
+      where: 'closed_at IS NULL',
+      orderBy: 'updated_at DESC',
+    );
+    final installation = (await loadNetworkConfiguration()).installationId;
+    return rows
+        .map(
+          (row) => _managedFromRow(
+            row['client_installation_id'] != null &&
+                    row['client_installation_id'] != installation
+                ? {
+                    ...row,
+                    'destination_id': null,
+                    'client_installation_id': null,
+                    'server_revision': 0,
+                  }
+                : row,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static ManagedOrder _managedFromRow(Map<String, Object?> row) {
+    final lines = decodeOrderLines(row['lines_json']);
+    final courses = decodeCourses(row['courses_json']);
+    validateCourses(courses, lines.map((line) => line.courseId));
+    return ManagedOrder(
+      id: row['id'] as String,
+      number: row['display_number'] as int,
+      revision: row['revision'] as int,
+      createdAt: DateTime.parse(row['created_at'] as String),
+      updatedAt: DateTime.parse(row['updated_at'] as String),
+      closedAt: row['closed_at'] == null
+          ? null
+          : DateTime.parse(row['closed_at'] as String),
+      heading: row['heading_snapshot'] as String,
+      reference: row['reference_snapshot'] as String,
+      orderNote: row['order_note_snapshot'] as String,
+      lines: lines,
+      courses: courses,
+      destinationId: row['destination_id'] as String?,
+      clientInstallationId: row['client_installation_id'] as String?,
+      serverRevision: row['server_revision'] as int,
+    );
+  }
+
+  @override
+  Future<OrderDraft> beginOrderAddition(String orderId, String draftId) async {
+    return (await _db).transaction((tx) async {
+      final drafts = await tx.query('drafts');
+      final lineCount =
+          Sqflite.firstIntValue(
+            await tx.rawQuery('SELECT COUNT(*) FROM draft_lines'),
+          ) ??
+          0;
+      if (drafts.length != 1 ||
+          drafts.single['id'] != draftId ||
+          lineCount != 0 ||
+          (drafts.single['reference'] as String).isNotEmpty ||
+          (drafts.single['order_note'] as String).isNotEmpty ||
+          drafts.single['managed_order_id'] != null) {
+        throw const OrderStorageException(
+          'Finish the current composition first.',
+        );
+      }
+      final rows = await tx.query(
+        'managed_orders',
+        where: 'id = ? AND closed_at IS NULL',
+        whereArgs: [orderId],
+      );
+      if (rows.length != 1) {
+        throw const OrderStorageException('The order is no longer open.');
+      }
+      final order = _managedFromRow(rows.single);
+      final now = DateTime.now().toUtc();
+      final draft = OrderDraft(
+        id: createLocalId(),
+        createdAt: now,
+        updatedAt: now,
+        managedOrderId: order.id,
+        baseRevision: order.revision,
+        reference: order.reference,
+        orderNote: order.orderNote,
+        courses: order.courses,
+      );
+      await tx.delete('drafts', where: 'id = ?', whereArgs: [draftId]);
+      await _writeDraft(tx, draft);
+      return draft;
+    });
+  }
+
+  @override
+  Future<void> closeManagedOrder(String orderId) async {
+    await (await _db).transaction((tx) async {
+      final linked = await tx.query(
+        'drafts',
+        where: 'managed_order_id = ?',
+        whereArgs: [orderId],
+      );
+      if (linked.isNotEmpty) {
+        throw const OrderStorageException('Finish the current addition first.');
+      }
+      final changed = await tx.update(
+        'managed_orders',
+        {'closed_at': _timestamp(DateTime.now())},
+        where: 'id = ? AND closed_at IS NULL',
+        whereArgs: [orderId],
+      );
+      if (changed != 1) {
+        throw const OrderStorageException('The order is no longer open.');
+      }
+      await _pruneClosedOrders(tx);
+    });
+  }
+
+  static void validatePortableManagedOrders(Map<String, Object?> snapshot) {
+    final tables = snapshot['tables'] as Map;
+    final modern = (snapshot['schemaVersion'] as int) >= 12;
+    final rows = tables['managed_orders'] ?? (modern ? null : <Object?>[]);
+    if (rows is! List || (!modern && rows.isNotEmpty)) {
+      throw const FormatException('Invalid managed inventory');
+    }
+    final orders = <String, ManagedOrder>{};
+    for (final value in rows) {
+      if (value is! Map) throw const FormatException('Invalid managed order');
+      final row = Map<String, Object?>.from(value);
+      for (final key in [
+        'id',
+        'heading_snapshot',
+        'reference_snapshot',
+        'order_note_snapshot',
+        'created_at',
+        'updated_at',
+      ]) {
+        if (row[key] is! String || (row[key] as String).contains('\u0000')) {
+          throw const FormatException('Invalid managed text');
+        }
+      }
+      if (!validOrderId(row['id'] as String) ||
+          row['display_number'] is! int ||
+          (row['display_number'] as int) < 1 ||
+          row['revision'] is! int ||
+          (row['revision'] as int) < 1 ||
+          row['server_revision'] is! int ||
+          (row['server_revision'] as int) < 0 ||
+          (row['server_revision'] as int) > (row['revision'] as int) ||
+          (row['heading_snapshot'] as String).length > 60 ||
+          (row['reference_snapshot'] as String).length > 80 ||
+          (row['order_note_snapshot'] as String).length > 500 ||
+          (row['destination_id'] != null &&
+              (row['destination_id'] is! String ||
+                  !validOrderId(row['destination_id'] as String))) ||
+          (row['client_installation_id'] != null &&
+              (row['client_installation_id'] is! String ||
+                  !validOrderId(row['client_installation_id'] as String))) ||
+          ((row['destination_id'] == null) !=
+              (row['client_installation_id'] == null)) ||
+          (row['destination_id'] == null && row['server_revision'] != 0)) {
+        throw const FormatException('Invalid managed metadata');
+      }
+      for (final key in ['created_at', 'updated_at', 'closed_at']) {
+        final value = row[key];
+        if (key == 'closed_at' && value == null) continue;
+        final timestamp = value is String ? DateTime.tryParse(value) : null;
+        if (timestamp == null ||
+            !timestamp.isUtc ||
+            !(value as String).endsWith('Z')) {
+          throw const FormatException('Invalid managed timestamp');
+        }
+      }
+      final order = _managedFromRow(row);
+      if (orders.containsKey(order.id)) {
+        throw const FormatException('Duplicate managed order');
+      }
+      orders[order.id] = order;
+    }
+    final editing = <String>{};
+    for (final value in tables['drafts'] as List) {
+      final row = value as Map;
+      final id = row['managed_order_id'];
+      final revision = row['base_revision'] ?? (modern ? null : 0);
+      if (revision is! int ||
+          (modern && !row.containsKey('managed_order_id'))) {
+        throw const FormatException('Invalid addition');
+      }
+      if (id == null) {
+        if (revision != 0) {
+          throw const FormatException('Invalid addition revision');
+        }
+        continue;
+      }
+      final order = orders[id];
+      if (!modern ||
+          order == null ||
+          order.closedAt != null ||
+          revision != order.revision ||
+          !editing.add(order.id) ||
+          row['reference'] != order.reference ||
+          row['order_note'] != order.orderNote) {
+        throw const FormatException('Invalid addition relationship');
+      }
+      final courses = decodeCourses(row['courses_json']);
+      if (courses.length < order.courses.length ||
+          List.generate(
+            order.courses.length,
+            (i) =>
+                courses[i].id != order.courses[i].id ||
+                courses[i].name != order.courses[i].name,
+          ).contains(true)) {
+        throw const FormatException('Invalid addition courses');
+      }
+      final previous = order.lines.map((line) => line.id).toSet();
+      final additions = (tables['draft_lines'] as List).cast<Map>().where(
+        (line) => line['draft_id'] == row['id'],
+      );
+      if (additions.any((line) => previous.contains(line['id'])) ||
+          order.lines.length + additions.length > 200) {
+        throw const FormatException('Invalid addition lines');
+      }
+    }
+    final ticketLines = <Object?, List<Map>>{};
+    for (final line in (tables['ticket_lines'] as List).cast<Map>()) {
+      ticketLines.putIfAbsent(line['ticket_id'], () => []).add(line);
+    }
+    for (final row in (tables['tickets'] as List).cast<Map>()) {
+      final id = row['managed_order_id'];
+      final revision = row['revision'] ?? (modern ? null : 0);
+      final encoded = row['addition_line_ids'] ?? (modern ? null : '[]');
+      if (revision is! int || encoded is! String || encoded.length > 32768) {
+        throw const FormatException('Invalid ticket revision');
+      }
+      final additions = jsonDecode(encoded);
+      if (additions is! List ||
+          additions.any((id) => id is! String) ||
+          additions.toSet().length != additions.length) {
+        throw const FormatException('Invalid addition inventory');
+      }
+      if (id == null) {
+        if (revision != 0 || additions.isNotEmpty) {
+          throw const FormatException('Invalid ordinary revision');
+        }
+        continue;
+      }
+      final order = orders[id];
+      final lines = ticketLines[row['id']] ?? <Map>[];
+      final stableIds = lines.map((line) => line['order_line_id']).toSet();
+      if (!modern ||
+          order == null ||
+          revision < 1 ||
+          revision > order.revision ||
+          row['display_number'] != order.number ||
+          row['heading_snapshot'] != order.heading ||
+          row['reference_snapshot'] != order.reference ||
+          row['order_note_snapshot'] != order.orderNote ||
+          additions.isEmpty ||
+          additions.any((id) => !stableIds.contains(id)) ||
+          stableIds.contains(null) ||
+          stableIds.length != lines.length ||
+          (revision == 1 && additions.length != lines.length)) {
+        throw const FormatException('Invalid ticket relationship');
+      }
+      for (final line in lines) {
+        final matching = order.lines.where(
+          (old) => old.id == line['order_line_id'],
+        );
+        if (matching.length != 1 ||
+            matching.single.name != line['name_snapshot'] ||
+            matching.single.quantity != line['quantity'] ||
+            matching.single.preparationNote != line['preparation_note'] ||
+            matching.single.courseId != line['course_id']) {
+          throw const FormatException('Invalid immutable line');
+        }
+      }
+    }
+    final features = (tables['order_feature_settings'] as List).single as Map;
+    final enabled = features['managed_orders_enabled'] ?? (modern ? null : 0);
+    if (enabled != 0 && enabled != 1 || (!modern && enabled != 0)) {
+      throw const FormatException('Invalid managed settings');
     }
   }
 
@@ -1446,6 +2120,15 @@ class SqliteOrderRepository
   Future<void> deleteTicket(String id) async {
     try {
       await (await _db).transaction((transaction) async {
+        final unfinished = await transaction.rawQuery(
+          "SELECT o.id FROM server_delivery_outbox o JOIN tickets t ON t.id = o.ticket_id WHERE t.managed_order_id IS NOT NULL AND o.status != 'delivered' AND t.id = ?",
+          [id],
+        );
+        if (unfinished.isNotEmpty) {
+          throw const OrderStorageException(
+            'Deliver pending managed revisions before deleting their tickets.',
+          );
+        }
         await transaction.delete(
           'print_jobs',
           where: 'ticket_id = ?',
@@ -1457,6 +2140,7 @@ class SqliteOrderRepository
           whereArgs: [id],
         );
         await transaction.delete('tickets', where: 'id = ?', whereArgs: [id]);
+        await _pruneClosedOrders(transaction);
       });
     } catch (error) {
       throw OrderStorageException('Could not delete the ticket.', error);
@@ -1467,16 +2151,35 @@ class SqliteOrderRepository
   Future<void> deleteAllTickets() async {
     try {
       await (await _db).transaction((transaction) async {
+        final unfinished = await transaction.rawQuery(
+          "SELECT o.id FROM server_delivery_outbox o JOIN tickets t ON t.id = o.ticket_id WHERE t.managed_order_id IS NOT NULL AND o.status != 'delivered'",
+        );
+        if (unfinished.isNotEmpty) {
+          throw const OrderStorageException(
+            'Deliver pending managed revisions before deleting their tickets.',
+          );
+        }
         await transaction.delete('print_jobs');
         await transaction.delete('ticket_lines');
         await transaction.delete('tickets');
+        await _pruneClosedOrders(transaction);
       });
     } catch (error) {
       throw OrderStorageException('Could not delete ticket history.', error);
     }
   }
 
+  static Future<void> _pruneClosedOrders(DatabaseExecutor executor) async {
+    await executor.rawDelete('''
+      DELETE FROM managed_orders
+      WHERE closed_at IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM tickets WHERE managed_order_id = managed_orders.id)
+        AND NOT EXISTS (SELECT 1 FROM drafts WHERE managed_order_id = managed_orders.id)
+    ''');
+  }
+
   static const _portableTables = <String>[
+    'managed_orders',
     'categories',
     'items',
     'drafts',
@@ -1489,6 +2192,7 @@ class SqliteOrderRepository
   ];
 
   static const _deleteOrder = <String>[
+    'managed_orders',
     'print_jobs',
     'ticket_lines',
     'tickets',
@@ -1537,7 +2241,11 @@ class SqliteOrderRepository
         throw const FormatException('Unsupported database snapshot');
       }
       validatePortableCourses(snapshot);
-      final tables = snapshot['tables']! as Map<String, dynamic>;
+      validatePortableManagedOrders(snapshot);
+      final tables = Map<String, dynamic>.from(snapshot['tables']! as Map);
+      if ((snapshot['schemaVersion'] as int) < 12) {
+        tables.putIfAbsent('managed_orders', () => <Object?>[]);
+      }
       if (tables.keys.toSet().difference(_portableTables.toSet()).isNotEmpty ||
           _portableTables.any((table) => tables[table] is! List)) {
         throw const FormatException('Invalid database table inventory');
@@ -1596,7 +2304,7 @@ class SqliteOrderRepository
   static void validatePortableCourses(Map<String, Object?> snapshot) {
     final tables = snapshot['tables'];
     if (tables is! Map) throw const FormatException('Invalid course snapshot');
-    final current = snapshot['schemaVersion'] == databaseVersion;
+    final current = (snapshot['schemaVersion'] as int) >= 11;
     for (final (parents, children, parentKey) in [
       ('drafts', 'draft_lines', 'draft_id'),
       ('tickets', 'ticket_lines', 'ticket_id'),
@@ -1928,6 +2636,9 @@ class SqliteOrderRepository
       reference: row['reference_snapshot']! as String,
       orderNote: row['order_note_snapshot']! as String,
       courses: decodeCourses(row['courses_json']),
+      managedOrderId: row['managed_order_id'] as String?,
+      revision: row['revision'] as int? ?? 0,
+      completedRevision: row['completed_revision'] as int? ?? 0,
       payloadChecksum: row['payload_checksum']! as String,
       status: ServerOrderStatusValue.parse(row['status']! as String),
       completedAt: row['completed_at'] == null
@@ -1940,6 +2651,8 @@ class SqliteOrderRepository
             quantity: line['quantity']! as int,
             preparationNote: line['preparation_note']! as String,
             courseId: line['course_id'] as String?,
+            id: line['order_line_id'] as String?,
+            addedRevision: line['added_revision'] as int? ?? 0,
           ),
       ],
     );
@@ -1980,6 +2693,11 @@ class SqliteOrderRepository
       orderNote: row['order_note_snapshot']! as String,
       courses: decodeCourses(row['courses_json']),
       sourceTicketId: row['source_ticket_id'] as String?,
+      managedOrderId: row['managed_order_id'] as String?,
+      revision: row['revision'] as int? ?? 0,
+      additionLineIds: (jsonDecode(
+        row['addition_line_ids'] as String? ?? '[]',
+      ) as List).cast<String>(),
       lines: lines.map(_lineFromTicketRow).toList(growable: false),
     );
   }
@@ -2000,6 +2718,8 @@ class SqliteOrderRepository
       orderNote: row['order_note']! as String,
       courses: decodeCourses(row['courses_json']),
       activeCourseId: row['active_course_id'] as String?,
+      managedOrderId: row['managed_order_id'] as String?,
+      baseRevision: row['base_revision'] as int? ?? 0,
       createdAt: DateTime.parse(row['created_at']! as String),
       updatedAt: DateTime.parse(row['updated_at']! as String),
       lines: lines.map(_lineFromDraftRow).toList(growable: false),
@@ -2016,7 +2736,7 @@ class SqliteOrderRepository
   );
 
   static TicketLine _lineFromTicketRow(Map<String, Object?> row) => TicketLine(
-    id: row['id']! as String,
+    id: (row['order_line_id'] ?? row['id']) as String,
     catalogueItemId: row['catalogue_item_id'] as String?,
     name: row['name_snapshot']! as String,
     quantity: row['quantity']! as int,

@@ -117,6 +117,10 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
               style: detailsBold,
             ),
           ),
+          if (document.revisionLabel.isNotEmpty)
+            pw.Center(
+              child: pw.Text(document.revisionLabel, style: detailsBold),
+            ),
           pw.Center(child: pw.Text(document.createdAt, style: details)),
           if (document.reference.isNotEmpty) ...[
             pw.SizedBox(height: 2 * PdfPageFormat.mm),

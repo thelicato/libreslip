@@ -528,5 +528,44 @@
         "type": "String"
       }
     }
-  }
+  },
+  "managedOrders": "Mantieni aperti gli ordini",
+  "managedOrdersBody": "Mantieni disponibili i nuovi ordini per aggiunte successive. Gli ordini esistenti restano disponibili quando disattivi questa opzione.",
+  "activeOrders": "Ordini aperti",
+  "activeOrdersEmpty": "Stampa un ordine con Mantieni aperti gli ordini attivo per iniziare.",
+  "newOrderKeptOpen": "Questo ordine resterà aperto per aggiunte successive.",
+  "addToOrder": "Aggiungi articoli",
+  "additionEditing": "Aggiunta a un ordine aperto",
+  "additionBody": "Aggiungi nuovi articoli qui sotto. Articoli già inviati, titoli, note e nomi delle portate restano invariati.",
+  "previouslyOrdered": "Già ordinato",
+  "orderAdditions": "Aggiunte",
+  "fullOrderSnapshot": "Ordine completo a questa revisione",
+  "printAdditions": "Stampa aggiunte",
+  "finishCompositionFirst": "Stampa o termina la composizione attuale prima di scegliere un ordine aperto.",
+  "closeActiveOrder": "Chiudi ordine",
+  "closeActiveOrderBody": "Vuoi terminare le aggiunte a questo ordine? Le comande salvate restano nello storico. L’ordine sul Server non viene segnato come completato.",
+  "cancelAddition": "Annulla aggiunte",
+  "cancelAdditionBody": "Vuoi scartare le aggiunte attuali? Gli articoli già salvati restano nell’ordine aperto.",
+  "deliveryUpdatesUnsupported": "Aggiorna il Server per ricevere ordini aperti e aggiunte, poi riprova questo invio.",
+  "latestAdditions": "Aggiunto in questa revisione",
+  "orderRevision": "Revisione {revision}",
+  "@orderRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
+  "additionsRevision": "Aggiunte · revisione {revision}",
+  "@additionsRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "int"
+      }
+    }
+  },
+  "managedHistoryPending": "Invia le revisioni in attesa prima di eliminare le comande salvate.",
+  "activeOrderLocal": "Questo ordine resta su questo telefono.",
+  "previouslyCompleted": "Già completato",
+  "deliveryWaitingForRevision": "In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio."
 }

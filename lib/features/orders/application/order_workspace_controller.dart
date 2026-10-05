@@ -19,6 +19,7 @@ class OrderWorkspaceController extends ChangeNotifier {
   List<ItemCategory> categories = const [];
   List<OrderDraft> drafts = const [];
   List<SavedTicket> tickets = const [];
+  List<ManagedOrder> managedOrders = const [];
   OrderFeatureSettings featureSettings = const OrderFeatureSettings();
   int nextOrderNumber = 1;
   String? activeDraftId;
@@ -60,7 +61,47 @@ class OrderWorkspaceController extends ChangeNotifier {
     nextOrderNumber = await _repository.loadNextOrderNumber();
     drafts = await _repository.loadDrafts();
     tickets = await _repository.loadTickets();
+    managedOrders = await _repository.loadManagedOrders();
   }
+
+  ManagedOrder? get editingOrder {
+    for (final order in managedOrders) {
+      if (order.id == activeDraft?.managedOrderId) return order;
+    }
+    return null;
+  }
+
+  int get compositionNumber => editingOrder?.number ?? nextOrderNumber;
+  bool get canBeginAddition =>
+      !saving &&
+      activeDraft != null &&
+      activeDraft!.managedOrderId == null &&
+      activeDraft!.lines.isEmpty &&
+      activeDraft!.reference.isEmpty &&
+      activeDraft!.orderNote.isEmpty;
+
+  Future<bool> beginAddition(String id) => _perform(() async {
+    await flushWrites();
+    final draft = await _repository.beginOrderAddition(id, activeDraft!.id);
+    drafts = [draft];
+    activeDraftId = draft.id;
+  });
+
+  Future<bool> cancelAddition() => _perform(() async {
+    final draft = activeDraft;
+    if (draft?.managedOrderId == null) return;
+    await flushWrites();
+    await _repository.deleteDraft(draft!.id);
+    final replacement = await _repository.createDraft();
+    drafts = [replacement];
+    activeDraftId = replacement.id;
+  });
+
+  Future<bool> closeOrder(String id) => _perform(() async {
+    await flushWrites();
+    await _repository.closeManagedOrder(id);
+    managedOrders = await _repository.loadManagedOrders();
+  });
 
   Future<bool> resetOrderNumber() => _perform(() async {
     await _repository.resetOrderNumber();
@@ -147,7 +188,7 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void addCatalogueItem(CatalogueItem item) {
     final draft = activeDraft;
-    if (draft == null) return;
+    if (saving || draft == null) return;
     final lines = [...draft.lines];
     final existingIndex = lines.indexWhere(
       (line) =>
@@ -159,6 +200,7 @@ class OrderWorkspaceController extends ChangeNotifier {
       if (existing.quantity >= 999) return;
       lines[existingIndex] = existing.copyWith(quantity: existing.quantity + 1);
     } else {
+      if (lines.length + (editingOrder?.lines.length ?? 0) >= 200) return;
       lines.add(
         TicketLine(
           id: createLocalId(),
@@ -176,7 +218,7 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setQuantity(String lineId, int quantity) {
     final draft = activeDraft;
-    if (draft == null || quantity < 1 || quantity > 999) return;
+    if (saving || draft == null || quantity < 1 || quantity > 999) return;
     _replaceActive(
       draft.copyWith(
         updatedAt: DateTime.now().toUtc(),
@@ -194,7 +236,8 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void selectCourse(String? id) {
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !courseControlsAvailable ||
         (id != null && !draft.courses.any((course) => course.id == id))) {
       return;
@@ -210,8 +253,12 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   bool saveCourse(String name, {String? id}) {
     final draft = activeDraft;
-    if (draft == null || !courseControlsAvailable) return false;
+    if (saving || draft == null || !courseControlsAvailable) return false;
     final course = OrderCourse(id: id ?? createLocalId(), name: name.trim());
+    if (id != null &&
+        editingOrder?.courses.any((value) => value.id == id) == true) {
+      return false;
+    }
     if (id != null && !draft.courses.any((value) => value.id == id)) {
       return false;
     }
@@ -238,11 +285,13 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void moveCourse(String id, int direction) {
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !courseControlsAvailable ||
         ![-1, 1].contains(direction)) {
       return;
     }
+    if (editingOrder != null) return;
     final courses = [...draft.courses];
     final index = courses.indexWhere((course) => course.id == id);
     final destination = index + direction;
@@ -255,8 +304,9 @@ class OrderWorkspaceController extends ChangeNotifier {
   }
 
   void removeCourse(String id) {
+    if (editingOrder?.courses.any((course) => course.id == id) == true) return;
     final draft = activeDraft;
-    if (draft == null || !courseControlsAvailable) return;
+    if (saving || draft == null || !courseControlsAvailable) return;
     _replaceActive(
       draft.copyWith(
         courses: draft.courses.where((course) => course.id != id).toList(),
@@ -272,7 +322,8 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setLineCourse(String lineId, String? courseId) {
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !courseControlsAvailable ||
         (courseId != null &&
             !draft.courses.any((course) => course.id == courseId))) {
@@ -294,7 +345,8 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void setPreparationNote(String lineId, String note) {
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !featureSettings.preparationNotesEnabled ||
         note.length > 300) {
       return;
@@ -315,7 +367,7 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   void removeLine(String lineId) {
     final draft = activeDraft;
-    if (draft == null) return;
+    if (saving || draft == null) return;
     _replaceActive(
       draft.copyWith(
         updatedAt: DateTime.now().toUtc(),
@@ -325,8 +377,10 @@ class OrderWorkspaceController extends ChangeNotifier {
   }
 
   void setReference(String reference) {
+    if (editingOrder != null) return;
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !featureSettings.orderReferenceEnabled ||
         reference.length > 80) {
       return;
@@ -337,8 +391,10 @@ class OrderWorkspaceController extends ChangeNotifier {
   }
 
   void setOrderNote(String note) {
+    if (editingOrder != null) return;
     final draft = activeDraft;
-    if (draft == null ||
+    if (saving ||
+        draft == null ||
         !featureSettings.orderNotesEnabled ||
         note.length > 500) {
       return;
@@ -383,32 +439,35 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   Future<SavedTicket?> saveActiveTicket({required String heading}) async {
     final draft = activeDraft;
-    if (draft == null || draft.lines.isEmpty) return null;
-    try {
-      await flushWrites();
-    } catch (_) {
-      return null;
-    }
-    final features = featureSettings;
-    final ticketDraft = draft.copyWith(
-      clearActiveCourse: true,
-      reference: features.orderReferenceEnabled ? draft.reference : '',
-      orderNote: features.orderNotesEnabled ? draft.orderNote : '',
-      lines: [
-        for (final line in draft.lines)
-          features.preparationNotesEnabled
-              ? line
-              : line.copyWith(preparationNote: ''),
-      ],
-    );
+    if (saving || draft == null || draft.lines.isEmpty) return null;
     SavedTicket? ticket;
     final success = await _perform(() async {
+      await flushWrites();
+      final features = featureSettings;
+      final ticketDraft = draft.copyWith(
+        clearActiveCourse: true,
+        reference:
+            draft.managedOrderId != null || features.orderReferenceEnabled
+            ? draft.reference
+            : '',
+        orderNote: draft.managedOrderId != null || features.orderNotesEnabled
+            ? draft.orderNote
+            : '',
+        lines: [
+          for (final line in draft.lines)
+            features.preparationNotesEnabled
+                ? line
+                : line.copyWith(preparationNote: ''),
+        ],
+      );
       ticket = await _repository.convertDraftToTicket(
         ticketDraft,
         heading: heading,
+        keepOpen: features.managedOrdersEnabled,
       );
       drafts = await _repository.loadDrafts();
       tickets = await _repository.loadTickets();
+      managedOrders = await _repository.loadManagedOrders();
       nextOrderNumber = await _repository.loadNextOrderNumber();
       if (drafts.isEmpty) {
         var replacement = await _repository.createDraft();

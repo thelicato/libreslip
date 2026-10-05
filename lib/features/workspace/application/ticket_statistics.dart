@@ -38,8 +38,11 @@ class TicketStatistics {
       if (start != null && createdAt.isBefore(start)) continue;
       if (endExclusive != null && !createdAt.isBefore(endExclusive)) continue;
       ticketCount++;
-      itemQuantity += ticket.itemCount;
-      for (final line in ticket.lines) {
+      itemQuantity += ticket.printLines.fold(
+        0,
+        (sum, line) => sum + line.quantity,
+      );
+      for (final line in ticket.printLines) {
         final key = _SnapshotItemKey(line.catalogueItemId, line.name);
         quantities.update(
           key,
