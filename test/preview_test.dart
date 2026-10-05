@@ -17,6 +17,7 @@ import 'package:libreslip/features/networking/domain/server_security.dart';
 import 'package:libreslip/features/networking/domain/server_transport.dart';
 import 'package:libreslip/features/networking/domain/network_models.dart';
 import 'package:libreslip/features/networking/domain/network_protocol.dart';
+import 'package:libreslip/features/networking/domain/order_progress.dart';
 import 'package:libreslip/features/networking/domain/server_inbox_models.dart';
 import 'package:libreslip/features/portability/application/portability_controller.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
@@ -262,6 +263,48 @@ void main() {
         ThemeMode.light,
         5,
       ),
+      (
+        'managed-progress-sync-tablet-en',
+        const Size(1100, 1300),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-progress-sync-conflict-phone-it',
+        const Size(520, 1500),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-progress-sync-conflict-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-progress-sync-conflict-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-progress-sync-unsupported-phone-it',
+        const Size(520, 1300),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-progress-sync-success-tablet-en',
+        const Size(1100, 1300),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
       ('items-tablet-it', const Size(1100, 1000), 'it', ThemeMode.dark, 1),
       ('tickets-tablet-en', const Size(1100, 1000), 'en', ThemeMode.light, 3),
       (
@@ -353,13 +396,15 @@ void main() {
       final networking = NetworkModeController(environment.repository);
       ServerInboxController? inbox;
       await networking.load();
+      final progressTransport = _FakeClientTransport();
       final clientDelivery = ClientDeliveryController(
         environment.repository,
         _MemoryClientSecrets(),
-        _FakeClientTransport(),
+        progressTransport,
       );
       await clientDelivery.load();
-      if (name == 'client-server-settings-phone-en') {
+      if (name == 'client-server-settings-phone-en' ||
+          name.contains('progress-sync')) {
         await clientDelivery.pair(
           configuration: networking.configuration!,
           address: '192.168.1.42:5119',
@@ -572,7 +617,8 @@ void main() {
       if (managedPreview && (page == 2 || page == 3)) {
         await orders.saveActiveTicket(heading: 'Corner & Co.');
         if (name != 'managed-active-phone-it-large-text' &&
-            !name.contains('delivery-active')) {
+            !name.contains('delivery-active') &&
+            !name.contains('progress-sync')) {
           await orders.beginAddition(orders.managedOrders.single.id);
           orders.saveCourse(language == 'it' ? 'Bevande' : 'Drinks');
           await orders.saveItem(
@@ -617,6 +663,31 @@ void main() {
           expectedQuantity: 2,
         );
       }
+      if (name.contains('progress-sync')) {
+        final order = orders.managedOrders.single;
+        progressTransport.progressOrder = order;
+        progressTransport.unsupportedProgress = name.contains('unsupported');
+        if (name.contains('conflict')) {
+          progressTransport.progressRevision = 1;
+          progressTransport.progressQuantities = {
+            for (final line in order.lines)
+              line.id: line == order.lines.first ? 2 : 0,
+          };
+          await orders.setLineDelivered(
+            order.id,
+            order.lines.first.id,
+            1,
+            expectedQuantity: 0,
+          );
+        } else if (name.contains('success')) {
+          await orders.setLineDelivered(
+            order.id,
+            order.lines.first.id,
+            1,
+            expectedQuantity: 0,
+          );
+        }
+      }
       final boundary = GlobalKey();
       await tester.pumpWidget(
         RepaintBoundary(
@@ -646,18 +717,49 @@ void main() {
       }
       if (managedPreview && page == 2) {
         if (name == 'managed-active-phone-it-large-text' ||
-            name.contains('delivery-active')) {
+            name.contains('delivery-active') ||
+            name.contains('progress-sync')) {
           final active = find.byKey(const ValueKey('active-orders'));
           await tester.ensureVisible(active);
           await tester.pumpAndSettle();
           await tester.tap(active);
           await tester.pumpAndSettle();
-          if (name.contains('delivery-active')) {
+          if (name.contains('delivery-active') ||
+              name.contains('progress-sync')) {
             final expansion = find.byType(ExpansionTile).last;
             await tester.ensureVisible(expansion);
             await tester.tap(expansion);
             await tester.pumpAndSettle();
-            if (size.width < 760 || size.height < 600) {
+            if (name.contains('progress-sync') &&
+                (name.contains('conflict') ||
+                    name.contains('unsupported') ||
+                    name.contains('success'))) {
+              final sync = find.byKey(
+                ValueKey('sync-progress-${orders.managedOrders.single.id}'),
+              );
+              await tester.ensureVisible(sync);
+              await tester.pumpAndSettle();
+              await tester.tap(sync);
+              await tester.pumpAndSettle();
+            }
+            if (name.contains('progress-sync') &&
+                (size.width < 760 || size.height < 600)) {
+              final target = name.contains('conflict')
+                  ? find.byKey(
+                      ValueKey(
+                        'progress-use-server-${orders.managedOrders.single.id}',
+                      ),
+                    )
+                  : find.byKey(
+                      ValueKey(
+                        'sync-progress-${orders.managedOrders.single.id}',
+                      ),
+                    );
+              await tester.ensureVisible(target);
+              await tester.pumpAndSettle();
+            }
+            if (!name.contains('progress-sync') &&
+                (size.width < 760 || size.height < 600)) {
               await tester.ensureVisible(
                 find.byKey(
                   ValueKey(
@@ -850,7 +952,57 @@ class _MemoryClientSecrets implements ClientSecretStore {
   }
 }
 
-class _FakeClientTransport implements ClientServerTransport {
+class _FakeClientTransport
+    implements ClientServerTransport, OrderProgressTransport {
+  ManagedOrder? progressOrder;
+  bool unsupportedProgress = false;
+  int progressRevision = 0;
+  Map<String, int> progressQuantities = {};
+  final _progressReceipts = <String, OrderProgressSnapshot>{};
+
+  OrderProgressSnapshot get _progressSnapshot {
+    final order = progressOrder!;
+    return OrderProgressSnapshot(
+      clientId: order.clientInstallationId!,
+      orderId: order.id,
+      orderRevision: order.serverRevision,
+      progressRevision: progressRevision,
+      quantities: {
+        for (final line in order.lines.where((line) => line.sendToServer))
+          line.id: progressQuantities[line.id] ?? 0,
+      },
+    );
+  }
+
+  @override
+  Future<OrderProgressSnapshot> fetchProgress({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required String orderId,
+  }) async {
+    if (unsupportedProgress) {
+      throw const ClientTransportException('unsupported_progress');
+    }
+    return _progressSnapshot;
+  }
+
+  @override
+  Future<OrderProgressSnapshot> changeProgress({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderProgressChange change,
+  }) async {
+    final previous = _progressReceipts[change.operationId];
+    if (previous != null) return previous;
+    progressQuantities = change.quantities;
+    progressRevision++;
+    final result = _progressSnapshot;
+    _progressReceipts[change.operationId] = result;
+    return result;
+  }
+
   @override
   Future<PairServerResult> pair(PairServerRequest request) async {
     final now = DateTime.utc(2026, 9, 25, 8);

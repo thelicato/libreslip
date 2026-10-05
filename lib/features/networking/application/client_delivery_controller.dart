@@ -9,6 +9,9 @@ import '../domain/client_delivery_models.dart';
 import '../domain/client_security.dart';
 import '../domain/client_transport.dart';
 import '../domain/network_models.dart';
+import '../domain/order_progress.dart';
+import '../../orders/domain/order_models.dart';
+import 'order_progress_synchroniser.dart';
 
 class ClientDeliveryController extends ChangeNotifier {
   ClientDeliveryController(
@@ -155,6 +158,23 @@ class ClientDeliveryController extends ChangeNotifier {
       unpairing = false;
       notifyListeners();
     }
+  }
+
+  Future<void> synchroniseProgress(
+    ManagedOrder order, {
+    OrderProgressSnapshot? conflict,
+    ProgressResolution? resolution,
+  }) async {
+    final store = _store;
+    final transport = _transport;
+    if (store is! ClientProgressStore || transport is! OrderProgressTransport) {
+      throw const ProgressSyncException('unsupported_progress');
+    }
+    await OrderProgressSynchroniser(
+      store as ClientProgressStore,
+      _secrets,
+      transport as OrderProgressTransport,
+    ).synchronise(order, conflict: conflict, resolution: resolution);
   }
 
   Future<void> ticketPrinted(String ticketId) async {

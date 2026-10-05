@@ -1,5 +1,22 @@
 # Validation evidence
 
+## Explicit paired delivery progress, 5 October 2026
+
+Validated step 4b of optional order management with `VERSION` unchanged at 1.6.0.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | Formatting passed for all 95 Dart files and `flutter analyze --no-pub` reported no issues. `pubspec.lock` and `VERSION` are unchanged. |
+| Automated regression | All 166 active tests passed; the normal run skipped only opt-in render capture. The 33 targeted sync, dialog and archive tests also passed. Existing migrations, interrupted printing, Server delivery and restore checks passed in the full suite. |
+| Explicit exchange and immutability | Pull, push, partial delivery, completion and undo preserved immutable ticket contents, revision numbers, print jobs and Local only counts. Shared additions waited for receipt. Original Server routing remained fixed; local orders and orders restored to a different installation retained offline operation. A newer Server content revision was rejected. |
+| Conflict and interruption | Concurrent differences required explicit whole-shared-order Client or Server choice; cancellation retained edits and stale choices refreshed the conflict. Lost acknowledgement survived SQLite reopen and retried the same operation without overwriting later Server undo. New offline edits during recovery retained their generation and used a new operation when appropriate. Server revision races and conflicting nonce reuse were rejected atomically. |
+| Migration, archives and rollback | Schema 13 migration retained progress and conservatively marked all legacy line identities edited. Schema 14 backups preserved zero-valued undo intent while excluding sync baselines and pending operations. Fresh-install restore and invalid edit metadata checks passed. Failed settings replacement and simulated interrupted restore recovered the exact pending operation from the private journal; invalid private recovery rolled back atomically. |
+| Pinned HTTPS | Real loopback TLS tests verified authenticated progress, Client-scoped access and live board refresh. Older pinned Servers received no progress GET or POST; explicit retry after advertising support succeeded. No automatic progress networking was introduced. |
+| Responsive and localised rendering | Forty-eight captures passed framework and missed-tap checks. Inspected English tablet sync and success, Italian phone conflict and unsupported-Server feedback, Italian 320-pixel doubled text and English landscape conflict choices. Actual Active orders dialog tests exercised sync, cancellation and resolution in English, Italian and large text. |
+| Android preview APK | Fresh debug APK built as 1.6.0, build 1, `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle APK outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, offline cold launch, permission-denial, Android process-death or printer test was performed. Host SQLite, TLS and widget checks do not establish physical-device behaviour or paper output. |
+| Compatibility and scope | Optional managed orders remain disabled by default. Schema 14 accepts portable schemas 5 through 13; configuration document version 3 and order envelope versions 1, 2 and 3 remain unchanged. Progress protocol version 1 is optional and explicit. Prices and estimated totals remain step 5. |
+
 ## Optional per-item delivery on each device, 5 October 2026
 
 Validated step 4a of optional order management with the unchanged LibreSlip `VERSION` value 1.6.0.
@@ -93,7 +110,7 @@ Validated on 26 September 2026 for LibreSlip 1.5.0, Android application identifi
 - The Android foreground service and retained-engine lifecycle compile and have host lifecycle coverage, but locked-screen receipt has not yet been verified on a physical Android device. Force-stop, process termination or device restart stops reception until LibreSlip is opened in Server mode again.
 - Server mode supports manual IPv4 address entry. There is no automatic discovery, boot start, hosted relay or remote-network support.
 - Networking tables and pairing secrets are outside the archive format. Moving data to another device requires fresh pairing.
-- Server Received or Done state is not synchronised back to the Client. Deleting one or all Client tickets leaves durable delivery records and Server copies untouched; per-ticket delivery status is no longer available from history after the local ticket is deleted.
+- Ordinary Server Received or Done state is not synchronised back to the Client. Managed orders support explicit delivery-count synchronisation; Client closure remains separate from Server completion. Deleting one or all Client tickets leaves durable delivery records and Server copies untouched; per-ticket delivery status is no longer available from history after the local ticket is deleted.
 - The Android document picker and share sheet compile into the release and have automated cancellation and state coverage, but the latest validation did not repeat every platform-owned destination flow manually.
 - USB printing is not implemented. The NETUM Classic SPP protocol does not provide battery percentage.
 - Bluetooth Classic does not provide a universally reliable side-effect-free remote liveness probe. The 15-second monitor detects Bluetooth changes and socket failures, but some printer power or range losses may only appear after Android closes the socket or the next write fails.

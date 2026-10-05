@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 
 import '../../orders/data/sqlite_order_repository.dart';
 import '../../orders/domain/order_models.dart';
+import '../../networking/domain/order_progress.dart';
 import '../../settings/data/settings_repository.dart';
 import '../../settings/domain/app_settings.dart';
 import '../domain/portability_models.dart';
@@ -288,7 +289,16 @@ class PortabilityService {
           if (snapshot is! Map<String, dynamic>) {
             throw const FormatException('Invalid recovery database');
           }
-          await _orders.replaceWithPortableSnapshot(snapshot);
+          final progress = value['progressSync'];
+          if (progress != null && _orders is ProgressRecoveryStore) {
+            await (_orders as ProgressRecoveryStore)
+                .replaceProgressRecoverySnapshot({
+                  'database': snapshot,
+                  'progressSync': progress,
+                });
+          } else {
+            await _orders.replaceWithPortableSnapshot(snapshot);
+          }
         } else {
           await _orders.saveFeatureSettings(_parseFeatures(features));
         }
@@ -308,8 +318,15 @@ class PortabilityService {
   Future<void> restore(ImportPreview preview) async {
     final oldSettings = await _settings.load() ?? const AppSettings();
     final oldFeatures = await _orders.loadFeatureSettings();
+    final recovery =
+        preview.kind == PortableArchiveKind.fullBackup &&
+            _orders is ProgressRecoveryStore
+        ? await (_orders as ProgressRecoveryStore)
+              .createProgressRecoverySnapshot()
+        : null;
     final oldSnapshot = preview.kind == PortableArchiveKind.fullBackup
-        ? await _orders.createPortableSnapshot()
+        ? ((recovery?['database'] as Map<String, Object?>?) ??
+              await _orders.createPortableSnapshot())
         : null;
     Directory? stagedDirectory;
     File? recoveryJournal;
@@ -326,6 +343,7 @@ class PortabilityService {
         oldSettings: oldSettings,
         oldFeatures: oldFeatures,
         oldSnapshot: oldSnapshot,
+        progressSync: recovery?['progressSync'],
         stagedDirectory: stagedDirectory.path,
       );
       final configuration =
@@ -368,7 +386,12 @@ class PortabilityService {
     } catch (error) {
       try {
         if (databaseChanged && oldSnapshot != null) {
-          await _orders.replaceWithPortableSnapshot(oldSnapshot);
+          if (recovery != null && _orders is ProgressRecoveryStore) {
+            await (_orders as ProgressRecoveryStore)
+                .replaceProgressRecoverySnapshot(recovery);
+          } else {
+            await _orders.replaceWithPortableSnapshot(oldSnapshot);
+          }
         } else if (featuresChanged) {
           await _orders.saveFeatureSettings(oldFeatures);
         }
@@ -393,6 +416,7 @@ class PortabilityService {
     required AppSettings oldSettings,
     required OrderFeatureSettings oldFeatures,
     required Map<String, Object?>? oldSnapshot,
+    Object? progressSync,
     required String stagedDirectory,
   }) async {
     final journal = File(p.join(support.path, 'portability_recovery.json'));
@@ -409,6 +433,7 @@ class PortabilityService {
         'managedOrdersEnabled': oldFeatures.managedOrdersEnabled,
       },
       'database': oldSnapshot,
+      'progressSync': ?progressSync,
       'stagedDirectory': stagedDirectory,
     };
     await temporary.writeAsString(jsonEncode(document), flush: true);

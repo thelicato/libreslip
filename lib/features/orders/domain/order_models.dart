@@ -301,6 +301,8 @@ class ManagedOrder {
     this.clientInstallationId,
     this.serverRevision = 0,
     this.deliveredQuantities = const {},
+    this.changedDeliveryIds = const {},
+    this.deliveryEditRevision = 0,
   });
   final String id;
   final int number;
@@ -317,6 +319,8 @@ class ManagedOrder {
   final String? clientInstallationId;
   final int serverRevision;
   final Map<String, int> deliveredQuantities;
+  final Set<String> changedDeliveryIds;
+  final int deliveryEditRevision;
   int deliveredQuantity(String lineId) => deliveredQuantities[lineId] ?? 0;
   int get deliveredCount => deliveredQuantities.values.fold(0, (a, b) => a + b);
   int get outstandingCount => itemCount - deliveredCount;
@@ -410,4 +414,19 @@ Map<String, int> decodeDeliveryProgress(
     result[entry.key as String] = entry.value as int;
   }
   return Map.unmodifiable(result);
+}
+
+Set<String> decodeChangedDeliveryIds(Object? source, List<TicketLine> lines) {
+  if (source is! String || source.length > 32768) {
+    throw const FormatException('Invalid changed delivery inventory');
+  }
+  final values = jsonDecode(source);
+  final ids = lines.map((line) => line.id).toSet();
+  if (values is! List ||
+      values.length > ids.length ||
+      values.any((id) => id is! String || !ids.contains(id)) ||
+      values.toSet().length != values.length) {
+    throw const FormatException('Invalid changed delivery inventory');
+  }
+  return Set.unmodifiable(values.cast<String>());
 }

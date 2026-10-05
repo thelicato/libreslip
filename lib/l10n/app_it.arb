@@ -569,7 +569,7 @@
   "previouslyCompleted": "Già completato",
   "deliveryWaitingForRevision": "In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.",
   "deliveryProgress": "Avanzamento consegna",
-  "deliveryProgressLocal": "L’avanzamento è salvato su questo dispositivo. Non è ancora condiviso con il dispositivo abbinato.",
+  "deliveryProgressLocal": "L’avanzamento è salvato su questo dispositivo. I Client abbinati possono condividerlo con Sincronizza consegne.",
   "deliveredItems": "Articoli consegnati",
   "deliveryQuantity": "Consegnati: {delivered} · Da consegnare: {outstanding}",
   "deliverOne": "Consegna un articolo: {name}",
@@ -602,5 +602,34 @@
         "type": "String"
       }
     }
-  }
+  },
+  "deliveryProgressOffline": "L’avanzamento è salvato su questo dispositivo. Questo ordine non ha un Server abbinato.",
+  "deliveryProgressManual": "Sincronizza consegne scambia l’avanzamento con il Server originale dell’ordine. Le modifiche offline restano qui fino alla sincronizzazione. Gli articoli Solo locale restano su questo dispositivo.",
+  "progressSync": "Sincronizza consegne",
+  "progressSyncing": "Sincronizzazione consegne…",
+  "progressSynced": "Avanzamento delle consegne sincronizzato.",
+  "progressConflictTitle": "Entrambi i dispositivi hanno modificato le consegne",
+  "progressConflictBody": "Scegli l’avanzamento da conservare per tutti gli articoli condivisi. Gli articoli Solo locale mantengono il loro avanzamento. Annulla conserva le modifiche offline.",
+  "progressDifference": "{name}: questo dispositivo {local}, Server {server}",
+  "progressUseServer": "Usa le consegne del Server",
+  "progressUseClient": "Usa le consegne di questo dispositivo",
+  "progressUnsupported": "Aggiorna il Server originale per sincronizzare le consegne. L’avanzamento locale è salvato.",
+  "progressPairAgain": "Abbina nuovamente questo dispositivo al Server originale dell’ordine e riprova. L’avanzamento locale è salvato.",
+  "progressOrderMissing": "Questo ordine non è disponibile sul Server. Controlla lo stato di invio. Gli ordini eliminati non possono essere sincronizzati.",
+  "progressItemsPending": "Invia le aggiunte attuali al Server prima di sincronizzare le consegne. L’avanzamento locale è salvato.",
+  "progressUnavailable": "Il Server non è disponibile. L’avanzamento locale è salvato. Sincronizza di nuovo quando è raggiungibile.",
+  "@progressDifference": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "local": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "progressServerNewer": "Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine."
 }

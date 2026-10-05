@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/features/networking/domain/client_delivery_models.dart';
+import 'package:libreslip/features/networking/domain/client_transport.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/portability/application/portability_service.dart';
@@ -14,6 +15,8 @@ import 'package:libreslip/features/portability/domain/portability_models.dart';
 import 'package:libreslip/features/settings/data/settings_repository.dart';
 import 'package:libreslip/features/settings/domain/app_settings.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'progress_sync_test.dart';
 
 void main() {
   setUpAll(sqfliteFfiInit);
@@ -293,6 +296,9 @@ void main() {
     expect(await destination.loadNextOrderNumber(), 2);
     expect((await destination.loadManagedOrders()).single.id, managed.id);
     expect((await destination.loadManagedOrders()).single.deliveredCount, 2);
+    expect((await destination.loadManagedOrders()).single.changedDeliveryIds, {
+      managed.lines.single.id,
+    });
     expect(
       (await destination.loadManagedOrders()).single.destinationId,
       isNull,
@@ -403,6 +409,87 @@ void main() {
     },
   );
 
+  test('failed and interrupted restores retain the same pending progress operation', () async {
+    final fixture = await createProgressFixture();
+    addTearDown(fixture.dispose);
+    final progressService = PortabilityService(
+      fixture.client,
+      settings,
+      supportDirectory: () async => support,
+      temporaryDirectory: () async => temporary,
+      appVersion: () => File('VERSION').readAsString(),
+    );
+    final archive = await progressService.createArchive(
+      PortableArchiveKind.fullBackup,
+    );
+    final preview = await progressService.inspectArchive(archive);
+    final archivedDatabase = await fixture.client.createPortableSnapshot();
+    await fixture.local('water', 1);
+    fixture.transport.loseNextAcknowledgement = true;
+    await expectLater(fixture.sync(), throwsA(isA<ClientTransportException>()));
+    final pending = (await fixture.client.loadProgressSyncState(
+      await fixture.order(),
+    )).pending!;
+    settings.failNextSave = true;
+    await expectLater(
+      progressService.restore(preview),
+      throwsA(isA<PortabilityException>()),
+    );
+    expect((await fixture.order()).deliveredQuantity('water'), 1);
+    expect(
+      (await fixture.client.loadProgressSyncState(await fixture.order()))
+          .pending!
+          .operationId,
+      pending.operationId,
+    );
+
+    final recovery = await fixture.client.createProgressRecoverySnapshot();
+    final features = await fixture.client.loadFeatureSettings();
+    final oldSettings = await settings.load() ?? const AppSettings();
+    await fixture.client.replaceWithPortableSnapshot(archivedDatabase);
+    expect(
+      (await fixture.client.loadProgressSyncState(await fixture.order()))
+          .pending,
+      isNull,
+    );
+    final staged = Directory(
+      '${support.path}/restored_assets/progress-interrupted',
+    )..createSync(recursive: true);
+    final journal = File('${support.path}/portability_recovery.json');
+    await journal.writeAsString(
+      jsonEncode({
+        'version': 1,
+        'phase': 'pending',
+        'settings': oldSettings.toJson(),
+        'features': {
+          'orderReferenceEnabled': features.orderReferenceEnabled,
+          'preparationNotesEnabled': features.preparationNotesEnabled,
+          'orderNotesEnabled': features.orderNotesEnabled,
+          'courseGroupsEnabled': features.courseGroupsEnabled,
+          'managedOrdersEnabled': features.managedOrdersEnabled,
+        },
+        ...recovery,
+        'stagedDirectory': staged.path,
+      }),
+      flush: true,
+    );
+    await progressService.recoverInterruptedRestore();
+    expect((await fixture.order()).deliveredQuantity('water'), 1);
+    expect(
+      (await fixture.client.loadProgressSyncState(await fixture.order()))
+          .pending!
+          .operationId,
+      pending.operationId,
+    );
+    expect(journal.existsSync(), isFalse);
+    expect(staged.existsSync(), isFalse);
+    await fixture.sync();
+    expect(fixture.transport.operations, [
+      pending.operationId,
+      pending.operationId,
+    ]);
+  });
+
   test('a failed settings write rolls the database replacement back', () async {
     final originalDraft = await orders.createDraft();
     final originalTicket = await orders.convertDraftToTicket(
@@ -453,6 +540,48 @@ void main() {
       isFalse,
     );
   });
+  test(
+    'invalid sync edit metadata fails preview without changing local progress',
+    () async {
+      final draft = await orders.createDraft();
+      final ticket = await orders.convertDraftToTicket(
+        draft.copyWith(
+          lines: const [TicketLine(id: 'sync-soup', name: 'Soup', quantity: 2)],
+        ),
+        heading: 'Kitchen',
+        keepOpen: true,
+      );
+      await orders.setManagedLineDelivered(
+        ticket.managedOrderId!,
+        'sync-soup',
+        1,
+        expectedQuantity: 0,
+      );
+      final archive = await service.createArchive(
+        PortableArchiveKind.fullBackup,
+      );
+      for (final (key, value) in [
+        ('delivery_changed_ids', '["missing"]'),
+        ('delivery_changed_ids', '["sync-soup","sync-soup"]'),
+        ('delivery_changed_ids', '{}'),
+        ('delivery_changed_ids', null),
+        ('delivery_edit_revision', -1),
+        ('delivery_edit_revision', '1'),
+        ('delivery_edit_revision', 9007199254740992),
+      ]) {
+        final broken = _rewriteDatabase(archive, (snapshot) {
+          ((snapshot['tables'] as Map)['managed_orders'] as List).single[key] =
+              value;
+        });
+        await expectLater(
+          service.inspectArchive(broken),
+          throwsA(isA<PortabilityException>()),
+        );
+        expect((await orders.loadManagedOrders()).single.deliveredCount, 1);
+      }
+    },
+  );
+
   test('invalid delivered quantities fail archive preview with current progress intact', () async {
     final draft = await orders.createDraft();
     final ticket = await orders.convertDraftToTicket(

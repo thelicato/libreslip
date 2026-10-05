@@ -1449,7 +1449,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryProgressLocal =>
-      'L’avanzamento è salvato su questo dispositivo. Non è ancora condiviso con il dispositivo abbinato.';
+      'L’avanzamento è salvato su questo dispositivo. I Client abbinati possono condividerlo con Sincronizza consegne.';
 
   @override
   String get deliveredItems => 'Articoli consegnati';
@@ -1486,6 +1486,66 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get clientDeliveryRules =>
       'Gli ordini consegnati restano aperti per aggiunte finché non li chiudi.';
+
+  @override
+  String get deliveryProgressOffline =>
+      'L’avanzamento è salvato su questo dispositivo. Questo ordine non ha un Server abbinato.';
+
+  @override
+  String get deliveryProgressManual =>
+      'Sincronizza consegne scambia l’avanzamento con il Server originale dell’ordine. Le modifiche offline restano qui fino alla sincronizzazione. Gli articoli Solo locale restano su questo dispositivo.';
+
+  @override
+  String get progressSync => 'Sincronizza consegne';
+
+  @override
+  String get progressSyncing => 'Sincronizzazione consegne…';
+
+  @override
+  String get progressSynced => 'Avanzamento delle consegne sincronizzato.';
+
+  @override
+  String get progressConflictTitle =>
+      'Entrambi i dispositivi hanno modificato le consegne';
+
+  @override
+  String get progressConflictBody =>
+      'Scegli l’avanzamento da conservare per tutti gli articoli condivisi. Gli articoli Solo locale mantengono il loro avanzamento. Annulla conserva le modifiche offline.';
+
+  @override
+  String progressDifference(String name, String local, String server) {
+    return '$name: questo dispositivo $local, Server $server';
+  }
+
+  @override
+  String get progressUseServer => 'Usa le consegne del Server';
+
+  @override
+  String get progressUseClient => 'Usa le consegne di questo dispositivo';
+
+  @override
+  String get progressUnsupported =>
+      'Aggiorna il Server originale per sincronizzare le consegne. L’avanzamento locale è salvato.';
+
+  @override
+  String get progressPairAgain =>
+      'Abbina nuovamente questo dispositivo al Server originale dell’ordine e riprova. L’avanzamento locale è salvato.';
+
+  @override
+  String get progressOrderMissing =>
+      'Questo ordine non è disponibile sul Server. Controlla lo stato di invio. Gli ordini eliminati non possono essere sincronizzati.';
+
+  @override
+  String get progressItemsPending =>
+      'Invia le aggiunte attuali al Server prima di sincronizzare le consegne. L’avanzamento locale è salvato.';
+
+  @override
+  String get progressUnavailable =>
+      'Il Server non è disponibile. L’avanzamento locale è salvato. Sincronizza di nuovo quando è raggiungibile.';
+
+  @override
+  String get progressServerNewer =>
+      'Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

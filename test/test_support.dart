@@ -84,10 +84,27 @@ Future<void> removeManagedColumnsForLegacyFixture(Database database) async {
 }
 
 Future<void> removeDeliveryColumnsForLegacyFixture(Database database) async {
+  await removeProgressSyncColumnsForLegacyFixture(database);
   await database.execute(
     'ALTER TABLE managed_orders DROP COLUMN delivery_progress_json',
   );
   await database.execute(
     'ALTER TABLE server_order_lines DROP COLUMN delivered_quantity',
+  );
+}
+
+Future<void> removeProgressSyncColumnsForLegacyFixture(
+  Database database,
+) async {
+  await database.execute('DROP TABLE client_progress_sync');
+  await database.execute('DROP TABLE server_progress_receipts');
+  await database.execute(
+    'ALTER TABLE managed_orders DROP COLUMN delivery_changed_ids',
+  );
+  await database.execute(
+    'ALTER TABLE managed_orders DROP COLUMN delivery_edit_revision',
+  );
+  await database.execute(
+    'ALTER TABLE server_orders DROP COLUMN progress_revision',
   );
 }

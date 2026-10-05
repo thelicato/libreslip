@@ -7,11 +7,13 @@ import 'package:crypto/crypto.dart';
 import '../domain/client_delivery_models.dart';
 import '../domain/client_transport.dart';
 import '../domain/network_protocol.dart';
+import '../domain/order_progress.dart';
 
-class PinnedHttpsClient implements ClientServerTransport {
+class PinnedHttpsClient
+    implements ClientServerTransport, OrderProgressTransport {
   const PinnedHttpsClient();
 
-  static const _responseLimit = 16384;
+  static const _responseLimit = 65536;
   static final _fingerprintPattern = RegExp(r'^[0-9a-f]{64}$');
   static final _identifierPattern = RegExp(
     r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$',
@@ -181,6 +183,99 @@ class PinnedHttpsClient implements ClientServerTransport {
       duplicate: body['duplicate']! as bool,
     );
   }
+
+  Future<void> _checkProgressSupport(PairedServer server) async {
+    final status = await _request(
+      server.baseUrl.resolve('/v1/status'),
+      fingerprint: server.certificateFingerprint,
+    );
+    if (status.statusCode != HttpStatus.ok ||
+        status.body['protocol'] != NetworkProtocol.name ||
+        status.body['serverInstallationId'] != server.id) {
+      throw const ClientTransportException('server_identity');
+    }
+    final versions = status.body['progressVersions'];
+    if (versions is! List || !versions.contains(1)) {
+      throw const ClientTransportException('unsupported_progress');
+    }
+  }
+
+  Future<OrderProgressSnapshot> _progressRequest({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required String orderId,
+    OrderProgressChange? change,
+  }) async {
+    if (accessToken.isEmpty ||
+        !_identifierPattern.hasMatch(clientId) ||
+        !_identifierPattern.hasMatch(orderId)) {
+      throw const ClientTransportException('credentials');
+    }
+    await _checkProgressSupport(server);
+    final uri = server.baseUrl.resolve('/v1/progress');
+    final response = await _request(
+      change == null ? uri.replace(queryParameters: {'orderId': orderId}) : uri,
+      fingerprint: server.certificateFingerprint,
+      body: change?.toJson(),
+      headers: {
+        HttpHeaders.authorizationHeader: 'Bearer $accessToken',
+        'X-LibreSlip-Client-Id': clientId,
+      },
+    );
+    if (response.statusCode == HttpStatus.unauthorized ||
+        response.statusCode == HttpStatus.forbidden) {
+      throw const ClientTransportException('unauthorised');
+    }
+    if (response.statusCode == HttpStatus.conflict) {
+      throw const ClientTransportException('conflict');
+    }
+    if (response.statusCode == HttpStatus.notFound) {
+      throw const ClientTransportException('order_missing');
+    }
+    if (response.statusCode != HttpStatus.ok) {
+      throw ClientTransportException(
+        response.statusCode >= 500 ? 'server' : 'rejected',
+      );
+    }
+    final OrderProgressSnapshot snapshot;
+    try {
+      snapshot = OrderProgressSnapshot.fromJson(response.body);
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+    if (snapshot.clientId != clientId || snapshot.orderId != orderId) {
+      throw const ClientTransportException('server_identity');
+    }
+    return snapshot;
+  }
+
+  @override
+  Future<OrderProgressSnapshot> fetchProgress({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required String orderId,
+  }) => _progressRequest(
+    server: server,
+    accessToken: accessToken,
+    clientId: clientId,
+    orderId: orderId,
+  );
+
+  @override
+  Future<OrderProgressSnapshot> changeProgress({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderProgressChange change,
+  }) => _progressRequest(
+    server: server,
+    accessToken: accessToken,
+    clientId: clientId,
+    orderId: change.orderId,
+    change: change,
+  );
 
   Future<_FirstContactResponse> _requestFirstContact(Uri uri) async {
     String? callbackFingerprint;

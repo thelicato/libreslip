@@ -71,6 +71,7 @@ class ServerOrder {
     this.managedOrderId,
     this.revision = 0,
     this.completedRevision = 0,
+    this.progressRevision = 0,
   });
 
   final String id;
@@ -89,6 +90,7 @@ class ServerOrder {
   final String? managedOrderId;
   final int revision;
   final int completedRevision;
+  final int progressRevision;
   final String payloadChecksum;
   final ServerOrderStatus status;
   final DateTime? completedAt;

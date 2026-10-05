@@ -76,6 +76,7 @@ class ComposePageState extends State<ComposePage> {
               draft.managedOrderId != null) ...[
             ManagedOrderComposer(
               controller: widget.controller,
+              delivery: widget.delivery,
               busy: widget.printing.value || widget.controller.saving,
             ),
             const SizedBox(height: 12),

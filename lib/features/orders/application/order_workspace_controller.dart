@@ -115,6 +115,29 @@ class OrderWorkspaceController extends ChangeNotifier {
     }
   });
 
+  /// Holds the editor lock while an explicit progress exchange is in flight.
+  Future<void> exchangeProgress(
+    String orderId,
+    Future<void> Function(ManagedOrder) exchange,
+  ) async {
+    if (saving) throw const OrderStorageException('The workspace is busy.');
+    saving = true;
+    notifyListeners();
+    try {
+      await flushWrites();
+      managedOrders = await _repository.loadManagedOrders();
+      final order = managedOrders.firstWhere((value) => value.id == orderId);
+      await exchange(order);
+    } finally {
+      try {
+        managedOrders = await _repository.loadManagedOrders();
+      } finally {
+        saving = false;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<bool> closeOrder(String id) => _perform(() async {
     await flushWrites();
     await _repository.closeManagedOrder(id);

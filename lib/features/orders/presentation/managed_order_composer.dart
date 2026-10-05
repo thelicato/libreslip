@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
+import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/presentation/progress_sync_controls.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'delivery_progress.dart';
@@ -11,9 +13,11 @@ class ManagedOrderComposer extends StatelessWidget {
     super.key,
     required this.controller,
     this.busy = false,
+    this.delivery,
   });
   final OrderWorkspaceController controller;
   final bool busy;
+  final ClientDeliveryController? delivery;
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +41,10 @@ class ManagedOrderComposer extends StatelessWidget {
                       ? null
                       : () => showDialog<void>(
                           context: context,
-                          builder: (_) =>
-                              _ActiveOrdersDialog(controller: controller),
+                          builder: (_) => _ActiveOrdersDialog(
+                            controller: controller,
+                            delivery: delivery,
+                          ),
                         ),
                   icon: const Icon(Icons.playlist_add_rounded),
                   label: Text(l.activeOrders),
@@ -63,7 +69,11 @@ class ManagedOrderComposer extends StatelessWidget {
                 tilePadding: EdgeInsets.zero,
                 title: Text(l.previouslyOrdered),
                 children: [
-                  _OrderContents(order: order, controller: controller),
+                  _OrderContents(
+                    order: order,
+                    controller: controller,
+                    delivery: delivery,
+                  ),
                 ],
               ),
               Align(
@@ -99,8 +109,9 @@ class ManagedOrderComposer extends StatelessWidget {
 }
 
 class _ActiveOrdersDialog extends StatelessWidget {
-  const _ActiveOrdersDialog({required this.controller});
+  const _ActiveOrdersDialog({required this.controller, this.delivery});
   final OrderWorkspaceController controller;
+  final ClientDeliveryController? delivery;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -147,6 +158,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                               _OrderContents(
                                 order: order,
                                 controller: controller,
+                                delivery: delivery,
                               ),
                             ],
                           ),
@@ -218,9 +230,14 @@ class _ActiveOrdersDialog extends StatelessWidget {
 }
 
 class _OrderContents extends StatelessWidget {
-  const _OrderContents({required this.order, required this.controller});
+  const _OrderContents({
+    required this.order,
+    required this.controller,
+    this.delivery,
+  });
   final ManagedOrder order;
   final OrderWorkspaceController controller;
+  final ClientDeliveryController? delivery;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +245,15 @@ class _OrderContents extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l.deliveryProgressLocal),
+        if (order.destinationId != null && delivery != null)
+          ProgressSyncControls(
+            key: ValueKey('progress-sync-controls-${order.id}'),
+            order: order,
+            workspace: controller,
+            delivery: delivery!,
+          )
+        else
+          Text(l.deliveryProgressOffline),
         const SizedBox(height: 8),
         Text(l.clientDeliveryRules),
         const SizedBox(height: 12),

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../domain/network_models.dart';
 import '../domain/network_protocol.dart';
+import '../domain/order_progress.dart';
 import '../domain/server_inbox_models.dart';
 import '../domain/server_security.dart';
 import '../domain/server_transport.dart';
@@ -19,6 +20,7 @@ class LocalHttpsServer implements ServerHost {
   static const _pairPath = '/v1/pair';
   static const _ordersPath = '/v1/orders';
   static const _statusPath = '/v1/status';
+  static const _progressPath = '/v1/progress';
   static const _clientHeader = 'x-libreslip-client-id';
   static const _maxPairingBytes = 4096;
 
@@ -92,6 +94,7 @@ class LocalHttpsServer implements ServerHost {
             NetworkProtocol.groupedVersion,
             NetworkProtocol.managedVersion,
           ],
+          'progressVersions': [if (_store is ServerProgressStore) 1],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,
           'certificateFingerprint': identity.certificateFingerprint,
@@ -105,6 +108,11 @@ class LocalHttpsServer implements ServerHost {
           configuration: configuration,
           requestPairingApproval: requestPairingApproval,
         );
+        return;
+      }
+      if (request.uri.path == _progressPath &&
+          (request.method == 'GET' || request.method == 'POST')) {
+        await _progress(request, onOrderReceived: onOrderReceived);
         return;
       }
       if (request.method == 'POST' && request.uri.path == _ordersPath) {
@@ -124,6 +132,8 @@ class LocalHttpsServer implements ServerHost {
         HttpStatus.badRequest,
         'invalid_request',
       );
+    } on ProgressSyncException {
+      await _writeError(request.response, HttpStatus.notFound, 'order_missing');
     } on ServerOrderConflictException {
       await _writeError(
         request.response,
@@ -215,34 +225,8 @@ class LocalHttpsServer implements ServerHost {
     required void Function() onOrderReceived,
   }) async {
     _requireJson(request);
-    final clientId = request.headers.value(_clientHeader);
-    final authorization = request.headers.value(
-      HttpHeaders.authorizationHeader,
-    );
-    if (clientId == null ||
-        !_identifierPattern.hasMatch(clientId) ||
-        authorization == null ||
-        !authorization.startsWith('Bearer ')) {
-      await _writeError(
-        request.response,
-        HttpStatus.unauthorized,
-        'unauthorised',
-      );
-      return;
-    }
-    final client = await _store.findPairedClient(clientId);
-    final expectedHash = await _secrets.readClientTokenHash(clientId);
-    final suppliedHash = hashAccessToken(authorization.substring(7));
-    if (client == null ||
-        expectedHash == null ||
-        !_constantTimeEquals(expectedHash, suppliedHash)) {
-      await _writeError(
-        request.response,
-        HttpStatus.unauthorized,
-        'unauthorised',
-      );
-      return;
-    }
+    final clientId = await _authenticateClient(request);
+    if (clientId == null) return;
     final source = await _readBody(request, NetworkProtocol.maxEnvelopeBytes);
     final envelope = OrderDeliveryEnvelope.fromJsonString(source);
     if (envelope.clientInstallationId != clientId) {
@@ -269,6 +253,78 @@ class LocalHttpsServer implements ServerHost {
         'duplicate': receipt.wasDuplicate,
       },
     );
+  }
+
+  Future<String?> _authenticateClient(HttpRequest request) async {
+    final clientId = request.headers.value(_clientHeader);
+    final authorization = request.headers.value(
+      HttpHeaders.authorizationHeader,
+    );
+    if (clientId == null ||
+        !_identifierPattern.hasMatch(clientId) ||
+        authorization == null ||
+        !authorization.startsWith('Bearer ')) {
+      await _writeError(
+        request.response,
+        HttpStatus.unauthorized,
+        'unauthorised',
+      );
+      return null;
+    }
+    final client = await _store.findPairedClient(clientId);
+    final expectedHash = await _secrets.readClientTokenHash(clientId);
+    final suppliedHash = hashAccessToken(authorization.substring(7));
+    if (client == null ||
+        expectedHash == null ||
+        !_constantTimeEquals(expectedHash, suppliedHash)) {
+      await _writeError(
+        request.response,
+        HttpStatus.unauthorized,
+        'unauthorised',
+      );
+      return null;
+    }
+    return clientId;
+  }
+
+  Future<void> _progress(
+    HttpRequest request, {
+    required void Function() onOrderReceived,
+  }) async {
+    final clientId = await _authenticateClient(request);
+    if (clientId == null) return;
+    final store = _store;
+    if (store is! ServerProgressStore) {
+      await _writeError(
+        request.response,
+        HttpStatus.notFound,
+        'unsupported_progress',
+      );
+      return;
+    }
+    OrderProgressSnapshot result;
+    if (request.method == 'GET') {
+      final orderId = request.uri.queryParameters['orderId'];
+      if (request.uri.queryParameters.length != 1 ||
+          orderId == null ||
+          !_identifierPattern.hasMatch(orderId)) {
+        throw const FormatException('Invalid progress identity');
+      }
+      result = await (store as ServerProgressStore).loadServerProgress(
+        clientId,
+        orderId,
+      );
+    } else {
+      _requireJson(request);
+      final source = await _readBody(request, NetworkProtocol.maxEnvelopeBytes);
+      final change = OrderProgressChange.fromJson(jsonDecode(source));
+      result = await (store as ServerProgressStore).applyServerProgress(
+        clientId,
+        change,
+      );
+      onOrderReceived();
+    }
+    await _writeJson(request.response, HttpStatus.ok, result.toJson());
   }
 
   static void _requireJson(HttpRequest request) {

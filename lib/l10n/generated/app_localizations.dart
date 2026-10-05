@@ -2629,7 +2629,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryProgressLocal.
   ///
   /// In en, this message translates to:
-  /// **'Progress is saved on this device. It is not yet shared with the paired device.'**
+  /// **'Progress is saved on this device. Paired Clients can exchange it using Sync progress.'**
   String get deliveryProgressLocal;
 
   /// No description provided for @deliveredItems.
@@ -2685,6 +2685,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delivered orders stay open for additions until you close them.'**
   String get clientDeliveryRules;
+
+  /// No description provided for @deliveryProgressOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress is saved on this device. This order has no paired Server.'**
+  String get deliveryProgressOffline;
+
+  /// No description provided for @deliveryProgressManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync progress exchanges deliveries with this order’s original Server. Offline edits stay here until you sync. Local only items stay on this device.'**
+  String get deliveryProgressManual;
+
+  /// No description provided for @progressSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync progress'**
+  String get progressSync;
+
+  /// No description provided for @progressSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing progress…'**
+  String get progressSyncing;
+
+  /// No description provided for @progressSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery progress synchronised.'**
+  String get progressSynced;
+
+  /// No description provided for @progressConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Both devices changed progress'**
+  String get progressConflictTitle;
+
+  /// No description provided for @progressConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which device’s progress to keep for all shared items. Local only items keep their progress. Cancel keeps your offline edits.'**
+  String get progressConflictBody;
+
+  /// No description provided for @progressDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: this device {local}, Server {server}'**
+  String progressDifference(String name, String local, String server);
+
+  /// No description provided for @progressUseServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Server progress'**
+  String get progressUseServer;
+
+  /// No description provided for @progressUseClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this device’s progress'**
+  String get progressUseClient;
+
+  /// No description provided for @progressUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the original Server to support progress synchronisation. Your local progress is saved.'**
+  String get progressUnsupported;
+
+  /// No description provided for @progressPairAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair this device with the order’s original Server again, then retry. Your local progress is saved.'**
+  String get progressPairAgain;
+
+  /// No description provided for @progressOrderMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This order is unavailable on its Server. Check its delivery status. Deleted orders cannot be synchronised.'**
+  String get progressOrderMissing;
+
+  /// No description provided for @progressItemsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Deliver the current order additions to the Server before syncing progress. Your local progress is saved.'**
+  String get progressItemsPending;
+
+  /// No description provided for @progressUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The Server is unavailable. Your local progress is saved. Sync again when it is reachable.'**
+  String get progressUnavailable;
+
+  /// No description provided for @progressServerNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.'**
+  String get progressServerNewer;
 }
 
 class _AppLocalizationsDelegate

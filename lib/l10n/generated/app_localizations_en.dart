@@ -1436,7 +1436,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryProgressLocal =>
-      'Progress is saved on this device. It is not yet shared with the paired device.';
+      'Progress is saved on this device. Paired Clients can exchange it using Sync progress.';
 
   @override
   String get deliveredItems => 'Delivered items';
@@ -1473,6 +1473,65 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientDeliveryRules =>
       'Delivered orders stay open for additions until you close them.';
+
+  @override
+  String get deliveryProgressOffline =>
+      'Progress is saved on this device. This order has no paired Server.';
+
+  @override
+  String get deliveryProgressManual =>
+      'Sync progress exchanges deliveries with this order’s original Server. Offline edits stay here until you sync. Local only items stay on this device.';
+
+  @override
+  String get progressSync => 'Sync progress';
+
+  @override
+  String get progressSyncing => 'Syncing progress…';
+
+  @override
+  String get progressSynced => 'Delivery progress synchronised.';
+
+  @override
+  String get progressConflictTitle => 'Both devices changed progress';
+
+  @override
+  String get progressConflictBody =>
+      'Choose which device’s progress to keep for all shared items. Local only items keep their progress. Cancel keeps your offline edits.';
+
+  @override
+  String progressDifference(String name, String local, String server) {
+    return '$name: this device $local, Server $server';
+  }
+
+  @override
+  String get progressUseServer => 'Use Server progress';
+
+  @override
+  String get progressUseClient => 'Use this device’s progress';
+
+  @override
+  String get progressUnsupported =>
+      'Update the original Server to support progress synchronisation. Your local progress is saved.';
+
+  @override
+  String get progressPairAgain =>
+      'Pair this device with the order’s original Server again, then retry. Your local progress is saved.';
+
+  @override
+  String get progressOrderMissing =>
+      'This order is unavailable on its Server. Check its delivery status. Deleted orders cannot be synchronised.';
+
+  @override
+  String get progressItemsPending =>
+      'Deliver the current order additions to the Server before syncing progress. Your local progress is saved.';
+
+  @override
+  String get progressUnavailable =>
+      'The Server is unavailable. Your local progress is saved. Sync again when it is reachable.';
+
+  @override
+  String get progressServerNewer =>
+      'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

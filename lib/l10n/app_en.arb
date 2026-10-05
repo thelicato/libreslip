@@ -569,7 +569,7 @@
   "previouslyCompleted": "Previously completed",
   "deliveryWaitingForRevision": "Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.",
   "deliveryProgress": "Delivery progress",
-  "deliveryProgressLocal": "Progress is saved on this device. It is not yet shared with the paired device.",
+  "deliveryProgressLocal": "Progress is saved on this device. Paired Clients can exchange it using Sync progress.",
   "deliveredItems": "Delivered items",
   "deliveryQuantity": "Delivered: {delivered} · Outstanding: {outstanding}",
   "deliverOne": "Deliver one {name}",
@@ -602,5 +602,34 @@
         "type": "String"
       }
     }
-  }
+  },
+  "deliveryProgressOffline": "Progress is saved on this device. This order has no paired Server.",
+  "deliveryProgressManual": "Sync progress exchanges deliveries with this order’s original Server. Offline edits stay here until you sync. Local only items stay on this device.",
+  "progressSync": "Sync progress",
+  "progressSyncing": "Syncing progress…",
+  "progressSynced": "Delivery progress synchronised.",
+  "progressConflictTitle": "Both devices changed progress",
+  "progressConflictBody": "Choose which device’s progress to keep for all shared items. Local only items keep their progress. Cancel keeps your offline edits.",
+  "progressDifference": "{name}: this device {local}, Server {server}",
+  "progressUseServer": "Use Server progress",
+  "progressUseClient": "Use this device’s progress",
+  "progressUnsupported": "Update the original Server to support progress synchronisation. Your local progress is saved.",
+  "progressPairAgain": "Pair this device with the order’s original Server again, then retry. Your local progress is saved.",
+  "progressOrderMissing": "This order is unavailable on its Server. Check its delivery status. Deleted orders cannot be synchronised.",
+  "progressItemsPending": "Deliver the current order additions to the Server before syncing progress. Your local progress is saved.",
+  "progressUnavailable": "The Server is unavailable. Your local progress is saved. Sync again when it is reachable.",
+  "@progressDifference": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "local": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "progressServerNewer": "The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order."
 }

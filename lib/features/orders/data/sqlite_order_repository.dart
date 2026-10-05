@@ -7,6 +7,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../networking/domain/client_delivery_models.dart';
 import '../../networking/domain/network_models.dart';
 import '../../networking/domain/network_protocol.dart';
+import '../../networking/domain/order_progress.dart';
 import '../../networking/domain/server_inbox_models.dart';
 import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
@@ -17,11 +18,14 @@ class SqliteOrderRepository
         PrintJobStore,
         NetworkConfigurationStore,
         ClientDeliveryStore,
-        ServerInboxStore {
+        ServerInboxStore,
+        ClientProgressStore,
+        ServerProgressStore,
+        ProgressRecoveryStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 13;
+  static const databaseVersion = 14;
   static const portableSchemaVersions = {
     5,
     6,
@@ -31,6 +35,7 @@ class SqliteOrderRepository
     10,
     11,
     12,
+    13,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -56,6 +61,7 @@ class SqliteOrderRepository
       _database = await _factory.openDatabase(
         path,
         options: OpenDatabaseOptions(
+          singleInstance: path != inMemoryDatabasePath,
           version: databaseVersion,
           onConfigure: (database) async {
             await database.execute('PRAGMA foreign_keys = ON');
@@ -540,6 +546,45 @@ class SqliteOrderRepository
           AND added_revision <= (SELECT completed_revision FROM server_orders WHERE id = order_id)
       ''');
     }
+    if (oldVersion < 14 && newVersion >= 14) {
+      await database.execute(
+        "ALTER TABLE managed_orders ADD COLUMN delivery_changed_ids TEXT NOT NULL DEFAULT '[]' CHECK (length(delivery_changed_ids) <= 32768)",
+      );
+      await database.execute(
+        'ALTER TABLE managed_orders ADD COLUMN delivery_edit_revision INTEGER NOT NULL DEFAULT 0 CHECK (delivery_edit_revision >= 0)',
+      );
+      final orders = await database.query('managed_orders');
+      for (final row in orders) {
+        // Earlier versions did not record zero-valued undo intent. Treat all
+        // retained lines as edited until the first explicit synchronisation.
+        final ids = decodeOrderLines(row['lines_json'])
+            .map((line) => line.id)
+            .toList();
+        await database.update(
+          'managed_orders',
+          {'delivery_changed_ids': jsonEncode(ids)},
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
+      }
+      await database.execute(
+        'ALTER TABLE server_orders ADD COLUMN progress_revision INTEGER NOT NULL DEFAULT 0 CHECK (progress_revision >= 0)',
+      );
+      await database.execute(
+        'UPDATE server_orders SET progress_revision = 1 WHERE managed_order_id IS NOT NULL',
+      );
+      await database.execute('''CREATE TABLE client_progress_sync (
+        order_id TEXT PRIMARY KEY, destination_id TEXT NOT NULL, client_id TEXT NOT NULL,
+        baseline_json TEXT, pending_json TEXT, pending_local_revision INTEGER,
+        FOREIGN KEY (order_id) REFERENCES managed_orders(id) ON DELETE CASCADE
+      )''');
+      await database.execute('''CREATE TABLE server_progress_receipts (
+        client_id TEXT NOT NULL, operation_id TEXT NOT NULL, order_id TEXT NOT NULL,
+        request_json TEXT NOT NULL, applied_json TEXT NOT NULL,
+        PRIMARY KEY (client_id, operation_id),
+        FOREIGN KEY (order_id) REFERENCES server_orders(id) ON DELETE CASCADE
+      )''');
+    }
   }
 
   @override
@@ -585,6 +630,325 @@ class SqliteOrderRepository
       if (error is OrderStorageException) rethrow;
       throw OrderStorageException('Could not save the app mode.', error);
     }
+  }
+
+  @override
+  Future<PairedServer?> loadProgressServer(String serverId) async {
+    final rows = await (await _db).query(
+      'network_destinations',
+      where: 'id = ?',
+      whereArgs: [serverId],
+    );
+    return rows.isEmpty ? null : _pairedServerFromRow(rows.single);
+  }
+
+  static Future<ManagedOrder> _checkProgressScope(
+    DatabaseExecutor tx,
+    ManagedOrder expected, {
+    bool checkEdits = false,
+  }) async {
+    final rows = await tx.query(
+      'managed_orders',
+      where: 'id = ? AND closed_at IS NULL',
+      whereArgs: [expected.id],
+    );
+    if (rows.length != 1) throw const ProgressSyncException('local_changed');
+    final current = _managedFromRow(rows.single);
+    if (current.destinationId != expected.destinationId ||
+        current.clientInstallationId != expected.clientInstallationId ||
+        (checkEdits &&
+            (current.revision != expected.revision ||
+                current.deliveryEditRevision !=
+                    expected.deliveryEditRevision))) {
+      throw const ProgressSyncException('local_changed');
+    }
+    return current;
+  }
+
+  static Future<Map<String, Object?>?> _progressStateRow(
+    DatabaseExecutor tx,
+    ManagedOrder order,
+  ) async {
+    final rows = await tx.query(
+      'client_progress_sync',
+      where: 'order_id = ? AND destination_id = ? AND client_id = ?',
+      whereArgs: [order.id, order.destinationId, order.clientInstallationId],
+    );
+    return rows.firstOrNull;
+  }
+
+  @override
+  Future<ManagedOrder> reloadProgressOrder(ManagedOrder order) async =>
+      _checkProgressScope(await _db, order);
+
+  @override
+  Future<ProgressSyncState> loadProgressSyncState(ManagedOrder order) async {
+    final database = await _db;
+    await _checkProgressScope(database, order);
+    final row = await _progressStateRow(database, order);
+    return ProgressSyncState(
+      baseline: row?['baseline_json'] == null
+          ? null
+          : OrderProgressSnapshot.fromJson(
+              jsonDecode(row!['baseline_json'] as String),
+            ),
+      pending: row?['pending_json'] == null
+          ? null
+          : OrderProgressChange.fromJson(
+              jsonDecode(row!['pending_json'] as String),
+            ),
+    );
+  }
+
+  @override
+  Future<void> savePendingProgress(
+    ManagedOrder order,
+    OrderProgressChange change,
+  ) async {
+    await (await _db).transaction((tx) async {
+      await _checkProgressScope(tx, order, checkEdits: true);
+      final previous = await _progressStateRow(tx, order);
+      if (previous?['pending_json'] != null || change.orderId != order.id) {
+        throw const ProgressSyncException('local_changed');
+      }
+      await tx.insert('client_progress_sync', {
+        'order_id': order.id,
+        'destination_id': order.destinationId,
+        'client_id': order.clientInstallationId,
+        'baseline_json': previous?['baseline_json'],
+        'pending_json': jsonEncode(change.toJson()),
+        'pending_local_revision': order.deliveryEditRevision,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  @override
+  Future<void> acknowledgeProgress(
+    ManagedOrder order,
+    OrderProgressSnapshot applied,
+  ) async {
+    await (await _db).transaction((tx) async {
+      final current = await _checkProgressScope(tx, order);
+      final row = await _progressStateRow(tx, order);
+      if (row?['pending_json'] == null) {
+        throw const ProgressSyncException('local_changed');
+      }
+      final pending = OrderProgressChange.fromJson(
+        jsonDecode(row!['pending_json'] as String),
+      );
+      if (applied.clientId != order.clientInstallationId ||
+          applied.orderId != order.id ||
+          applied.orderRevision != pending.orderRevision ||
+          applied.progressRevision != pending.expectedRevision + 1 ||
+          applied.quantities.length != pending.quantities.length ||
+          pending.quantities.keys.any(
+            (id) => pending.quantities[id] != applied.quantities[id],
+          )) {
+        throw const ProgressSyncException('identity');
+      }
+      if (current.deliveryEditRevision == row['pending_local_revision']) {
+        await tx.update(
+          'managed_orders',
+          {
+            'delivery_changed_ids': jsonEncode(
+              current.changedDeliveryIds
+                  .difference(applied.quantities.keys.toSet())
+                  .toList()
+                ..sort(),
+            ),
+          },
+          where: 'id = ?',
+          whereArgs: [order.id],
+        );
+      }
+      await tx.update(
+        'client_progress_sync',
+        {
+          'baseline_json': jsonEncode(applied.toJson()),
+          'pending_json': null,
+          'pending_local_revision': null,
+        },
+        where: 'order_id = ?',
+        whereArgs: [order.id],
+      );
+    });
+  }
+
+  @override
+  Future<void> discardRejectedProgress(ManagedOrder order) async {
+    await (await _db).transaction((tx) async {
+      await _checkProgressScope(tx, order);
+      await tx.update(
+        'client_progress_sync',
+        {'pending_json': null, 'pending_local_revision': null},
+        where: 'order_id = ? AND destination_id = ? AND client_id = ?',
+        whereArgs: [order.id, order.destinationId, order.clientInstallationId],
+      );
+    });
+  }
+
+  @override
+  Future<void> applySyncedProgress(
+    ManagedOrder order,
+    OrderProgressSnapshot snapshot,
+  ) async {
+    await (await _db).transaction((tx) async {
+      final current = await _checkProgressScope(tx, order, checkEdits: true);
+      final lines = current.lines.where((line) => line.sendToServer).toList();
+      if (snapshot.clientId != order.clientInstallationId ||
+          snapshot.orderId != order.id ||
+          snapshot.orderRevision != current.serverRevision ||
+          snapshot.quantities.length != lines.length ||
+          lines.any(
+            (line) =>
+                snapshot.quantities[line.id] == null ||
+                snapshot.quantities[line.id]! < 0 ||
+                snapshot.quantities[line.id]! > line.quantity,
+          )) {
+        throw const ProgressSyncException('pending_items');
+      }
+      final progress = {...current.deliveredQuantities};
+      for (final entry in snapshot.quantities.entries) {
+        if (entry.value == 0) {
+          progress.remove(entry.key);
+        } else {
+          progress[entry.key] = entry.value;
+        }
+      }
+      await tx.update(
+        'managed_orders',
+        {
+          'delivery_progress_json': jsonEncode(progress),
+          'delivery_changed_ids': jsonEncode(
+            current.changedDeliveryIds
+                .difference(snapshot.quantities.keys.toSet())
+                .toList()
+              ..sort(),
+          ),
+          'delivery_edit_revision': current.deliveryEditRevision + 1,
+        },
+        where: 'id = ?',
+        whereArgs: [order.id],
+      );
+      await tx.insert('client_progress_sync', {
+        'order_id': order.id,
+        'destination_id': order.destinationId,
+        'client_id': order.clientInstallationId,
+        'baseline_json': jsonEncode(snapshot.toJson()),
+        'pending_json': null,
+        'pending_local_revision': null,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  static OrderProgressSnapshot _serverProgress(ServerOrder order) =>
+      OrderProgressSnapshot(
+        clientId: order.clientInstallationId,
+        orderId: order.managedOrderId!,
+        orderRevision: order.revision,
+        progressRevision: order.progressRevision,
+        quantities: {
+          for (final line in order.lines) line.id!: line.deliveredQuantity,
+        },
+      );
+
+  static Future<ServerOrder> _scopedServerProgressOrder(
+    DatabaseExecutor tx,
+    String clientId,
+    String orderId,
+  ) async {
+    final rows = await tx.query(
+      'server_orders',
+      where: 'client_installation_id = ? AND managed_order_id = ?',
+      whereArgs: [clientId, orderId],
+    );
+    if (rows.length != 1) throw const ProgressSyncException('missing');
+    return _loadServerOrder(tx, rows.single['id'] as String);
+  }
+
+  @override
+  Future<OrderProgressSnapshot> loadServerProgress(
+    String clientId,
+    String orderId,
+  ) async => (await _db).transaction(
+    (tx) async => _serverProgress(
+      await _scopedServerProgressOrder(tx, clientId, orderId),
+    ),
+  );
+
+  @override
+  Future<OrderProgressSnapshot> applyServerProgress(
+    String clientId,
+    OrderProgressChange change,
+  ) async {
+    return (await _db).transaction((tx) async {
+      final order = await _scopedServerProgressOrder(
+        tx,
+        clientId,
+        change.orderId,
+      );
+      final request = canonicalProgressChange(change);
+      final receipts = await tx.query(
+        'server_progress_receipts',
+        where: 'client_id = ? AND operation_id = ?',
+        whereArgs: [clientId, change.operationId],
+      );
+      if (receipts.isNotEmpty) {
+        if (receipts.single['request_json'] != request ||
+            receipts.single['order_id'] != order.id) {
+          throw const ServerOrderConflictException();
+        }
+        return OrderProgressSnapshot.fromJson(
+          jsonDecode(receipts.single['applied_json'] as String),
+        );
+      }
+      if (order.revision != change.orderRevision ||
+          order.progressRevision != change.expectedRevision) {
+        throw const ServerOrderConflictException();
+      }
+      if (change.quantities.length != order.lines.length ||
+          order.lines.any(
+            (line) =>
+                change.quantities[line.id] == null ||
+                change.quantities[line.id]! < 0 ||
+                change.quantities[line.id]! > line.quantity,
+          )) {
+        throw const FormatException('Invalid shared delivery inventory');
+      }
+      for (final line in order.lines) {
+        await tx.update(
+          'server_order_lines',
+          {'delivered_quantity': change.quantities[line.id]},
+          where: 'order_id = ? AND order_line_id = ?',
+          whereArgs: [order.id, line.id],
+        );
+      }
+      final complete = order.lines.every(
+        (line) => change.quantities[line.id] == line.quantity,
+      );
+      await tx.update(
+        'server_orders',
+        {
+          'progress_revision': order.progressRevision + 1,
+          'status': complete
+              ? ServerOrderStatus.done.value
+              : ServerOrderStatus.received.value,
+          'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
+          'completed_revision': complete ? order.revision : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [order.id],
+      );
+      final result = _serverProgress(await _loadServerOrder(tx, order.id));
+      await tx.insert('server_progress_receipts', {
+        'client_id': clientId,
+        'operation_id': change.operationId,
+        'order_id': order.id,
+        'request_json': request,
+        'applied_json': jsonEncode(result.toJson()),
+      });
+      return result;
+    });
   }
 
   @override
@@ -1196,6 +1560,7 @@ class SqliteOrderRepository
               : ServerOrderStatus.received.value,
           'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
           'completed_revision': complete ? order.revision : 0,
+          'progress_revision': order.progressRevision + 1,
         },
         where: 'id = ?',
         whereArgs: [orderId],
@@ -1214,7 +1579,12 @@ class SqliteOrderRepository
       await database.transaction((transaction) async {
         final rows = await transaction.query(
           'server_orders',
-          columns: ['status', 'revision', 'managed_order_id'],
+          columns: [
+            'status',
+            'revision',
+            'managed_order_id',
+            'progress_revision',
+          ],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -1237,6 +1607,8 @@ class SqliteOrderRepository
               'status': ServerOrderStatus.done.value,
               'completed_at': _timestamp(completedAt),
               'completed_revision': rows.single['revision'],
+              'progress_revision':
+                  (rows.single['progress_revision'] as int) + 1,
             },
             where: 'id = ? AND status = ?',
             whereArgs: [id, ServerOrderStatus.received.value],
@@ -1257,7 +1629,7 @@ class SqliteOrderRepository
       await database.transaction((transaction) async {
         final rows = await transaction.query(
           'server_orders',
-          columns: ['status', 'managed_order_id'],
+          columns: ['status', 'managed_order_id', 'progress_revision'],
           where: 'id = ?',
           whereArgs: [id],
           limit: 1,
@@ -1282,6 +1654,8 @@ class SqliteOrderRepository
               'status': ServerOrderStatus.received.value,
               'completed_at': null,
               'completed_revision': 0,
+              'progress_revision':
+                  (rows.single['progress_revision'] as int) + 1,
             },
             where: 'id = ? AND status = ?',
             whereArgs: [id, ServerOrderStatus.done.value],
@@ -1946,6 +2320,16 @@ class SqliteOrderRepository
         row['delivery_progress_json'] ?? '{}',
         lines,
       ),
+      changedDeliveryIds: decodeChangedDeliveryIds(
+        row['delivery_changed_ids'] ??
+            jsonEncode(
+              (jsonDecode(
+                row['delivery_progress_json'] as String? ?? '{}',
+              ) as Map).keys.toList(),
+            ),
+        lines,
+      ),
+      deliveryEditRevision: row['delivery_edit_revision'] as int? ?? 0,
     );
   }
 
@@ -1983,7 +2367,13 @@ class SqliteOrderRepository
       }
       await tx.update(
         'managed_orders',
-        {'delivery_progress_json': jsonEncode(progress)},
+        {
+          'delivery_progress_json': jsonEncode(progress),
+          'delivery_changed_ids': jsonEncode(
+            {...order.changedDeliveryIds, lineId}.toList()..sort(),
+          ),
+          'delivery_edit_revision': order.deliveryEditRevision + 1,
+        },
         where: 'id = ?',
         whereArgs: [orderId],
       );
@@ -2117,6 +2507,13 @@ class SqliteOrderRepository
       if ((snapshot['schemaVersion'] as int) >= 13 &&
           row['delivery_progress_json'] is! String) {
         throw const FormatException('Missing delivery progress');
+      }
+      if ((snapshot['schemaVersion'] as int) >= 14 &&
+          (row['delivery_changed_ids'] is! String ||
+              row['delivery_edit_revision'] is! int ||
+              ((row['delivery_edit_revision'] as int) < 0 ||
+                  (row['delivery_edit_revision'] as int) > 9007199254740991))) {
+        throw const FormatException('Invalid progress edits');
       }
       final order = _managedFromRow(row);
       if (orders.containsKey(order.id)) {
@@ -2332,37 +2729,139 @@ class SqliteOrderRepository
     'order_feature_settings',
   ];
 
+  static Future<Map<String, Object?>> _portableSnapshot(
+    DatabaseExecutor tx,
+  ) async {
+    final tables = <String, Object?>{};
+    for (final table in _portableTables) {
+      final rows = await tx.query(table);
+      tables[table] = [
+        for (final row in rows)
+          {
+            for (final entry in row.entries)
+              entry.key: entry.value is Uint8List
+                  ? base64Encode(entry.value as Uint8List)
+                  : entry.value,
+          },
+      ];
+    }
+    return {'schemaVersion': databaseVersion, 'tables': tables};
+  }
+
   @override
   Future<Map<String, Object?>> createPortableSnapshot() async {
     try {
-      return await (await _db).transaction((transaction) async {
-        final tables = <String, Object?>{};
-        for (final table in _portableTables) {
-          final rows = await transaction.query(table);
-          tables[table] = [
-            for (final row in rows)
-              {
-                for (final entry in row.entries)
-                  entry.key: entry.value is Uint8List
-                      ? base64Encode(entry.value as Uint8List)
-                      : entry.value,
-              },
-          ];
-        }
-        return <String, Object?>{
-          'schemaVersion': databaseVersion,
-          'tables': tables,
-        };
-      });
+      return await (await _db).transaction(_portableSnapshot);
     } catch (error) {
       throw OrderStorageException('Could not create the data snapshot.', error);
     }
   }
 
   @override
-  Future<void> replaceWithPortableSnapshot(
-    Map<String, Object?> snapshot,
+  Future<Map<String, Object?>> createProgressRecoverySnapshot() async =>
+      (await _db).transaction(
+        (tx) async => {
+          'database': await _portableSnapshot(tx),
+          'progressSync': await tx.query('client_progress_sync'),
+        },
+      );
+
+  @override
+  Future<void> replaceProgressRecoverySnapshot(
+    Map<String, Object?> recovery,
   ) async {
+    final database = recovery['database'];
+    final rows = recovery['progressSync'];
+    if (database is! Map<String, Object?> || rows is! List) {
+      throw const FormatException('Invalid progress recovery snapshot');
+    }
+    await replaceWithPortableSnapshot(database, progressRecovery: rows);
+  }
+
+  static Future<void> _restoreProgressRecovery(
+    DatabaseExecutor tx,
+    List<Object?> rows,
+  ) async {
+    final ids = <String>{};
+    for (final value in rows) {
+      if (value is! Map<String, Object?> ||
+          value.length != 6 ||
+          value['order_id'] is! String ||
+          !ids.add(value['order_id'] as String)) {
+        throw const FormatException('Invalid progress recovery inventory');
+      }
+      final orders = await tx.query(
+        'managed_orders',
+        where: 'id = ?',
+        whereArgs: [value['order_id']],
+      );
+      if (orders.length != 1) {
+        throw const FormatException('Missing recovered order');
+      }
+      final order = _managedFromRow(orders.single);
+      if (value['destination_id'] != order.destinationId ||
+          value['client_id'] != order.clientInstallationId ||
+          order.destinationId == null ||
+          order.clientInstallationId == null) {
+        throw const FormatException('Invalid recovery scope');
+      }
+      final quantities = {
+        for (final line in order.lines.where((line) => line.sendToServer))
+          line.id: line.quantity,
+      };
+      bool validQuantities(Map<String, int> counts) => counts.entries.every(
+        (entry) =>
+            quantities[entry.key] != null &&
+            entry.value >= 0 &&
+            entry.value <= quantities[entry.key]!,
+      );
+      final baseline = value['baseline_json'];
+      if (baseline != null) {
+        if (baseline is! String || baseline.length > 65536) {
+          throw const FormatException('Invalid recovery baseline');
+        }
+        final snapshot = OrderProgressSnapshot.fromJson(jsonDecode(baseline));
+        if (snapshot.clientId != order.clientInstallationId ||
+            snapshot.orderId != order.id ||
+            snapshot.orderRevision > order.serverRevision ||
+            !validQuantities(snapshot.quantities)) {
+          throw const FormatException('Invalid recovery baseline');
+        }
+      }
+      final pending = value['pending_json'];
+      final generation = value['pending_local_revision'];
+      if (pending == null) {
+        if (generation != null) {
+          throw const FormatException('Invalid recovery generation');
+        }
+      } else {
+        if (pending is! String ||
+            pending.length > 65536 ||
+            generation is! int ||
+            generation < 0 ||
+            generation > order.deliveryEditRevision) {
+          throw const FormatException('Invalid recovery operation');
+        }
+        final change = OrderProgressChange.fromJson(jsonDecode(pending));
+        if (change.orderId != order.id ||
+            change.orderRevision > order.serverRevision ||
+            !validQuantities(change.quantities)) {
+          throw const FormatException('Invalid recovery operation');
+        }
+      }
+      await tx.insert(
+        'client_progress_sync',
+        value,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  @override
+  Future<void> replaceWithPortableSnapshot(
+    Map<String, Object?> snapshot, {
+    List<Object?>? progressRecovery,
+  }) async {
     try {
       if (!portableSchemaVersions.contains(snapshot['schemaVersion']) ||
           snapshot['tables'] is! Map<String, dynamic>) {
@@ -2373,6 +2872,25 @@ class SqliteOrderRepository
       final tables = Map<String, dynamic>.from(snapshot['tables']! as Map);
       if ((snapshot['schemaVersion'] as int) < 12) {
         tables.putIfAbsent('managed_orders', () => <Object?>[]);
+      }
+      if ((snapshot['schemaVersion'] as int) < 14 &&
+          tables['managed_orders'] is List) {
+        tables['managed_orders'] = [
+          for (final value in tables['managed_orders'] as List)
+            <String, Object?>{
+              ...Map<String, Object?>.from(value as Map),
+              'delivery_changed_ids': jsonEncode(
+                (snapshot['schemaVersion'] as int) >= 13
+                    ? decodeOrderLines(value['lines_json'])
+                          .map((line) => line.id)
+                          .toList()
+                    : (jsonDecode(
+                        value['delivery_progress_json'] as String? ?? '{}',
+                      ) as Map).keys.toList(),
+              ),
+              'delivery_edit_revision': 0,
+            },
+        ];
       }
       if (tables.keys.toSet().difference(_portableTables.toSet()).isNotEmpty ||
           _portableTables.any((table) => tables[table] is! List)) {
@@ -2405,6 +2923,9 @@ class SqliteOrderRepository
             }
             await transaction.insert(table, row);
           }
+        }
+        if (progressRecovery != null) {
+          await _restoreProgressRecovery(transaction, progressRecovery);
         }
         final violations = await transaction.rawQuery(
           'PRAGMA foreign_key_check',
@@ -2767,6 +3288,7 @@ class SqliteOrderRepository
       managedOrderId: row['managed_order_id'] as String?,
       revision: row['revision'] as int? ?? 0,
       completedRevision: row['completed_revision'] as int? ?? 0,
+      progressRevision: row['progress_revision'] as int? ?? 0,
       payloadChecksum: row['payload_checksum']! as String,
       status: ServerOrderStatusValue.parse(row['status']! as String),
       completedAt: row['completed_at'] == null
