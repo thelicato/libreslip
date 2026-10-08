@@ -30,6 +30,7 @@ void main() {
       compactCompose: true,
       printerConnectionRequired: false,
       completeWholeSteps: true,
+      hideServerOrderDetails: true,
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -50,6 +51,7 @@ void main() {
     expect(decoded.compactCompose, isTrue);
     expect(decoded.printerConnectionRequired, isFalse);
     expect(decoded.completeWholeSteps, isTrue);
+    expect(decoded.hideServerOrderDetails, isTrue);
     expect(decoded.copyWith(language: 'en').completeWholeSteps, isTrue);
     expect(decoded.copyWith(language: 'en').printerConnectionRequired, isFalse);
     expect(
@@ -176,12 +178,14 @@ void main() {
 
   test('legacy step controls default to individual items; modern values must be boolean', () {
     expect(const AppSettings().completeWholeSteps, isFalse);
+    expect(const AppSettings().hideServerOrderDetails, isFalse);
     final legacy = {
       ...const AppSettings(completeWholeSteps: true).toJson(),
       'version': 8,
     }..remove('completeWholeSteps');
     final settings = AppSettings.fromJson(legacy);
     expect(settings.completeWholeSteps, isFalse);
+    expect(settings.hideServerOrderDetails, isFalse);
     expect(settings.printerConnectionRequired, isTrue);
     for (final value in [null, 0, 'true']) {
       expect(
@@ -191,12 +195,35 @@ void main() {
         }),
         throwsFormatException,
       );
+      expect(
+        () => AppSettings.fromJson({
+          ...const AppSettings().toJson(),
+          'hideServerOrderDetails': value,
+        }),
+        throwsFormatException,
+      );
     }
   });
 
+  test(
+    'version 9 settings retain step controls and default hidden details off',
+    () {
+      final legacy = {
+        ...const AppSettings(
+          completeWholeSteps: true,
+          hideServerOrderDetails: true,
+        ).toJson(),
+        'version': 9,
+      }..remove('hideServerOrderDetails');
+      final settings = AppSettings.fromJson(legacy);
+      expect(settings.completeWholeSteps, isTrue);
+      expect(settings.hideServerOrderDetails, isFalse);
+    },
+  );
+
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 10},
+      {...const AppSettings().toJson(), 'version': 11},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},

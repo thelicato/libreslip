@@ -570,6 +570,8 @@
   "deliveryWaitingForRevision": "Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.",
   "completeWholeSteps": "Complete whole steps",
   "completeWholeStepsBody": "One button per step instead of item controls.",
+  "hideServerOrderDetails": "Hide order details",
+  "hideServerOrderDetailsBody": "Hide the revision, received and created times, heading and delivery guidance in order details.",
   "completeStep": "Complete step",
   "undoStepDelivery": "Reopen step",
   "deliveryProgress": "Delivery progress",

@@ -67,6 +67,7 @@ void main() {
         preferredPrinterAddress: '00:11:22:33:44:55',
         printerConnectionRequired: false,
         completeWholeSteps: true,
+        hideServerOrderDetails: true,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -143,6 +144,7 @@ void main() {
       expect(settings.stored!.heading, 'Caffè Libertà');
       expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.completeWholeSteps, isTrue);
+      expect(settings.stored!.hideServerOrderDetails, isTrue);
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
       expect(settings.stored!.logoWidthPercent, 50);
@@ -197,6 +199,7 @@ void main() {
         language: 'it',
         printerConnectionRequired: false,
         completeWholeSteps: true,
+        hideServerOrderDetails: true,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -230,6 +233,7 @@ void main() {
       expect(settings.stored!.heading, 'Exported heading');
       expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.completeWholeSteps, isTrue);
+      expect(settings.stored!.hideServerOrderDetails, isTrue);
       expect(settings.stored!.language, 'it');
       expect(await orders.loadItems(), hasLength(1));
       expect((await orders.loadTickets()).single.id, ticket.id);

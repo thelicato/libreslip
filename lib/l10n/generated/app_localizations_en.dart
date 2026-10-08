@@ -1439,6 +1439,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'One button per step instead of item controls.';
 
   @override
+  String get hideServerOrderDetails => 'Hide order details';
+
+  @override
+  String get hideServerOrderDetailsBody =>
+      'Hide the revision, received and created times, heading and delivery guidance in order details.';
+
+  @override
   String get completeStep => 'Complete step';
 
   @override

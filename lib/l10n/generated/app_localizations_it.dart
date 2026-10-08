@@ -1452,6 +1452,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Un pulsante per fase, senza comandi per articolo.';
 
   @override
+  String get hideServerOrderDetails => 'Nascondi i dettagli dell’ordine';
+
+  @override
+  String get hideServerOrderDetailsBody =>
+      'Nasconde revisione, orari di ricezione e creazione, intestazione e indicazioni sulla consegna nei dettagli dell’ordine.';
+
+  @override
   String get completeStep => 'Completa fase';
 
   @override

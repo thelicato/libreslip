@@ -2632,6 +2632,18 @@ abstract class AppLocalizations {
   /// **'One button per step instead of item controls.'**
   String get completeWholeStepsBody;
 
+  /// No description provided for @hideServerOrderDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide order details'**
+  String get hideServerOrderDetails;
+
+  /// No description provided for @hideServerOrderDetailsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the revision, received and created times, heading and delivery guidance in order details.'**
+  String get hideServerOrderDetailsBody;
+
   /// No description provided for @completeStep.
   ///
   /// In en, this message translates to:

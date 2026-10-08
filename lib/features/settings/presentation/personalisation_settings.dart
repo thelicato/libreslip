@@ -28,6 +28,18 @@ class StepCompletionSettingsCard extends StatelessWidget {
                     controller.settings.copyWith(completeWholeSteps: value),
                   ),
           ),
+          SwitchListTile(
+            key: const ValueKey('toggle-hide-server-order-details'),
+            contentPadding: EdgeInsets.zero,
+            value: controller.settings.hideServerOrderDetails,
+            title: Text(l.hideServerOrderDetails),
+            subtitle: Text(l.hideServerOrderDetailsBody),
+            onChanged: controller.saving
+                ? null
+                : (value) => controller.update(
+                    controller.settings.copyWith(hideServerOrderDetails: value),
+                  ),
+          ),
           if (controller.saveFailed)
             Text(
               l.saveError,

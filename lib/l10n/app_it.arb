@@ -570,6 +570,8 @@
   "deliveryWaitingForRevision": "In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.",
   "completeWholeSteps": "Completa intere fasi",
   "completeWholeStepsBody": "Un pulsante per fase, senza comandi per articolo.",
+  "hideServerOrderDetails": "Nascondi i dettagli dell’ordine",
+  "hideServerOrderDetailsBody": "Nasconde revisione, orari di ricezione e creazione, intestazione e indicazioni sulla consegna nei dettagli dell’ordine.",
   "completeStep": "Completa fase",
   "undoStepDelivery": "Riapri fase",
   "deliveryProgress": "Avanzamento consegna",

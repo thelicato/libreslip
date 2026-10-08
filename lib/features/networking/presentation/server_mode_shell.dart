@@ -842,6 +842,8 @@ class _OrderDialog extends StatelessWidget {
         order: current ?? order,
         controller: controller,
         completeWholeSteps: settingsController.settings.completeWholeSteps,
+        hideServerOrderDetails:
+            settingsController.settings.hideServerOrderDetails,
       );
     },
   );
@@ -852,10 +854,12 @@ class _OrderDialogContents extends StatelessWidget {
     required this.order,
     required this.controller,
     required this.completeWholeSteps,
+    required this.hideServerOrderDetails,
   });
   final ServerOrder order;
   final ServerInboxController controller;
   final bool completeWholeSteps;
+  final bool hideServerOrderDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -884,24 +888,26 @@ class _OrderDialogContents extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (order.revision > 0) Text(l.orderRevision(order.revision)),
-              _DetailRow(
-                label: l.receivedAt,
-                value: DateFormat.yMMMd(locale)
-                    .add_Hm()
-                    .format(order.receivedAt.toLocal()),
-              ),
-              _DetailRow(
-                label: l.createdAt,
-                value: DateFormat.yMMMd(locale)
-                    .add_Hm()
-                    .format(order.sourceCreatedAt.toLocal()),
-              ),
-              if (order.heading.isNotEmpty)
-                _DetailRow(label: l.heading, value: order.heading),
-              const Divider(height: 28),
+              if (!hideServerOrderDetails) ...[
+                if (order.revision > 0) Text(l.orderRevision(order.revision)),
+                _DetailRow(
+                  label: l.receivedAt,
+                  value: DateFormat.yMMMd(locale)
+                      .add_Hm()
+                      .format(order.receivedAt.toLocal()),
+                ),
+                _DetailRow(
+                  label: l.createdAt,
+                  value: DateFormat.yMMMd(locale)
+                      .add_Hm()
+                      .format(order.sourceCreatedAt.toLocal()),
+                ),
+                if (order.heading.isNotEmpty)
+                  _DetailRow(label: l.heading, value: order.heading),
+                const Divider(height: 28),
+              ],
               if (order.managedOrderId != null) ...[
-                Text(l.serverDeliveryRules),
+                if (!hideServerOrderDetails) Text(l.serverDeliveryRules),
                 const SizedBox(height: 12),
                 DeliveryProgress(
                   courses: order.courses,

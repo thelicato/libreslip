@@ -273,6 +273,16 @@ void main() {
           await tester.tap(toggle);
           await tester.pumpAndSettle();
           expect(settings.settings.completeWholeSteps, isTrue);
+          if (language == 'en' && size.width == 1100) {
+            final hideDetails = find.byKey(
+              const ValueKey('toggle-hide-server-order-details'),
+            );
+            await tester.ensureVisible(hideDetails);
+            await tester.pumpAndSettle();
+            await tester.tap(hideDetails);
+            await tester.pumpAndSettle();
+            expect(settings.settings.hideServerOrderDetails, isTrue);
+          }
           await tester.tap(find.byKey(const ValueKey('server-tab-orders')));
           await tester.pumpAndSettle();
         }
@@ -300,6 +310,38 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(cardTitle);
         await tester.pumpAndSettle();
+        if (wholeSteps && language == 'en' && size.width == 1100) {
+          final dialog = find.byType(AlertDialog);
+          expect(
+            find.descendant(of: dialog, matching: find.text('Revision 1')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(of: dialog, matching: find.text('Received')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(of: dialog, matching: find.text('Created')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(of: dialog, matching: find.text('Heading')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(of: dialog, matching: find.text('Kitchen')),
+            findsNothing,
+          );
+          expect(
+            find.descendant(
+              of: dialog,
+              matching: find.text(
+                'Mark Done marks every item delivered. Move to Received resets all deliveries. Undoing an individual delivery returns the order to Received.',
+              ),
+            ),
+            findsNothing,
+          );
+        }
         if (wholeSteps) {
           Future<void> tapStep(String id) async {
             final target = find.byKey(ValueKey('complete-step-$id'));
