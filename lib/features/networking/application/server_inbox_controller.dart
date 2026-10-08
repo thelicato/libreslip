@@ -167,6 +167,34 @@ class ServerInboxController extends ChangeNotifier {
     }
   }
 
+  Future<bool> setStepDelivered(
+    ServerOrder order,
+    String? courseId,
+    bool delivered,
+  ) async {
+    if (updating) return false;
+    updating = true;
+    _notify();
+    try {
+      await _store.setServerStepDelivered(
+        order.id,
+        courseId,
+        delivered,
+        expectedOrderRevision: order.revision,
+        expectedProgressRevision: order.progressRevision,
+      );
+      orders = await _store.loadServerOrders();
+      failed = false;
+      return true;
+    } catch (_) {
+      await refresh();
+      return false;
+    } finally {
+      updating = false;
+      _notify();
+    }
+  }
+
   Future<bool> markDone(String id) async {
     if (updating) return false;
     updating = true;

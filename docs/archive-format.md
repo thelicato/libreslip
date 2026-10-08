@@ -28,7 +28,7 @@ Schema 15 adds `price_minor_units` and `price_currency` to item, draft-line and 
 
 Settings format 8 includes the boolean `printerConnectionRequired`, enabled by default. Versions 1 through 7 restore with it enabled. Configuration and full backups preserve the preference; missing or malformed version 8 values fail preview before replacement. Older apps reject the unsupported preference format. Database schema 15 and network protocol versions are unchanged. Networking outbox rows remain excluded from exported backups.
 
-Settings format 9 adds the boolean `completeWholeSteps`, disabled by default. Versions 1 through 8 retain individual item controls. Both configuration and full backups preserve this Client preference; missing or malformed version 9 values fail validation before replacement. Database schema 17, configuration document version 4 and network formats remain unchanged.
+Settings format 9 adds the boolean `completeWholeSteps`, disabled by default. Versions 1 through 8 retain individual item controls. Both configuration and full backups preserve this device preference, shared by Client and Server modes; missing or malformed version 9 values fail validation before replacement. Database schema 17, configuration document version 4 and network formats remain unchanged.
 
 ## Validation and restore
 

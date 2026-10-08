@@ -1741,6 +1741,56 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<ServerOrder> setServerStepDelivered(
+    String orderId,
+    String? courseId,
+    bool delivered, {
+    required int expectedOrderRevision,
+    required int expectedProgressRevision,
+  }) async {
+    final database = await _db;
+    await database.transaction((tx) async {
+      final order = await _loadServerOrder(tx, orderId);
+      final lines = order.lines.where((line) => line.courseId == courseId);
+      if (order.managedOrderId == null ||
+          lines.isEmpty ||
+          order.revision != expectedOrderRevision ||
+          order.progressRevision != expectedProgressRevision) {
+        throw const OrderStorageException('Invalid or stale step progress.');
+      }
+      for (final line in lines) {
+        await tx.update(
+          'server_order_lines',
+          {'delivered_quantity': delivered ? line.quantity : 0},
+          where: 'order_id = ? AND order_line_id = ?',
+          whereArgs: [orderId, line.id],
+        );
+      }
+      final complete = order.lines.every(
+        (line) =>
+            (line.courseId == courseId
+                ? (delivered ? line.quantity : 0)
+                : line.deliveredQuantity) ==
+            line.quantity,
+      );
+      await tx.update(
+        'server_orders',
+        {
+          'status': complete
+              ? ServerOrderStatus.done.value
+              : ServerOrderStatus.received.value,
+          'completed_at': complete ? _timestamp(DateTime.now().toUtc()) : null,
+          'completed_revision': complete ? order.revision : 0,
+          'progress_revision': order.progressRevision + 1,
+        },
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+    });
+    return _loadServerOrder(database, orderId);
+  }
+
+  @override
   Future<ServerOrder> markServerOrderDone(
     String id, {
     required DateTime completedAt,

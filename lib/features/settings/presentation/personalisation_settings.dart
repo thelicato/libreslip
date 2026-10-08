@@ -3,6 +3,42 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/settings_controller.dart';
 
+class StepCompletionSettingsCard extends StatelessWidget {
+  const StepCompletionSettingsCard({super.key, required this.controller});
+
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return _PersonalisationCard(
+      title: l.serverOrdersTab,
+      subtitle: l.completeWholeStepsBody,
+      icon: Icons.done_all_rounded,
+      child: Column(
+        children: [
+          SwitchListTile(
+            key: const ValueKey('toggle-whole-steps'),
+            contentPadding: EdgeInsets.zero,
+            value: controller.settings.completeWholeSteps,
+            title: Text(l.completeWholeSteps),
+            onChanged: controller.saving
+                ? null
+                : (value) => controller.update(
+                    controller.settings.copyWith(completeWholeSteps: value),
+                  ),
+          ),
+          if (controller.saveFailed)
+            Text(
+              l.saveError,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class LanguageSettingsCard extends StatelessWidget {
   const LanguageSettingsCard({super.key, required this.controller});
 

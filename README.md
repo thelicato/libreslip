@@ -65,10 +65,10 @@ In Client Settings, **Product prices and estimates** enables optional unit price
 
 Server mode turns another Android device into a focused preparation board:
 
-- **Orders** puts the item totals still waiting to be prepared above the Received and Completed lists, followed by order details. Managed orders also show per-item delivery progress. Completed orders can be restored to Received or deleted individually or together.
-- **Settings** shows connection addresses, pending Client requests, listener status, language, appearance and app version.
+- **Orders** puts the item totals still waiting to be prepared above the Received and Completed lists, followed by order details. Managed orders show delivery progress by item or step. Completed orders can be restored to Received or deleted individually or together.
+- **Settings** shows connection addresses, pending Client requests, listener status, whole-step completion, language, appearance and app version.
 
-For managed orders, details let you deliver individual quantities. Preparation totals count only the first unfinished section of each managed order, advancing when it is delivered. Delivering the last unit moves the order to Completed; undoing any unit returns it to Received. Done delivers all items, while Undo Done resets every delivered quantity. Ordinary orders keep their Received/Done controls. Clients using shared managed orders receive these counts automatically; older Servers retain explicit synchronisation.
+For managed orders, details let you deliver individual quantities, or complete and reopen whole steps when enabled in Settings. Preparation totals count only the first unfinished section of each managed order, advancing when it is delivered. Delivering the last unit moves the order to Completed; undoing any unit returns it to Received. Done delivers all items, while Undo Done resets every delivered quantity. Ordinary orders keep their Received/Done controls. Clients using shared managed orders receive these counts automatically; older Servers retain explicit synchronisation.
 
 Server mode receives orders, tracks preparation delivery, moves orders between Received and Completed, and removes Completed history when requested. It does not edit the catalogue, compose or print tickets, process payments or produce financial reports. An Android foreground service keeps HTTPS port 5119 available while the screen is locked or LibreSlip is in the background. Switching to Client mode stops the receiver. Android shows an ongoing notification while this service is active, and the CPU and Wi-Fi locks may increase battery use.
 

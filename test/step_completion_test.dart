@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/networking/domain/server_inbox_models.dart';
+import 'package:libreslip/features/networking/domain/network_protocol.dart';
 import 'package:libreslip/features/orders/data/sqlite_order_repository.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/features/settings/application/settings_controller.dart';
@@ -205,6 +206,176 @@ void main() {
     );
   });
 
+  test('Server step edits roll back interrupted writes, persist, guard revisions and maintain queues', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'libreslip-server-step-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final path = '${directory.path}/orders.db';
+    final repository = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: path,
+    );
+    await repository.open();
+    addTearDown(repository.close);
+    await repository.pairClient(
+      PairedClient(
+        installationId: 'client',
+        displayName: 'Client',
+        identityFingerprint: 'b' * 64,
+        pairedAt: DateTime.now(),
+      ),
+    );
+    final receipt = await repository.receiveServerOrder(
+      _serverEnvelope(1),
+      receivedAt: DateTime.now(),
+    );
+    final initial = await repository.setServerLineDelivered(
+      receipt.order.id,
+      'soup',
+      1,
+      expectedQuantity: 0,
+    );
+    final connection = await databaseFactoryFfiNoIsolate.openDatabase(path);
+    await connection.execute(
+      "CREATE TRIGGER reject_step_bread BEFORE UPDATE OF delivered_quantity ON server_order_lines WHEN NEW.order_line_id = 'bread' AND NEW.delivered_quantity = 3 BEGIN SELECT RAISE(ABORT, 'Injected step write failure'); END",
+    );
+    await expectLater(
+      _serverStep(repository, initial, 'first', true),
+      throwsA(isA<DatabaseException>()),
+    );
+    final rolledBack = (await repository.loadServerOrders()).single;
+    expect(rolledBack.lines.map((line) => line.deliveredQuantity), [
+      1,
+      0,
+      0,
+      0,
+    ]);
+    expect(rolledBack.progressRevision, initial.progressRevision);
+    expect(rolledBack.status, ServerOrderStatus.received);
+    await connection.execute('DROP TRIGGER reject_step_bread');
+    final complete = await _serverStep(repository, initial, 'first', true);
+    expect(complete.lines.map((line) => line.deliveredQuantity), [2, 3, 0, 0]);
+    expect(complete.progressRevision, initial.progressRevision + 1);
+    expect(complete.completedAt, isNull);
+    for (final (snapshot, course) in [
+      (initial, 'first'),
+      (complete, 'missing'),
+    ]) {
+      await expectLater(
+        _serverStep(repository, snapshot, course, false),
+        throwsA(isA<OrderStorageException>()),
+      );
+      expect(
+        (await repository.loadServerOrders()).single.lines.map(
+          (line) => line.deliveredQuantity,
+        ),
+        [2, 3, 0, 0],
+      );
+    }
+    await repository.close();
+    await repository.open();
+    final reopened = (await repository.loadServerOrders()).single;
+    expect(reopened.progressRevision, complete.progressRevision);
+    final later = await _serverStep(repository, reopened, 'later', true);
+    final all = await _serverStep(repository, later, null, true);
+    expect(all.status, ServerOrderStatus.done);
+    expect(all.completedRevision, all.revision);
+    expect(all.completedAt, isNotNull);
+    final undo = await _serverStep(repository, all, 'first', false);
+    expect(undo.status, ServerOrderStatus.received);
+    expect(undo.completedAt, isNull);
+    expect(undo.completedRevision, 0);
+    expect(undo.lines.map((line) => line.deliveredQuantity), [0, 0, 1, 1]);
+    await repository.receiveServerOrder(
+      _serverEnvelope(2),
+      receivedAt: DateTime.now(),
+    );
+    await expectLater(
+      _serverStep(repository, undo, 'first', true),
+      throwsA(isA<OrderStorageException>()),
+    );
+    final revision = (await repository.loadServerOrders()).single;
+    expect(revision.lines.last.deliveredQuantity, 0);
+    final ordinary = await repository.receiveServerOrder(
+      OrderDeliveryEnvelope.create(
+        clientInstallationId: 'client',
+        deliveryId: 'ordinary',
+        ticketId: 'ordinary',
+        ticketNumber: 2,
+        createdAt: DateTime.now(),
+        heading: '',
+        reference: '',
+        orderNote: '',
+        lines: const [DeliveryLine(name: 'Soup', quantity: 1)],
+      ),
+      receivedAt: DateTime.now(),
+    );
+    await expectLater(
+      _serverStep(repository, ordinary.order, null, true),
+      throwsA(isA<OrderStorageException>()),
+    );
+    await repository.deleteCompletedServerOrder(
+      (await repository.markServerOrderDone(
+        revision.id,
+        completedAt: DateTime.now(),
+      )).id,
+    );
+    await expectLater(
+      _serverStep(repository, revision, 'first', true),
+      throwsA(isA<OrderStorageException>()),
+    );
+  });
+
+  test('Server whole-step completion and reopening reach both Clients without exposing private items', () async {
+    final f = await SharedFixture.create();
+    addTearDown(f.dispose);
+    await f.seed();
+    await f.syncBoth();
+    final addition = await f.a.add('Tea', divider: true);
+    await f.a.delivery.ticketReady(addition.id);
+    await f.syncBoth();
+    final original = (await f.server.loadServerOrders()).single;
+    final completed = await _serverStep(f.server, original, null, true);
+    expect(completed.status, ServerOrderStatus.received);
+    await f.syncBoth();
+    for (final client in [f.a, f.b]) {
+      expect(client.order.deliveredQuantity('soup'), 3);
+      expect(client.order.deliveredQuantity('water'), 2);
+    }
+    expect(f.a.order.deliveredQuantity('private'), 0);
+    expect(summariseOutstandingItems([completed]).single.name, 'Tea');
+    final tea = completed.lines.singleWhere((line) => line.name == 'Tea');
+    final all = await _serverStep(f.server, completed, tea.courseId, true);
+    expect(all.status, ServerOrderStatus.done);
+    await f.syncBoth();
+    expect(f.b.order.outstandingCount, 0);
+    final undo = await _serverStep(f.server, all, null, false);
+    expect(undo.status, ServerOrderStatus.received);
+    await f.syncBoth();
+    for (final client in [f.a, f.b]) {
+      expect(client.order.deliveredQuantity('soup'), 0);
+      expect(client.order.deliveredQuantity('water'), 0);
+      expect(client.order.deliveredQuantity(tea.id!), 1);
+    }
+    expect(summariseOutstandingItems([undo]).map((line) => line.name), [
+      'Soup',
+      'Water',
+    ]);
+    await f.b.local('water', 1);
+    await f.b.sync.synchronise();
+    await expectLater(
+      _serverStep(f.server, undo, null, true),
+      throwsA(isA<OrderStorageException>()),
+    );
+    expect(
+      (await f.server.loadServerOrders()).single.lines
+          .firstWhere((line) => line.id == 'water')
+          .deliveredQuantity,
+      1,
+    );
+  });
+
   for (final (language, size, scale) in [
     ('en', const Size(1100, 900), 1.0),
     ('it', const Size(320, 740), 2.0),
@@ -351,3 +522,63 @@ Future<SavedTicket> _seed(
   heading: 'Kitchen',
   keepOpen: true,
 );
+
+Future<ServerOrder> _serverStep(
+  SqliteOrderRepository repository,
+  ServerOrder order,
+  String? courseId,
+  bool delivered,
+) => repository.setServerStepDelivered(
+  order.id,
+  courseId,
+  delivered,
+  expectedOrderRevision: order.revision,
+  expectedProgressRevision: order.progressRevision,
+);
+
+OrderDeliveryEnvelope _serverEnvelope(int revision) =>
+    OrderDeliveryEnvelope.create(
+      clientInstallationId: 'client',
+      deliveryId: 'step-$revision',
+      ticketId: 'ticket-$revision',
+      managedOrderId: 'order',
+      revision: revision,
+      ticketNumber: 1,
+      createdAt: DateTime.utc(2026, 10, 8),
+      heading: 'Kitchen',
+      reference: 'Table 4',
+      orderNote: '',
+      courses: const [
+        OrderCourse(id: 'first', name: 'First'),
+        OrderCourse(id: 'empty', name: 'Empty'),
+        OrderCourse(id: 'later', name: 'Later'),
+      ],
+      lines: [
+        const DeliveryLine(
+          id: 'soup',
+          name: 'Soup',
+          quantity: 2,
+          courseId: 'first',
+        ),
+        const DeliveryLine(
+          id: 'bread',
+          name: 'Bread',
+          quantity: 3,
+          courseId: 'first',
+        ),
+        const DeliveryLine(
+          id: 'water',
+          name: 'Water',
+          quantity: 1,
+          courseId: 'later',
+        ),
+        const DeliveryLine(id: 'extra', name: 'Extra', quantity: 1),
+        if (revision > 1)
+          const DeliveryLine(
+            id: 'new-bread',
+            name: 'Bread',
+            quantity: 1,
+            courseId: 'first',
+          ),
+      ],
+    );

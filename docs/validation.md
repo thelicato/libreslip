@@ -1,5 +1,20 @@
 # Validation evidence
 
+## Whole-step completion in Server mode, 8 October 2026
+
+Validated step 13 with `VERSION` unchanged at 1.9.0. Settings format 9, database schema 17 and network formats are unchanged.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 110 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 241 active tests passed; normal execution skipped only opt-in workspace capture. Existing Client controls, settings, archives, migrations, printing and interrupted restore checks passed. |
+| Server persistence and rollback | Multi-item completion updates all items and the progress revision in one transaction. A SQLite trigger forced failure on the second item; the first item's write and the revision rolled back. Progress survived database close and reopen. Invalid sections, stale progress, stale order revisions, ordinary orders and deleted orders rejected step edits. |
+| Queue and Client sync | Completing the last section moved the order to Completed with its completion time and revision. Reopening restored Received and preserved other completed sections. Both Clients received section completion and reopening, private lines stayed local, preparation totals advanced correctly, and a later Client edit invalidated an outdated Server action. |
+| Actual Server controls | Setting, completion, reopening and switching back to item controls passed on an English tablet, Italian 320-pixel phone with doubled text and English landscape. Both control modes preserve delivery counts. Server cards use compact section lists when enabled; ordinary order controls retain their behaviour. |
+| Render inspection | Ninety-five captures passed framework and missed-tap checks. Inspected the Server toggle, compact board and step details in English, Italian enlarged text and dark landscape. Review images: [Server steps](previews/whole-step-server-en.png), [Italian enlarged text](previews/whole-step-server-it-large-text.png) and [Server toggle](previews/whole-step-server-settings-en.png). |
+| Android preview APK | Fresh 1.9.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, multi-phone LAN or physical printer verification was performed. Automated checks do not establish physical-device behaviour or paper output. |
+
 ## Optional whole-step completion, 8 October 2026
 
 Validated step 12 with `VERSION` unchanged at 1.9.0. Settings format 9 adds a Client preference; database schema 17 and network formats are unchanged.

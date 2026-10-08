@@ -167,171 +167,277 @@ void main() {
     );
   });
 
-  for (final (language, size, scale) in [
-    ('en', const Size(1100, 900), 1.0),
-    ('it', const Size(320, 740), 2.0),
-    ('en', const Size(915, 412), 1.0),
+  for (final (language, size, scale, wholeSteps) in [
+    ('en', const Size(1100, 900), 1.0, false),
+    ('en', const Size(1100, 900), 1.0, true),
+    ('it', const Size(320, 740), 2.0, false),
+    ('it', const Size(320, 740), 2.0, true),
+    ('en', const Size(915, 412), 1.0, false),
+    ('en', const Size(915, 412), 1.0, true),
   ]) {
-    testWidgets('managed Server delivery and undo $language $size', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final environment = await createMemoryOrderEnvironment();
-      final repository = environment.repository;
-      await repository.pairClient(
-        PairedClient(
-          installationId: 'client',
-          displayName: 'Client',
-          identityFingerprint: 'b' * 64,
-          pairedAt: DateTime.utc(2026, 10, 5),
-        ),
-      );
-      final received = await repository.receiveServerOrder(
-        OrderDeliveryEnvelope.create(
-          clientInstallationId: 'client',
-          deliveryId: 'delivery',
-          ticketId: 'ticket',
-          managedOrderId: 'managed',
-          revision: 1,
-          ticketNumber: 17,
-          createdAt: DateTime.utc(2026, 10, 5),
-          heading: 'Kitchen',
-          reference: 'Table 4',
-          orderNote: '',
-          courses: const [
-            OrderCourse(id: 'first', name: 'First course'),
-            OrderCourse(id: 'later', name: 'Next section'),
-          ],
-          lines: const [
-            DeliveryLine(
-              id: 'soup',
-              name: 'Soup',
-              quantity: 2,
-              courseId: 'first',
-            ),
-            DeliveryLine(
-              id: 'water',
-              name: 'Water',
-              quantity: 1,
-              courseId: 'later',
-            ),
-          ],
-        ),
-        receivedAt: DateTime.utc(2026, 10, 5),
-      );
-      final settings = SettingsController(
-        MemorySettingsRepository()
-          ..stored = AppSettings(language: language, appTextScale: scale),
-      );
-      final networking = NetworkModeController(repository);
-      final inbox = ServerInboxController(
-        repository,
-        _MemoryServerSecrets(),
-        _FakeServerHost(),
-      );
-      addTearDown(settings.dispose);
-      addTearDown(networking.dispose);
-      addTearDown(inbox.dispose);
-      addTearDown(environment.controller.dispose);
-      await settings.load();
-      await networking.load();
-      await networking.setMode(LibreSlipMode.server);
-      await tester.pumpWidget(
-        LibreSlipApp(
-          settings: settings,
-          orders: environment.controller,
-          networking: networking,
-          serverInbox: inbox,
-        ),
-      );
-      await tester.pumpAndSettle();
-      final summary = find.byKey(const ValueKey('outstanding-items-card'));
-      expect(
-        find.descendant(of: summary, matching: find.text('Soup')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: summary, matching: find.text('Water')),
-        findsNothing,
-      );
-      final card = find.byKey(ValueKey('server-order-${received.order.id}'));
-      await tester.scrollUntilVisible(
-        card,
-        200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      final cardTitle = find.descendant(
-        of: card,
-        matching: find.text('Table 4'),
-      );
-      await tester.ensureVisible(cardTitle);
-      await tester.pumpAndSettle();
-      await tester.tap(cardTitle);
-      await tester.pumpAndSettle();
-      final deliver = find.byKey(const ValueKey('deliver-one-soup'));
-      await tester.ensureVisible(deliver);
-      await tester.pumpAndSettle();
-      await tester.tap(deliver);
-      await tester.pumpAndSettle();
-      expect(
-        inbox.orders.single.lines
-            .firstWhere((line) => line.id == 'soup')
-            .deliveredQuantity,
-        1,
-      );
-      expect(inbox.receivedOrders, hasLength(1));
-      final all = find.byKey(const ValueKey('deliver-all-soup'));
-      await tester.ensureVisible(all);
-      await tester.pumpAndSettle();
-      await tester.tap(all);
-      await tester.pumpAndSettle();
-      expect(inbox.receivedOrders, hasLength(1));
-      expect(summariseOutstandingItems(inbox.orders).single.name, 'Water');
-      expect(summariseOutstandingItems(inbox.orders).single.quantity, 1);
-      final next = find.byKey(const ValueKey('deliver-all-water'));
-      await tester.ensureVisible(next);
-      await tester.pumpAndSettle();
-      await tester.tap(next);
-      await tester.pumpAndSettle();
-      expect(inbox.completedOrders, hasLength(1));
-      final undo = find.byKey(const ValueKey('undo-delivery-soup'));
-      await tester.ensureVisible(undo);
-      await tester.pumpAndSettle();
-      await tester.tap(undo);
-      await tester.pumpAndSettle();
-      expect(
-        inbox.orders.single.lines
-            .firstWhere((line) => line.id == 'soup')
-            .deliveredQuantity,
-        1,
-      );
-      expect(inbox.receivedOrders, hasLength(1));
-      expect(inbox.completedOrders, isEmpty);
-      final close = find.text(language == 'it' ? 'Chiudi' : 'Close');
-      await tester.ensureVisible(close);
-      await tester.pumpAndSettle();
-      await tester.tap(close);
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        summary,
-        -200,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.descendant(of: summary, matching: find.text('Soup')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: summary, matching: find.text('Water')),
-        findsNothing,
-      );
-      expect(tester.takeException(), isNull);
-    });
+    testWidgets(
+      'managed Server delivery and undo $language $size whole steps: $wholeSteps',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final environment = await createMemoryOrderEnvironment();
+        final repository = environment.repository;
+        await repository.pairClient(
+          PairedClient(
+            installationId: 'client',
+            displayName: 'Client',
+            identityFingerprint: 'b' * 64,
+            pairedAt: DateTime.utc(2026, 10, 5),
+          ),
+        );
+        final received = await repository.receiveServerOrder(
+          OrderDeliveryEnvelope.create(
+            clientInstallationId: 'client',
+            deliveryId: 'delivery',
+            ticketId: 'ticket',
+            managedOrderId: 'managed',
+            revision: 1,
+            ticketNumber: 17,
+            createdAt: DateTime.utc(2026, 10, 5),
+            heading: 'Kitchen',
+            reference: 'Table 4',
+            orderNote: '',
+            courses: const [
+              OrderCourse(id: 'first', name: 'First course'),
+              OrderCourse(id: 'later', name: 'Next section'),
+            ],
+            lines: [
+              const DeliveryLine(
+                id: 'soup',
+                name: 'Soup',
+                quantity: 2,
+                courseId: 'first',
+              ),
+              if (wholeSteps)
+                const DeliveryLine(
+                  id: 'bread',
+                  name: 'Bread',
+                  quantity: 2,
+                  courseId: 'first',
+                ),
+              const DeliveryLine(
+                id: 'water',
+                name: 'Water',
+                quantity: 1,
+                courseId: 'later',
+              ),
+            ],
+          ),
+          receivedAt: DateTime.utc(2026, 10, 5),
+        );
+        final settings = SettingsController(
+          MemorySettingsRepository()..stored = AppSettings(language: language),
+        );
+        final networking = NetworkModeController(repository);
+        final inbox = ServerInboxController(
+          repository,
+          _MemoryServerSecrets(),
+          _FakeServerHost(),
+        );
+        addTearDown(settings.dispose);
+        addTearDown(networking.dispose);
+        addTearDown(inbox.dispose);
+        addTearDown(environment.controller.dispose);
+        await settings.load();
+        await networking.load();
+        await networking.setMode(LibreSlipMode.server);
+        await tester.pumpWidget(
+          LibreSlipApp(
+            settings: settings,
+            orders: environment.controller,
+            networking: networking,
+            serverInbox: inbox,
+          ),
+        );
+        await tester.pumpAndSettle();
+        if (wholeSteps) {
+          await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+          await tester.pumpAndSettle();
+          final toggle = find.byKey(const ValueKey('toggle-whole-steps'));
+          await tester.scrollUntilVisible(
+            toggle,
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.ensureVisible(toggle);
+          await tester.pumpAndSettle();
+          await tester.tap(toggle);
+          await tester.pumpAndSettle();
+          expect(settings.settings.completeWholeSteps, isTrue);
+          await tester.tap(find.byKey(const ValueKey('server-tab-orders')));
+          await tester.pumpAndSettle();
+        }
+        final summary = find.byKey(const ValueKey('outstanding-items-card'));
+        expect(
+          find.descendant(of: summary, matching: find.text('Soup')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: summary, matching: find.text('Water')),
+          findsNothing,
+        );
+        final card = find.byKey(ValueKey('server-order-${received.order.id}'));
+        await tester.scrollUntilVisible(
+          card,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        final cardTitle = find.descendant(
+          of: card,
+          matching: find.text('Table 4'),
+        );
+        await tester.ensureVisible(cardTitle);
+        await tester.pumpAndSettle();
+        await tester.tap(cardTitle);
+        await tester.pumpAndSettle();
+        if (wholeSteps) {
+          Future<void> tapStep(String id) async {
+            final target = find.byKey(ValueKey('complete-step-$id'));
+            await tester.ensureVisible(target);
+            await tester.pumpAndSettle();
+            await tester.tap(target);
+            await tester.pumpAndSettle();
+          }
+
+          expect(find.byKey(const ValueKey('deliver-one-soup')), findsNothing);
+          expect(
+            find.byKey(const ValueKey('undo-delivery-soup')),
+            findsNothing,
+          );
+          expect(find.byKey(const ValueKey('deliver-all-soup')), findsNothing);
+          await tapStep('first');
+          expect(
+            inbox.orders.single.lines
+                .where((line) => line.courseId == 'first')
+                .map((line) => line.deliveredQuantity),
+            [2, 2],
+          );
+          expect(inbox.receivedOrders, hasLength(1));
+          expect(summariseOutstandingItems(inbox.orders).single.name, 'Water');
+          await tapStep('later');
+          expect(inbox.completedOrders, hasLength(1));
+          await tapStep('first');
+          expect(inbox.receivedOrders, hasLength(1));
+          expect(
+            inbox.orders.single.lines
+                .where((line) => line.courseId == 'first')
+                .every((line) => line.deliveredQuantity == 0),
+            isTrue,
+          );
+          expect(
+            inbox.orders.single.lines
+                .firstWhere((line) => line.id == 'water')
+                .deliveredQuantity,
+            1,
+          );
+        } else {
+          final deliver = find.byKey(const ValueKey('deliver-one-soup'));
+          await tester.ensureVisible(deliver);
+          await tester.pumpAndSettle();
+          await tester.tap(deliver);
+          await tester.pumpAndSettle();
+          expect(
+            inbox.orders.single.lines
+                .firstWhere((line) => line.id == 'soup')
+                .deliveredQuantity,
+            1,
+          );
+          expect(inbox.receivedOrders, hasLength(1));
+          final all = find.byKey(const ValueKey('deliver-all-soup'));
+          await tester.ensureVisible(all);
+          await tester.pumpAndSettle();
+          await tester.tap(all);
+          await tester.pumpAndSettle();
+          expect(inbox.receivedOrders, hasLength(1));
+          expect(summariseOutstandingItems(inbox.orders).single.name, 'Water');
+          expect(summariseOutstandingItems(inbox.orders).single.quantity, 1);
+          final next = find.byKey(const ValueKey('deliver-all-water'));
+          await tester.ensureVisible(next);
+          await tester.pumpAndSettle();
+          await tester.tap(next);
+          await tester.pumpAndSettle();
+          expect(inbox.completedOrders, hasLength(1));
+          final undo = find.byKey(const ValueKey('undo-delivery-soup'));
+          await tester.ensureVisible(undo);
+          await tester.pumpAndSettle();
+          await tester.tap(undo);
+          await tester.pumpAndSettle();
+          expect(
+            inbox.orders.single.lines
+                .firstWhere((line) => line.id == 'soup')
+                .deliveredQuantity,
+            1,
+          );
+          expect(inbox.receivedOrders, hasLength(1));
+          expect(inbox.completedOrders, isEmpty);
+        }
+        final close = find.text(language == 'it' ? 'Chiudi' : 'Close');
+        await tester.ensureVisible(close);
+        await tester.pumpAndSettle();
+        await tester.tap(close);
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          summary,
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(of: summary, matching: find.text('Soup')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: summary, matching: find.text('Water')),
+          findsNothing,
+        );
+        if (wholeSteps) {
+          await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+          await tester.pumpAndSettle();
+          final toggle = find.byKey(const ValueKey('toggle-whole-steps'));
+          await tester.ensureVisible(toggle);
+          await tester.pumpAndSettle();
+          await tester.tap(toggle);
+          await tester.pumpAndSettle();
+          expect(settings.settings.completeWholeSteps, isFalse);
+          await tester.tap(find.byKey(const ValueKey('server-tab-orders')));
+          await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            card,
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.ensureVisible(cardTitle);
+          await tester.pumpAndSettle();
+          await tester.tap(cardTitle);
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('deliver-one-soup')),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('complete-step-first')),
+            findsNothing,
+          );
+          expect(
+            inbox.orders.single.lines
+                .firstWhere((line) => line.id == 'water')
+                .deliveredQuantity,
+            1,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   test('Server orders load oldest first', () async {

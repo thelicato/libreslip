@@ -177,6 +177,14 @@ abstract interface class ServerInboxStore {
     required int expectedQuantity,
   });
 
+  Future<ServerOrder> setServerStepDelivered(
+    String orderId,
+    String? courseId,
+    bool delivered, {
+    required int expectedOrderRevision,
+    required int expectedProgressRevision,
+  });
+
   Future<ServerOrder> markServerOrderDone(
     String id, {
     required DateTime completedAt,

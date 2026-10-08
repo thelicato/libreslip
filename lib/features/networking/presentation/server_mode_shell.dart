@@ -232,6 +232,10 @@ class _ServerModeShellState extends State<ServerModeShell>
                                   Expanded(
                                     child: _OrderCard(
                                       order: orders[firstIndex],
+                                      completeWholeSteps: widget
+                                          .settingsController
+                                          .settings
+                                          .completeWholeSteps,
                                       onTap: () =>
                                           _showOrder(orders[firstIndex]),
                                     ),
@@ -242,6 +246,10 @@ class _ServerModeShellState extends State<ServerModeShell>
                                       child: firstIndex + 1 < orders.length
                                           ? _OrderCard(
                                               order: orders[firstIndex + 1],
+                                              completeWholeSteps: widget
+                                                  .settingsController
+                                                  .settings
+                                                  .completeWholeSteps,
                                               onTap: () => _showOrder(
                                                 orders[firstIndex + 1],
                                               ),
@@ -287,6 +295,10 @@ class _ServerModeShellState extends State<ServerModeShell>
                     const SizedBox(height: 16),
                     _PairingCard(controller: controller),
                     const SizedBox(height: 24),
+                    StepCompletionSettingsCard(
+                      controller: widget.settingsController,
+                    ),
+                    const SizedBox(height: 20),
                     ModeSettingsCard(controller: widget.modeController),
                     const SizedBox(height: 20),
                     LanguageSettingsCard(controller: widget.settingsController),
@@ -311,8 +323,11 @@ class _ServerModeShellState extends State<ServerModeShell>
   Future<void> _showOrder(ServerOrder order) async {
     await showDialog<void>(
       context: context,
-      builder: (context) =>
-          _OrderDialog(order: order, controller: widget.inboxController),
+      builder: (context) => _OrderDialog(
+        order: order,
+        controller: widget.inboxController,
+        settingsController: widget.settingsController,
+      ),
     );
   }
 
@@ -678,10 +693,15 @@ class _EmptyOrders extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.onTap});
+  const _OrderCard({
+    required this.order,
+    required this.onTap,
+    required this.completeWholeSteps,
+  });
 
   final ServerOrder order;
   final VoidCallback onTap;
+  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -717,6 +737,7 @@ class _OrderCard extends StatelessWidget {
                   courses: order.courses,
                   lines: _progressLines(order),
                   showHelp: false,
+                  completeWholeSteps: completeWholeSteps,
                 )
               else
                 for (final section in courseSections(
@@ -800,14 +821,19 @@ class _OrderCard extends StatelessWidget {
 }
 
 class _OrderDialog extends StatelessWidget {
-  const _OrderDialog({required this.order, required this.controller});
+  const _OrderDialog({
+    required this.order,
+    required this.controller,
+    required this.settingsController,
+  });
 
   final ServerOrder order;
   final ServerInboxController controller;
+  final SettingsController settingsController;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: Listenable.merge([controller, settingsController]),
     builder: (context, _) {
       final current = controller.orders
           .where((value) => value.id == order.id)
@@ -815,15 +841,21 @@ class _OrderDialog extends StatelessWidget {
       return _OrderDialogContents(
         order: current ?? order,
         controller: controller,
+        completeWholeSteps: settingsController.settings.completeWholeSteps,
       );
     },
   );
 }
 
 class _OrderDialogContents extends StatelessWidget {
-  const _OrderDialogContents({required this.order, required this.controller});
+  const _OrderDialogContents({
+    required this.order,
+    required this.controller,
+    required this.completeWholeSteps,
+  });
   final ServerOrder order;
   final ServerInboxController controller;
+  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -875,6 +907,20 @@ class _OrderDialogContents extends StatelessWidget {
                   courses: order.courses,
                   lines: _progressLines(order),
                   busy: controller.updating,
+                  showHelp: !completeWholeSteps,
+                  completeWholeSteps: completeWholeSteps,
+                  onStepChanged: (courseId, delivered) async {
+                    final success = await controller.setStepDelivered(
+                      order,
+                      courseId,
+                      delivered,
+                    );
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l.deliveryProgressFailed)),
+                      );
+                    }
+                  },
                   onChanged: (id, quantity, expected) async {
                     final success = await controller.setLineDelivered(
                       order.id,

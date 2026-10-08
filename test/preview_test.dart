@@ -84,6 +84,48 @@ void main() {
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       (
+        'managed-whole-step-delivery-server-dialog-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-whole-step-delivery-server-dialog-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'managed-whole-step-delivery-server-dialog-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.dark,
+        5,
+      ),
+      (
+        'managed-whole-step-server-board-tablet-en',
+        const Size(1100, 1100),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'whole-step-server-settings-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        5,
+      ),
+      (
+        'whole-step-server-settings-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        5,
+      ),
+      (
         'managed-whole-step-delivery-active-tablet-en',
         const Size(1100, 900),
         'en',
@@ -1174,7 +1216,24 @@ void main() {
           await tester.tap(title);
           await tester.pumpAndSettle();
           expect(find.byType(AlertDialog), findsOneWidget);
-          if (size.width < 760 || size.height < 600) {
+          if (name.contains('whole-step')) {
+            expect(
+              find.descendant(
+                of: find.byType(AlertDialog),
+                matching: find.byKey(const ValueKey('deliver-one-toast-line')),
+              ),
+              findsNothing,
+            );
+            final complete = find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byKey(const ValueKey('complete-step-first')),
+            );
+            expect(complete, findsOneWidget);
+            await tester.ensureVisible(complete);
+            await tester.pumpAndSettle();
+          }
+          if (!name.contains('whole-step') &&
+              (size.width < 760 || size.height < 600)) {
             await tester.ensureVisible(
               find.descendant(
                 of: find.byType(AlertDialog),
@@ -1194,6 +1253,20 @@ void main() {
         await tester.tap(find.text('Completed (1)'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Order 12'));
+        await tester.pumpAndSettle();
+      }
+      if (name.contains('whole-step-server-settings')) {
+        await tester.tap(find.byKey(const ValueKey('server-tab-settings')));
+        await tester.pumpAndSettle();
+        final toggle = find.byKey(const ValueKey('toggle-whole-steps'));
+        await tester.scrollUntilVisible(
+          toggle,
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.ensureVisible(
+          find.ancestor(of: toggle, matching: find.byType(Card)).first,
+        );
         await tester.pumpAndSettle();
       }
       if (name == 'server-settings-phone-en') {
