@@ -2588,6 +2588,61 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<void> setManagedStepDelivered(
+    String orderId,
+    String? courseId,
+    bool delivered, {
+    required int expectedOrderRevision,
+    required int expectedDeliveryRevision,
+    required Map<String, int> expectedQuantities,
+  }) async {
+    await (await _db).transaction((tx) async {
+      final rows = await tx.query(
+        'managed_orders',
+        where: 'id = ? AND closed_at IS NULL',
+        whereArgs: [orderId],
+      );
+      if (rows.length != 1) {
+        throw const OrderStorageException('The active order was not found.');
+      }
+      final order = _managedFromRow(rows.single);
+      final lines = order.lines.where((line) => line.courseId == courseId);
+      if (lines.isEmpty ||
+          order.revision != expectedOrderRevision ||
+          order.deliveryEditRevision != expectedDeliveryRevision ||
+          expectedQuantities.length != lines.length ||
+          lines.any(
+            (line) =>
+                expectedQuantities[line.id] != order.deliveredQuantity(line.id),
+          )) {
+        throw const OrderStorageException('Invalid or stale step progress.');
+      }
+      final progress = {...order.deliveredQuantities};
+      final changed = {...order.changedDeliveryIds};
+      for (final line in lines) {
+        final quantity = delivered ? line.quantity : 0;
+        if (order.deliveredQuantity(line.id) == quantity) continue;
+        if (quantity == 0) {
+          progress.remove(line.id);
+        } else {
+          progress[line.id] = quantity;
+        }
+        changed.add(line.id);
+      }
+      await tx.update(
+        'managed_orders',
+        {
+          'delivery_progress_json': jsonEncode(progress),
+          'delivery_changed_ids': jsonEncode(changed.toList()..sort()),
+          'delivery_edit_revision': order.deliveryEditRevision + 1,
+        },
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+    });
+  }
+
+  @override
   Future<OrderDraft> beginOrderAddition(String orderId, String draftId) async {
     return (await _db).transaction((tx) async {
       final drafts = await tx.query('drafts');

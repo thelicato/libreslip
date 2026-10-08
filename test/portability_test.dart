@@ -66,6 +66,7 @@ void main() {
         themeMode: ThemeMode.dark,
         preferredPrinterAddress: '00:11:22:33:44:55',
         printerConnectionRequired: false,
+        completeWholeSteps: true,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -141,6 +142,7 @@ void main() {
 
       expect(settings.stored!.heading, 'Caffè Libertà');
       expect(settings.stored!.printerConnectionRequired, isFalse);
+      expect(settings.stored!.completeWholeSteps, isTrue);
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
       expect(settings.stored!.logoWidthPercent, 50);
@@ -194,6 +196,7 @@ void main() {
         heading: 'Exported heading',
         language: 'it',
         printerConnectionRequired: false,
+        completeWholeSteps: true,
       );
       await orders.saveFeatureSettings(
         const OrderFeatureSettings(
@@ -226,6 +229,7 @@ void main() {
 
       expect(settings.stored!.heading, 'Exported heading');
       expect(settings.stored!.printerConnectionRequired, isFalse);
+      expect(settings.stored!.completeWholeSteps, isTrue);
       expect(settings.stored!.language, 'it');
       expect(await orders.loadItems(), hasLength(1));
       expect((await orders.loadTickets()).single.id, ticket.id);
@@ -243,6 +247,7 @@ void main() {
     settings.stored = const AppSettings(
       heading: 'Fresh destination',
       printerConnectionRequired: false,
+      completeWholeSteps: true,
     );
     final pairedAt = DateTime.now().toUtc();
     await orders.savePairedServer(
@@ -323,6 +328,7 @@ void main() {
 
     expect(destinationSettings.stored!.heading, 'Fresh destination');
     expect(destinationSettings.stored!.printerConnectionRequired, isFalse);
+    expect(destinationSettings.stored!.completeWholeSteps, isTrue);
     expect((await destination.loadItems()).single.id, item.id);
     expect((await destination.loadTickets()).single.id, ticket.id);
     expect(
@@ -675,6 +681,32 @@ void main() {
         throwsA(isA<PortabilityException>()),
       );
       expect(settings.stored!.printerConnectionRequired, isTrue);
+    }
+  });
+
+  test('step preference restores legacy defaults and rejects malformed archives without replacement', () async {
+    settings.stored = const AppSettings(completeWholeSteps: true);
+    final bytes = await service.createArchive(
+      PortableArchiveKind.configuration,
+    );
+    final legacy = _rewriteEntry(bytes, 'configuration.json', (configuration) {
+      final preferences = configuration['settings'] as Map;
+      preferences['version'] = 8;
+      preferences.remove('completeWholeSteps');
+    });
+    await service.restore(await service.inspectArchive(legacy));
+    expect(settings.stored!.completeWholeSteps, isFalse);
+    for (final value in [null, 0, 'true']) {
+      final invalid = _rewriteEntry(bytes, 'configuration.json', (
+        configuration,
+      ) {
+        (configuration['settings'] as Map)['completeWholeSteps'] = value;
+      });
+      await expectLater(
+        service.inspectArchive(invalid),
+        throwsA(isA<PortabilityException>()),
+      );
+      expect(settings.stored!.completeWholeSteps, isFalse);
     }
   });
 

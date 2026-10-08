@@ -7,7 +7,7 @@ LibreSlip ZIP archives use format identifier `libreslip-portability` and format 
 | Path | Required | Content |
 | --- | --- | --- |
 | `manifest.json` | Always | Archive identity, kind, versions, UTC creation time, counts and payload inventory. |
-| `configuration.json` | Always | Configuration document version 4 with settings format version 8, ticket typography, locale, theme, heading, footer, logo reference and printed width, order-field switches including `courseGroupsEnabled`, `managedOrdersEnabled` and `pricesEnabled`, Compact Compose preference, remembered printer address and a non-secret printer transport description. Legacy configuration document versions 1, 2 and 3 are accepted with prices disabled. |
+| `configuration.json` | Always | Configuration document version 4 with settings format version 9, ticket typography, locale, theme, heading, footer, logo reference and printed width, order-field switches including `courseGroupsEnabled`, `managedOrdersEnabled` and `pricesEnabled`, Compact Compose preference, remembered printer address and a non-secret printer transport description. Legacy configuration document versions 1, 2 and 3 are accepted with prices disabled. |
 | `database.json` | Full backup only | Portable database schema version 17, or accepted legacy version 5 through 16, with categories, items, composition, lines, active orders, tickets, ticket lines, counters, print jobs and order-field settings. Binary print payloads use Base64. |
 | `assets/logo.<ext>` | When configured | App-private ticket logo. |
 | `assets/items/<item-id>.<ext>` | When referenced | App-private reusable-item image. |
@@ -27,6 +27,8 @@ Schema 14 adds `delivery_changed_ids`, a unique stable-line identifier inventory
 Schema 15 adds `price_minor_units` and `price_currency` to item, draft-line and ticket-line rows, `priceMinorUnits` and `priceCurrency` to each managed line, and the disabled-by-default `prices_enabled` switch. Amount and currency are either both null or an integer from 0 through 99,999,999 and one of `EUR`, `GBP`, `USD`. Zero is a price; null is unknown. Modern archives must contain these fields and a valid boolean option. Prices for stable lines must agree between managed orders and their immutable ticket revisions. Legacy database schemas restore with absent prices and modernised managed inventories. Prices are private local data included in full backups, with no effect on Server envelopes or printable tickets.
 
 Settings format 8 includes the boolean `printerConnectionRequired`, enabled by default. Versions 1 through 7 restore with it enabled. Configuration and full backups preserve the preference; missing or malformed version 8 values fail preview before replacement. Older apps reject the unsupported preference format. Database schema 15 and network protocol versions are unchanged. Networking outbox rows remain excluded from exported backups.
+
+Settings format 9 adds the boolean `completeWholeSteps`, disabled by default. Versions 1 through 8 retain individual item controls. Both configuration and full backups preserve this Client preference; missing or malformed version 9 values fail validation before replacement. Database schema 17, configuration document version 4 and network formats remain unchanged.
 
 ## Validation and restore
 

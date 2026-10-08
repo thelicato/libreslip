@@ -1432,6 +1432,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.';
 
   @override
+  String get completeWholeSteps => 'Complete whole steps';
+
+  @override
+  String get completeWholeStepsBody =>
+      'One button per step instead of item controls.';
+
+  @override
+  String get completeStep => 'Complete step';
+
+  @override
+  String get undoStepDelivery => 'Reopen step';
+
+  @override
   String get deliveryProgress => 'Delivery progress';
 
   @override

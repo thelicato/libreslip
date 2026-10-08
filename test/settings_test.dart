@@ -29,6 +29,7 @@ void main() {
       preferredPrinterAddress: '00:11:22:33:44:55',
       compactCompose: true,
       printerConnectionRequired: false,
+      completeWholeSteps: true,
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -48,6 +49,8 @@ void main() {
     expect(decoded.preferredPrinterAddress, '00:11:22:33:44:55');
     expect(decoded.compactCompose, isTrue);
     expect(decoded.printerConnectionRequired, isFalse);
+    expect(decoded.completeWholeSteps, isTrue);
+    expect(decoded.copyWith(language: 'en').completeWholeSteps, isTrue);
     expect(decoded.copyWith(language: 'en').printerConnectionRequired, isFalse);
     expect(
       decoded.copyWith(clearPreferredPrinter: true).preferredPrinterAddress,
@@ -171,9 +174,29 @@ void main() {
     );
   });
 
+  test('legacy step controls default to individual items; modern values must be boolean', () {
+    expect(const AppSettings().completeWholeSteps, isFalse);
+    final legacy = {
+      ...const AppSettings(completeWholeSteps: true).toJson(),
+      'version': 8,
+    }..remove('completeWholeSteps');
+    final settings = AppSettings.fromJson(legacy);
+    expect(settings.completeWholeSteps, isFalse);
+    expect(settings.printerConnectionRequired, isTrue);
+    for (final value in [null, 0, 'true']) {
+      expect(
+        () => AppSettings.fromJson({
+          ...const AppSettings().toJson(),
+          'completeWholeSteps': value,
+        }),
+        throwsFormatException,
+      );
+    }
+  });
+
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 9},
+      {...const AppSettings().toJson(), 'version': 10},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
@@ -216,6 +239,7 @@ void main() {
         logoWidthPercent: 50,
         compactCompose: true,
         printerConnectionRequired: false,
+        completeWholeSteps: true,
       ),
     );
     first.dispose();
@@ -229,6 +253,7 @@ void main() {
     expect(next.settings.logoWidthPercent, 50);
     expect(next.settings.compactCompose, isTrue);
     expect(next.settings.printerConnectionRequired, isFalse);
+    expect(next.settings.completeWholeSteps, isTrue);
   });
 
   test('a failed read neither overwrites data nor enables editing, and can recover', () async {

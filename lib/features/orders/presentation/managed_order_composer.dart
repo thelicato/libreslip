@@ -18,11 +18,13 @@ class ManagedOrderComposer extends StatelessWidget {
     this.busy = false,
     this.delivery,
     this.sharedOrders,
+    this.completeWholeSteps = false,
   });
   final OrderWorkspaceController controller;
   final bool busy;
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
+  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,7 @@ class ManagedOrderComposer extends StatelessWidget {
                             controller: controller,
                             delivery: delivery,
                             sharedOrders: sharedOrders,
+                            completeWholeSteps: completeWholeSteps,
                           ),
                         ),
                   icon: const Icon(Icons.playlist_add_rounded),
@@ -81,6 +84,7 @@ class ManagedOrderComposer extends StatelessWidget {
                     controller: controller,
                     delivery: delivery,
                     sharedOrders: sharedOrders,
+                    completeWholeSteps: completeWholeSteps,
                   ),
                 ],
               ),
@@ -121,10 +125,12 @@ class _ActiveOrdersDialog extends StatelessWidget {
     required this.controller,
     this.delivery,
     this.sharedOrders,
+    this.completeWholeSteps = false,
   });
   final OrderWorkspaceController controller;
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
+  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -221,6 +227,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                   controller: controller,
                                   delivery: delivery,
                                   sharedOrders: sharedOrders,
+                                  completeWholeSteps: completeWholeSteps,
                                 ),
                               ],
                             ),
@@ -311,11 +318,13 @@ class _OrderContents extends StatelessWidget {
     required this.controller,
     this.delivery,
     this.sharedOrders,
+    this.completeWholeSteps = false,
   });
   final ManagedOrder order;
   final OrderWorkspaceController controller;
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
+  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +361,27 @@ class _OrderContents extends StatelessWidget {
               ),
           ],
           busy: controller.saving,
+          completeWholeSteps: completeWholeSteps,
+          onStepChanged: (courseId, delivered) async {
+            final success = await controller.setStepDelivered(
+              order.id,
+              courseId,
+              delivered,
+              expectedOrderRevision: order.revision,
+              expectedDeliveryRevision: order.deliveryEditRevision,
+              expectedQuantities: {
+                for (final line in order.lines.where(
+                  (line) => line.courseId == courseId,
+                ))
+                  line.id: order.deliveredQuantity(line.id),
+              },
+            );
+            if (!success && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(l.deliveryProgressFailed)));
+            }
+          },
           onChanged: (id, quantity, expected) async {
             final success = await controller.setLineDelivered(
               order.id,

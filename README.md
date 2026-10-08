@@ -27,7 +27,7 @@ There is no account, subscription or required cloud service. The catalogue, curr
 - Compose tickets with quantities, preparation notes, order notes and an optional order title or table name. Titles appear prominently in Compose, ticket history and the Server board, alongside the order number. The print action stays on screen, and optional Compact Compose shows every reusable item in one order card with a quantity starting at 0.
 - Recover the current order after closing or restarting LibreSlip.
 - Optionally separate items with unnamed visual dividers in Compose, Server orders, ticket previews, printed tickets and PDFs.
-- Optionally keep orders open, share them across Clients paired with the same Server, add items later and print labelled additions while retaining every saved revision. Track and synchronise delivered quantities within each divider.
+- Optionally keep orders open, share them across Clients paired with the same Server, add items later and print labelled additions while retaining every saved revision. Track and synchronise delivered quantities within each divider, or enable Complete whole steps for one completion button per step.
 - Print to the NETUM NT-1809DD through Bluetooth Classic SPP, with a ticket logo sized to 25%, 50%, 75% or 100% of the printable width.
 - Reprint or share a ticket as a PDF without creating a second order.
 - Browse immutable ticket history and delete individual tickets or clear the history when needed.

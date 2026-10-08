@@ -1,5 +1,20 @@
 # Validation evidence
 
+## Optional whole-step completion, 8 October 2026
+
+Validated step 12 with `VERSION` unchanged at 1.9.0. Settings format 9 adds a Client preference; database schema 17 and network formats are unchanged.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 110 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 236 active tests passed; normal execution skipped only opt-in workspace capture. Existing persistence, migrations, printing, shared conflict and interrupted restore checks passed. |
+| Whole-step persistence | A multi-item section completes or resets in one transaction, increments the delivery edit revision once and leaves other sections and immutable tickets unchanged. Progress survived database close and reopen. Tests reject stale local edits, stale content after additions, unknown sections and closed orders without partial changes. Additions to a completed section remain outstanding until explicitly delivered. |
+| Shared delivery | Two Clients exchanged section completion and undo through the existing Server sync. Private lines stayed local. A lost acknowledgement retried the original operation identity; later Server progress with unchanged local revisions caused a stale step action to fail without overwriting it. Preparation totals advanced to the next section and returned after undo. |
+| Settings and archives | The toggle defaults off, preserves progress when switching modes and survives controller recreation. Configuration and full backups, including fresh-install restore, retain it. Version 8 restores individual item controls; malformed version 9 values fail preview without replacing data. Existing failed and interrupted restore recovery passed. |
+| Responsive and localised screens | Actual setting, completion, reopening and mode-switch controls passed on an English tablet, Italian 320-pixel phone with doubled text and English landscape. Eighty-nine render captures passed framework and missed-tap checks. Inspected compact step cards and the concise setting in both languages, including dark landscape. Review images: [step completion](previews/whole-step-client-en.png), [Italian enlarged text](previews/whole-step-client-it-large-text.png) and [Client toggle](previews/whole-step-settings-it-large-text.png). |
+| Android preview APK | Fresh 1.9.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched; final localised labels are present. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, multi-phone LAN or physical printer verification was performed. Automated checks do not establish physical-device behaviour or paper output. |
+
 ## Current-section preparation overview, 5 October 2026
 
 Validated step 11 with `VERSION` unchanged at 1.8.0. No database or protocol changes.

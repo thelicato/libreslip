@@ -17,6 +17,7 @@ class AppSettings {
     this.preferredPrinterAddress,
     this.compactCompose = false,
     this.printerConnectionRequired = true,
+    this.completeWholeSteps = false,
   });
 
   final String heading;
@@ -36,6 +37,7 @@ class AppSettings {
   final String? preferredPrinterAddress;
   final bool compactCompose;
   final bool printerConnectionRequired;
+  final bool completeWholeSteps;
 
   Locale get locale =>
       language == 'it' ? const Locale('it', 'IT') : const Locale('en', 'GB');
@@ -54,6 +56,7 @@ class AppSettings {
     bool clearPreferredPrinter = false,
     bool? compactCompose,
     bool? printerConnectionRequired,
+    bool? completeWholeSteps,
   }) => AppSettings(
     heading: heading ?? this.heading,
     footer: footer ?? this.footer,
@@ -69,10 +72,11 @@ class AppSettings {
     compactCompose: compactCompose ?? this.compactCompose,
     printerConnectionRequired:
         printerConnectionRequired ?? this.printerConnectionRequired,
+    completeWholeSteps: completeWholeSteps ?? this.completeWholeSteps,
   );
 
   Map<String, Object?> toJson() => {
-    'version': 8,
+    'version': 9,
     'heading': heading,
     'footer': footer,
     'logoPath': logoPath,
@@ -84,6 +88,7 @@ class AppSettings {
     'preferredPrinterAddress': preferredPrinterAddress,
     'compactCompose': compactCompose,
     'printerConnectionRequired': printerConnectionRequired,
+    'completeWholeSteps': completeWholeSteps,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -91,27 +96,30 @@ class AppSettings {
     final footer = version == 1 ? '' : json['footer'];
     final logoPath = version == 1 ? null : json['logoPath'];
     final typographyJson = json['typography'];
-    final typography = ![3, 4, 5, 6, 7, 8].contains(version)
+    final typography = ![3, 4, 5, 6, 7, 8, 9].contains(version)
         ? const TicketTypography()
         : typographyJson is Map<String, dynamic>
         ? TicketTypography.fromJson(typographyJson)
         : throw const FormatException('Invalid ticket typography');
-    final appTextScale = [4, 5, 6, 7, 8].contains(version)
+    final appTextScale = [4, 5, 6, 7, 8, 9].contains(version)
         ? json['appTextScale']
         : defaultAppTextScale;
-    final preferredPrinterAddress = [5, 6, 7, 8].contains(version)
+    final preferredPrinterAddress = [5, 6, 7, 8, 9].contains(version)
         ? json['preferredPrinterAddress']
         : null;
-    final compactCompose = [6, 7, 8].contains(version)
+    final compactCompose = [6, 7, 8, 9].contains(version)
         ? json['compactCompose']
         : false;
-    final logoWidthPercent = [7, 8].contains(version)
+    final logoWidthPercent = [7, 8, 9].contains(version)
         ? json['logoWidthPercent']
         : defaultLogoWidthPercent;
-    final printerConnectionRequired = version == 8
+    final printerConnectionRequired = [8, 9].contains(version)
         ? json['printerConnectionRequired']
         : true;
-    if (![1, 2, 3, 4, 5, 6, 7, 8].contains(version) ||
+    final completeWholeSteps = version == 9
+        ? json['completeWholeSteps']
+        : false;
+    if (![1, 2, 3, 4, 5, 6, 7, 8, 9].contains(version) ||
         json['heading'] is! String ||
         (json['heading'] as String).characters.length > 60 ||
         footer is! String ||
@@ -125,6 +133,7 @@ class AppSettings {
         appTextScale > maxAppTextScale ||
         compactCompose is! bool ||
         printerConnectionRequired is! bool ||
+        completeWholeSteps is! bool ||
         logoWidthPercent is! int ||
         !logoWidthOptions.contains(logoWidthPercent) ||
         (preferredPrinterAddress != null &&
@@ -145,6 +154,7 @@ class AppSettings {
       preferredPrinterAddress: preferredPrinterAddress as String?,
       compactCompose: compactCompose,
       printerConnectionRequired: printerConnectionRequired,
+      completeWholeSteps: completeWholeSteps,
     );
   }
 }

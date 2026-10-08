@@ -254,6 +254,18 @@ class SettingsPage extends StatelessWidget {
                       ),
               ),
               SwitchListTile(
+                key: const ValueKey('toggle-whole-steps'),
+                contentPadding: EdgeInsets.zero,
+                value: settings.completeWholeSteps,
+                title: Text(l.completeWholeSteps),
+                subtitle: Text(l.completeWholeStepsBody),
+                onChanged: controller.saving
+                    ? null
+                    : (value) => controller.update(
+                        controller.settings.copyWith(completeWholeSteps: value),
+                      ),
+              ),
+              SwitchListTile(
                 key: const ValueKey('toggle-course-groups'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.courseGroupsEnabled,

@@ -77,3 +77,10 @@ Divider arrows and quantity controls share one row in item overview cards, with 
 ## 11. Current-section preparation overview: implemented
 
 Still to prepare aggregates only the first unfinished section of each updatable order, including ungrouped items before any divider. Empty and completed sections are skipped. Delivering the current section advances the overview; undoing an earlier delivery returns to it. Partial deliveries contribute only outstanding quantities. Ordinary tickets retain their complete Received totals. The overview has a concise English and Italian explanation; no stored state, protocol or version changes are required.
+
+
+## 12. Optional whole-step completion: implemented
+
+Client Settings adds Complete whole steps, off by default. When enabled, active orders and previously ordered items use compact section lists with one Complete step button instead of per-item controls. Completed sections offer Reopen step. Ungrouped orders use one section; empty sections are omitted. Partial progress remains visible and switching back restores item controls without modifying saved progress. The choice is local to each Client and preserves Server controls.
+
+A transaction completes or resets every item in the chosen section, records the changed line identities once and rejects stale order revisions, delivery revisions or section quantities. Existing synchronisation exchanges the complete edit with other Clients and the Server, retaining private items locally and existing conflict and acknowledgement recovery. Additions remain outstanding until explicitly delivered. Settings format 9 persists the preference and supports configuration and full-backup restore; earlier settings retain individual controls. Database and network formats and the app version remain unchanged.

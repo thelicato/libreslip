@@ -84,6 +84,41 @@ void main() {
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       (
+        'managed-whole-step-delivery-active-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-whole-step-delivery-active-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'managed-whole-step-delivery-active-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.dark,
+        2,
+      ),
+      (
+        'whole-step-settings-tablet-en',
+        const Size(1100, 900),
+        'en',
+        ThemeMode.light,
+        4,
+      ),
+      (
+        'whole-step-settings-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        4,
+      ),
+      (
         'printer-optional-compose-tablet-en',
         const Size(1100, 900),
         'en',
@@ -566,6 +601,7 @@ void main() {
       final settingsStore = MemorySettingsRepository()
         ..stored = AppSettings(
           language: language,
+          completeWholeSteps: name.contains('whole-step'),
           printerConnectionRequired: !name.contains('printer-optional'),
           themeMode: mode,
           typography: name == 'ticket-preview-phone-it'
@@ -838,7 +874,7 @@ void main() {
             orders.activeDraft!.lines.single.id,
             language == 'it' ? 'Uno senza pane' : 'One without bread',
           );
-          if (dividerPreview) {
+          if (dividerPreview || name.contains('whole-step')) {
             orders.addDivider();
           } else {
             orders.saveCourse(language == 'it' ? 'Secondo' : 'Second course');
@@ -1008,6 +1044,16 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
+      if (name.contains('whole-step-settings')) {
+        final toggle = find.byKey(const ValueKey('toggle-whole-steps'));
+        await tester.scrollUntilVisible(
+          toggle,
+          250,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.ensureVisible(toggle);
+        await tester.pumpAndSettle();
+      }
       if (managedPreview && page == 2) {
         if (name == 'managed-active-phone-it-large-text' ||
             name.contains('spaced-active') ||
@@ -1052,7 +1098,17 @@ void main() {
               await tester.ensureVisible(target);
               await tester.pumpAndSettle();
             }
-            if (!name.contains('progress-sync') &&
+            if (name.contains('whole-step')) {
+              final courseId = orders.managedOrders.single.lines.first.courseId;
+              await tester.ensureVisible(
+                find.byKey(
+                  ValueKey('complete-step-${courseId ?? 'ungrouped'}'),
+                ),
+              );
+              await tester.pumpAndSettle();
+            }
+            if (!name.contains('whole-step') &&
+                !name.contains('progress-sync') &&
                 !name.contains('spaced-active') &&
                 (size.width < 760 || size.height < 600)) {
               await tester.ensureVisible(

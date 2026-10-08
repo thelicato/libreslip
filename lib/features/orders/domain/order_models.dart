@@ -252,6 +252,15 @@ abstract interface class OrderRepository {
     required int expectedQuantity,
   });
 
+  Future<void> setManagedStepDelivered(
+    String orderId,
+    String? courseId,
+    bool delivered, {
+    required int expectedOrderRevision,
+    required int expectedDeliveryRevision,
+    required Map<String, int> expectedQuantities,
+  });
+
   Future<void> deleteTicket(String id);
 
   Future<void> deleteAllTickets();

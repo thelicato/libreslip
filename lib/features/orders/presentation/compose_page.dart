@@ -81,6 +81,7 @@ class ComposePageState extends State<ComposePage> {
               widget.controller.managedOrders.isNotEmpty ||
               draft.managedOrderId != null) ...[
             ManagedOrderComposer(
+              completeWholeSteps: widget.settings.completeWholeSteps,
               controller: widget.controller,
               delivery: widget.delivery,
               sharedOrders: widget.sharedOrders,

@@ -2620,6 +2620,30 @@ abstract class AppLocalizations {
   /// **'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.'**
   String get deliveryWaitingForRevision;
 
+  /// No description provided for @completeWholeSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete whole steps'**
+  String get completeWholeSteps;
+
+  /// No description provided for @completeWholeStepsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One button per step instead of item controls.'**
+  String get completeWholeStepsBody;
+
+  /// No description provided for @completeStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete step'**
+  String get completeStep;
+
+  /// No description provided for @undoStepDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen step'**
+  String get undoStepDelivery;
+
   /// No description provided for @deliveryProgress.
   ///
   /// In en, this message translates to:

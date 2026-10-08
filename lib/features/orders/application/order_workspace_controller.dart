@@ -131,6 +131,28 @@ class OrderWorkspaceController extends ChangeNotifier {
     }
   });
 
+  Future<bool> setStepDelivered(
+    String orderId,
+    String? courseId,
+    bool delivered, {
+    required int expectedOrderRevision,
+    required int expectedDeliveryRevision,
+    required Map<String, int> expectedQuantities,
+  }) => _perform(() async {
+    try {
+      await _repository.setManagedStepDelivered(
+        orderId,
+        courseId,
+        delivered,
+        expectedOrderRevision: expectedOrderRevision,
+        expectedDeliveryRevision: expectedDeliveryRevision,
+        expectedQuantities: expectedQuantities,
+      );
+    } finally {
+      managedOrders = await _repository.loadManagedOrders();
+    }
+  });
+
   /// Holds the editor lock while an explicit progress exchange is in flight.
   Future<void> exchangeProgress(
     String orderId,

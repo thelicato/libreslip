@@ -1445,6 +1445,19 @@ class AppLocalizationsIt extends AppLocalizations {
       'In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.';
 
   @override
+  String get completeWholeSteps => 'Completa intere fasi';
+
+  @override
+  String get completeWholeStepsBody =>
+      'Un pulsante per fase, senza comandi per articolo.';
+
+  @override
+  String get completeStep => 'Completa fase';
+
+  @override
+  String get undoStepDelivery => 'Riapri fase';
+
+  @override
   String get deliveryProgress => 'Avanzamento consegna';
 
   @override
