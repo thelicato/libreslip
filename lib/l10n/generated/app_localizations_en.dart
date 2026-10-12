@@ -1422,11 +1422,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String additionsRevision(int revision) {
-    return 'Additions · revision $revision';
-  }
-
-  @override
   String get managedHistoryPending =>
       'Deliver pending revisions before deleting their saved tickets.';
 
@@ -1765,6 +1760,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get phaseMovePending =>
       'Send pending additions to the Server before moving items.';
+
+  @override
+  String get ticketAdditionsHeading => 'Additions';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

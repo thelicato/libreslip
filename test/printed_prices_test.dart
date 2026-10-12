@@ -1,6 +1,9 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/app/libreslip_app.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
@@ -9,6 +12,7 @@ import 'package:libreslip/features/printing/application/printer_controller.dart'
 import 'package:libreslip/features/printing/application/ticket_output_controller.dart';
 import 'package:libreslip/features/printing/application/ticket_pdf_sharer.dart';
 import 'package:libreslip/features/printing/domain/ticket_document.dart';
+import 'package:libreslip/features/printing/domain/ticket_typography.dart';
 import 'package:libreslip/features/printing/presentation/ticket_detail_dialog.dart';
 import 'package:libreslip/features/printing/presentation/ticket_preview.dart';
 import 'package:libreslip/features/printing/presentation/ticket_price_labels.dart';
@@ -46,7 +50,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           enabled.lines.first.priceText,
-          contains(language == 'it' ? '1,25' : '1.25'),
+          isNot(contains(language == 'it' ? '1,25' : '1.25')),
         );
         expect(
           enabled.lines.first.priceText,
@@ -74,6 +78,9 @@ void main() {
           () => const EscPosTicketEncoder().encode(disabled),
         ))!;
         final text = String.fromCharCodes(encoded);
+        final amount = language == 'it' ? '2,50 EUR' : 'EUR 2.50';
+        expect(text, contains('2 x Soup${' ' * 16}$amount'));
+        expect(text, isNot(contains(language == 'it' ? 'ciascuno' : 'each')));
         expect(text, contains('EUR'));
         expect(text, contains('GBP'));
         expect(text, contains('USD'));
@@ -150,6 +157,17 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(addition.lines, hasLength(1));
+        expect(
+          addition.additionLabel,
+          language == 'it' ? 'Aggiunte' : 'Additions',
+        );
+        expect(first.additionLabel, isEmpty);
+        expect(
+          find.textContaining(
+            RegExp('revision|revisione', caseSensitive: false),
+          ),
+          findsNothing,
+        );
         expect(addition.priceSummary!.totals, hasLength(1));
         expect(
           addition.priceSummary!.label,
@@ -170,6 +188,133 @@ void main() {
         );
         expect(String.fromCharCodes(bytes), isNot(contains('GBP')));
         expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (language, size, scale, typography) in [
+    ('en', const Size(1100, 900), 1.0, const TicketTypography()),
+    ('it', const Size(320, 740), 2.0, const TicketTypography()),
+    (
+      'it',
+      const Size(915, 412),
+      1.0,
+      const TicketTypography(items: 18, details: 14),
+    ),
+  ]) {
+    testWidgets(
+      'receipt rows wrap long names and amounts without revision numbers $language $size',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        const capture = bool.fromEnvironment('LIBRESLIP_CAPTURE_PREVIEWS');
+        if (capture) {
+          await (FontLoader('RobotoTicket')
+                ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'))
+                ..addFont(rootBundle.load('assets/fonts/Roboto-Bold.ttf')))
+              .load();
+        }
+        final boundary = GlobalKey();
+        final ticket = SavedTicket(
+          id: 'receipt-additions',
+          number: 1,
+          createdAt: _ticket.createdAt,
+          heading: 'Kitchen',
+          reference: 'Table 4',
+          orderNote: '',
+          managedOrderId: 'open-order',
+          revision: 7,
+          additionLineIds: const ['long', 'maximum', 'unicode'],
+          lines: const [
+            TicketLine(
+              id: 'long',
+              name: 'Caffè con latte e una preparazione particolarmente lunga',
+              quantity: 2,
+              preparationNote: 'Caldo',
+              price: ProductPrice(minorUnits: 125, currency: 'EUR'),
+            ),
+            TicketLine(
+              id: 'maximum',
+              name: 'Water',
+              quantity: 999,
+              price: ProductPrice(minorUnits: 99999999, currency: 'EUR'),
+            ),
+            TicketLine(
+              id: 'unicode',
+              name: 'Crème brûlée',
+              quantity: 1,
+              price: ProductPrice(minorUnits: 0, currency: 'USD'),
+            ),
+          ],
+        );
+        late TicketDocument document;
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundary,
+            child: _app(
+              language,
+              Builder(
+                builder: (context) {
+                  document = _document(
+                    ticket,
+                    context,
+                    prices: true,
+                    typography: typography,
+                  );
+                  return SingleChildScrollView(
+                    child: Center(child: TicketPreview(document: document)),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining(
+            RegExp('revision|revisione', caseSensitive: false),
+          ),
+          findsNothing,
+        );
+        expect(
+          document.lines.first.priceText,
+          contains(language == 'it' ? '2,50' : '2.50'),
+        );
+        expect(
+          document.lines.last.priceText,
+          contains(language == 'it' ? '0,00' : '0.00'),
+        );
+        final bytes = (await tester.runAsync(
+          () => const EscPosTicketEncoder().encode(document),
+        ))!;
+        expect(bytes, containsAllInOrder([0x1D, 0x76, 0x30, 0x00]));
+        expect(String.fromCharCodes(bytes), isNot(contains('revision')));
+        final pdf = (await tester.runAsync(
+          () =>
+              LocalTicketPdfSharer().build(document, subject: 'Receipt layout'),
+        ))!;
+        expect(String.fromCharCodes(pdf.take(4)), '%PDF');
+        expect(ticket.revision, 7);
+        expect(tester.takeException(), isNull);
+        if (capture) {
+          await tester.pumpAndSettle();
+          await tester.runAsync(() async {
+            final render =
+                boundary.currentContext!.findRenderObject()!
+                    as RenderRepaintBoundary;
+            final image = await render.toImage();
+            final png = await image.toByteData(format: ui.ImageByteFormat.png);
+            final base =
+                'build/previews/receipt-rows-$language-${size.width.toInt()}';
+            await File('$base.png').writeAsBytes(png!.buffer.asUint8List());
+            await File('$base.pdf').writeAsBytes(pdf);
+            image.dispose();
+          });
+        }
       },
     );
   }
@@ -359,6 +504,7 @@ void main() {
 }
 
 Widget _app(String language, Widget child) => MaterialApp(
+  debugShowCheckedModeBanner: false,
   locale: Locale(language, language == 'it' ? 'IT' : 'GB'),
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
@@ -369,6 +515,7 @@ TicketDocument _document(
   SavedTicket ticket,
   BuildContext context, {
   bool prices = false,
+  TicketTypography typography = const TicketTypography(),
 }) {
   final l = AppLocalizations.of(context);
   return TicketDocument.fromTicket(
@@ -381,6 +528,8 @@ TicketDocument _document(
     orderNotesLabel: l.orderNotes,
     lineNotePrefix: l.lineNoteLabel,
     footer: '',
+    typography: typography,
+    additionLabel: l.ticketAdditionsHeading,
     priceLabels: prices ? ticketPriceLabels(context) : null,
   );
 }

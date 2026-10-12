@@ -559,14 +559,6 @@
       }
     }
   },
-  "additionsRevision": "Additions · revision {revision}",
-  "@additionsRevision": {
-    "placeholders": {
-      "revision": {
-        "type": "int"
-      }
-    }
-  },
   "managedHistoryPending": "Deliver pending revisions before deleting their saved tickets.",
   "activeOrderLocal": "This order stays on this phone.",
   "previouslyCompleted": "Previously completed",
@@ -745,5 +737,6 @@
       }
     }
   },
-  "phaseMovePending": "Send pending additions to the Server before moving items."
+  "phaseMovePending": "Send pending additions to the Server before moving items.",
+  "ticketAdditionsHeading": "Additions"
 }

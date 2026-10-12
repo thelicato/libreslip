@@ -13,10 +13,8 @@ TicketPriceLabels ticketPriceLabels(BuildContext context) {
     noPrice: l.noPrice,
     missingPrices: l.ticketMissingPrices,
     separateCurrencies: l.priceCurrenciesSeparate,
-    formatLine: (price, quantity) => l.priceLineEstimate(
-      formatPrice(context, price),
-      formatPrice(context, price, quantity: quantity),
-    ),
+    formatLine: (price, quantity) =>
+        formatPrice(context, price, quantity: quantity),
     formatAmount: (amount, currency) =>
         formatPriceAmount(context, amount, currency),
   );

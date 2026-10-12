@@ -615,7 +615,7 @@ TicketDocument _document(SavedTicket ticket) => TicketDocument.fromTicket(
   orderNotesLabel: 'Notes',
   lineNotePrefix: 'Note',
   footer: '',
-  revisionLabel: 'Additions · revision 2',
+  additionLabel: 'Additions',
   ungroupedLabel: 'Ungrouped',
 );
 Future<void> _transmit(

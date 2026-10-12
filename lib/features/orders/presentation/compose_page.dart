@@ -425,11 +425,7 @@ class ComposePageState extends State<ComposePage> {
       logoPath: widget.settings.logoPath,
       logoWidthPercent: widget.settings.logoWidthPercent,
       typography: widget.settings.typography,
-      revisionLabel: ticket.revision > 1
-          ? l.additionsRevision(ticket.revision)
-          : ticket.revision == 1
-          ? l.orderRevision(1)
-          : '',
+      additionLabel: l.ticketAdditionsHeading,
     );
   }
 }

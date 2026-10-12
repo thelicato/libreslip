@@ -117,9 +117,9 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
               style: detailsBold,
             ),
           ),
-          if (document.revisionLabel.isNotEmpty)
+          if (document.additionLabel.isNotEmpty)
             pw.Center(
-              child: pw.Text(document.revisionLabel, style: detailsBold),
+              child: pw.Text(document.additionLabel, style: detailsBold),
             ),
           pw.Center(child: pw.Text(document.createdAt, style: details)),
           if (document.reference.isNotEmpty) ...[
@@ -143,14 +143,16 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      '${line.quantity} x ${line.name}',
-                      style: itemsBold,
-                    ),
                     if (line.priceText.isNotEmpty)
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.only(top: 2),
-                        child: pw.Text(line.priceText, style: details),
+                      _amountRow(
+                        '${line.quantity} x ${line.name}',
+                        line.priceText,
+                        itemsBold,
+                      )
+                    else
+                      pw.Text(
+                        '${line.quantity} x ${line.name}',
+                        style: itemsBold,
                       ),
                     if (line.note.isNotEmpty)
                       pw.Padding(
@@ -166,9 +168,14 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
           ],
           if (document.priceSummary case final summary?) ...[
             pw.Divider(),
-            pw.Text(summary.label, style: detailsBold),
-            for (final amount in summary.totals)
-              pw.Text(amount, style: detailsBold),
+            if (summary.totals.isEmpty)
+              pw.Text(summary.label, style: detailsBold),
+            for (var i = 0; i < summary.totals.length; i++)
+              _amountRow(
+                i == 0 ? summary.label : '',
+                summary.totals[i],
+                detailsBold,
+              ),
             for (final note in summary.notes) pw.Text(note, style: notes),
           ],
           if (document.orderNote.isNotEmpty) ...[
@@ -192,6 +199,61 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
     );
     return pdf.save();
   }
+
+  pw.Widget _amountRow(String label, String amount, pw.TextStyle style) =>
+      pw.LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints!.maxWidth;
+          final font = style.font!.getFont(context);
+          final amountWidth =
+              font.stringMetrics(amount).maxWidth * style.fontSize! + 2;
+          final labelWidth = width - amountWidth - 8;
+          final wrapsInsideWord = label
+              .split(RegExp(r'\s+'))
+              .any(
+                (word) =>
+                    font.stringMetrics(word).maxWidth * style.fontSize! >
+                    labelWidth,
+              );
+          if (amountWidth > width * 0.6 || wrapsInsideWord) {
+            final amountStyle = amountWidth > width
+                ? style.copyWith(
+                    fontSize: style.fontSize! * width / amountWidth,
+                  )
+                : style;
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                if (label.isNotEmpty) pw.Text(label, style: style),
+                pw.Text(
+                  amount,
+                  style: amountStyle,
+                  textAlign: pw.TextAlign.right,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ],
+            );
+          }
+          return pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(child: pw.Text(label, style: style)),
+              pw.SizedBox(width: 8),
+              pw.SizedBox(
+                width: amountWidth,
+                child: pw.Text(
+                  amount,
+                  textAlign: pw.TextAlign.right,
+                  style: style,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          );
+        },
+      );
 
   Future<void> _loadFonts() async {
     if (_regular != null && _bold != null) return;

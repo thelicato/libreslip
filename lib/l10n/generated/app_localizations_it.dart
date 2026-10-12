@@ -1435,11 +1435,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String additionsRevision(int revision) {
-    return 'Aggiunte · revisione $revision';
-  }
-
-  @override
   String get managedHistoryPending =>
       'Invia le revisioni in attesa prima di eliminare le comande salvate.';
 
@@ -1780,6 +1775,9 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get phaseMovePending =>
       'Invia al Server le aggiunte in attesa prima di spostare gli articoli.';
+
+  @override
+  String get ticketAdditionsHeading => 'Aggiunte';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

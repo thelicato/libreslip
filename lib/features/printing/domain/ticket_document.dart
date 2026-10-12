@@ -19,7 +19,7 @@ class TicketDocument {
     this.logoWidthPercent = 100,
     this.courses = const [],
     this.ungroupedLabel = '',
-    this.revisionLabel = '',
+    this.additionLabel = '',
     this.priceSummary,
   });
 
@@ -39,7 +39,7 @@ class TicketDocument {
   final List<TicketDocumentLine> lines;
   final List<OrderCourse> courses;
   final String ungroupedLabel;
-  final String revisionLabel;
+  final String additionLabel;
   final TicketDocumentPriceSummary? priceSummary;
 
   List<CourseSection<TicketDocumentLine>> get sections {
@@ -70,7 +70,7 @@ class TicketDocument {
     int logoWidthPercent = 100,
     TicketTypography typography = const TicketTypography(),
     String ungroupedLabel = '',
-    String revisionLabel = '',
+    String additionLabel = '',
     TicketPriceLabels? priceLabels,
   }) => TicketDocument(
     heading: ticket.heading.isEmpty ? fallbackHeading : ticket.heading,
@@ -88,7 +88,7 @@ class TicketDocument {
     typography: typography,
     courses: ticket.courses,
     ungroupedLabel: ungroupedLabel,
-    revisionLabel: revisionLabel,
+    additionLabel: ticket.revision > 1 ? additionLabel : '',
     priceSummary: priceLabels?.summary(ticket),
     lines: [
       for (final line in ticket.printLines)

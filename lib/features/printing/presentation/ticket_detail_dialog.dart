@@ -233,11 +233,7 @@ class TicketDetailDialog extends StatelessWidget {
       logoPath: settings.logoPath,
       logoWidthPercent: settings.logoWidthPercent,
       typography: settings.typography,
-      revisionLabel: ticket.revision > 1
-          ? l.additionsRevision(ticket.revision)
-          : ticket.revision == 1
-          ? l.orderRevision(1)
-          : '',
+      additionLabel: l.ticketAdditionsHeading,
     );
   }
 }

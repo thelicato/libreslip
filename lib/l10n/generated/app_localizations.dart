@@ -2608,12 +2608,6 @@ abstract class AppLocalizations {
   /// **'Revision {revision}'**
   String orderRevision(int revision);
 
-  /// No description provided for @additionsRevision.
-  ///
-  /// In en, this message translates to:
-  /// **'Additions · revision {revision}'**
-  String additionsRevision(int revision);
-
   /// No description provided for @managedHistoryPending.
   ///
   /// In en, this message translates to:
@@ -3153,6 +3147,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send pending additions to the Server before moving items.'**
   String get phaseMovePending;
+
+  /// No description provided for @ticketAdditionsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Additions'**
+  String get ticketAdditionsHeading;
 }
 
 class _AppLocalizationsDelegate

@@ -68,10 +68,10 @@ class EscPosTicketEncoder {
       fontSize: typography.details,
       nativeFontSize: TicketTypography.defaultDetails,
     );
-    if (document.revisionLabel.isNotEmpty) {
+    if (document.additionLabel.isNotEmpty) {
       await _writeStyled(
         output,
-        document.revisionLabel,
+        document.additionLabel,
         align: TextAlign.center,
         bold: true,
         fontSize: typography.details,
@@ -105,19 +105,21 @@ class EscPosTicketEncoder {
         _line(output, '-' * profile.charactersPerLine);
       }
       for (final line in section.lines) {
-        await _writeStyled(
-          output,
-          '${line.quantity} x ${line.name}',
-          bold: true,
-          fontSize: typography.items,
-          nativeFontSize: TicketTypography.defaultItems,
-        );
         if (line.priceText.isNotEmpty) {
+          await _writeAmountRow(
+            output,
+            '${line.quantity} x ${line.name}',
+            line.priceText,
+            fontSize: typography.items,
+            nativeFontSize: TicketTypography.defaultItems,
+          );
+        } else {
           await _writeStyled(
             output,
-            line.priceText,
-            fontSize: typography.details,
-            nativeFontSize: TicketTypography.defaultDetails,
+            '${line.quantity} x ${line.name}',
+            bold: true,
+            fontSize: typography.items,
+            nativeFontSize: TicketTypography.defaultItems,
           );
         }
         if (line.note.isNotEmpty) {
@@ -133,18 +135,20 @@ class EscPosTicketEncoder {
 
     if (document.priceSummary case final summary?) {
       _line(output, '-' * profile.charactersPerLine);
-      await _writeStyled(
-        output,
-        summary.label,
-        bold: true,
-        fontSize: typography.details,
-        nativeFontSize: TicketTypography.defaultDetails,
-      );
-      for (final amount in summary.totals) {
+      if (summary.totals.isEmpty) {
         await _writeStyled(
           output,
-          amount,
+          summary.label,
           bold: true,
+          fontSize: typography.details,
+          nativeFontSize: TicketTypography.defaultDetails,
+        );
+      }
+      for (var i = 0; i < summary.totals.length; i++) {
+        await _writeAmountRow(
+          output,
+          i == 0 ? summary.label : '',
+          summary.totals[i],
           fontSize: typography.details,
           nativeFontSize: TicketTypography.defaultDetails,
         );
@@ -234,6 +238,90 @@ class EscPosTicketEncoder {
       ..addByte(0x0A);
   }
 
+  /// Native rows preserve spaces rather than passing through word wrapping.
+  /// Raster rows measure both columns at the selected font size.
+  Future<void> _writeAmountRow(
+    BytesBuilder output,
+    String label,
+    String amount, {
+    required int fontSize,
+    required int nativeFontSize,
+  }) async {
+    final price = amount.replaceAll('\u00a0', ' ');
+    final labelWidth = profile.charactersPerLine - price.runes.length - 2;
+    if (fontSize == nativeFontSize &&
+        _canEncode(label) &&
+        _canEncode(price) &&
+        labelWidth >= 8) {
+      output.add([0x1B, 0x61, 0x00, 0x1B, 0x45, 0x01, 0x1D, 0x21, 0x00]);
+      final lines = _wrap(label, labelWidth);
+      for (var i = 0; i < lines.length; i++) {
+        final text = lines[i];
+        final spaces =
+            profile.charactersPerLine - text.runes.length - price.runes.length;
+        _line(output, i == 0 ? '$text${' ' * spaces}$price' : text);
+      }
+      return;
+    }
+    final style = TextStyle(
+      color: Colors.black,
+      fontFamily: 'RobotoTicket',
+      fontSize: fontSize * profile.dpi / 72,
+      fontWeight: FontWeight.w700,
+      height: 1.2,
+    );
+    final pricePainter = TextPainter(
+      text: TextSpan(text: price, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final width = profile.widthDots.toDouble() - 8;
+    // Large typography or unusually long amounts can use the full paper width.
+    if (pricePainter.width > width * 0.6) {
+      final amountSize = pricePainter.width > width
+          ? (fontSize * width / pricePainter.width).floor()
+          : fontSize;
+      pricePainter.dispose();
+      await _writeStyled(
+        output,
+        label,
+        bold: true,
+        fontSize: fontSize,
+        nativeFontSize: nativeFontSize,
+      );
+      await _writeStyled(
+        output,
+        price,
+        align: TextAlign.right,
+        bold: true,
+        fontSize: amountSize,
+        nativeFontSize: nativeFontSize,
+      );
+      return;
+    }
+    final labelPainter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: width - pricePainter.width - 8);
+    final height =
+        (labelPainter.height > pricePainter.height
+                ? labelPainter.height
+                : pricePainter.height)
+            .ceil() +
+        8;
+    output.add([0x1B, 0x61, 0x00, 0x1B, 0x45, 0x00, 0x1D, 0x21, 0x00]);
+    output.add(
+      await _paintRaster(height, (canvas) {
+        labelPainter.paint(canvas, const Offset(4, 4));
+        pricePainter.paint(
+          canvas,
+          Offset(profile.widthDots - 4 - pricePainter.width, 4),
+        );
+      }),
+    );
+    labelPainter.dispose();
+    pricePainter.dispose();
+  }
+
   Future<List<int>> _logoRaster(String path, int widthPercent) async {
     try {
       final decoded = img.decodeImage(await File(path).readAsBytes());
@@ -266,8 +354,6 @@ class EscPosTicketEncoder {
     required bool bold,
     required int fontSize,
   }) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)..drawColor(Colors.white, BlendMode.src);
     final painter = TextPainter(
       text: TextSpan(
         text: text,
@@ -283,7 +369,20 @@ class EscPosTicketEncoder {
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: profile.widthDots.toDouble() - 8);
     final height = painter.height.ceil() + 8;
-    painter.paint(canvas, const Offset(4, 4));
+    final raster = await _paintRaster(height, (canvas) {
+      painter.paint(canvas, const Offset(4, 4));
+    });
+    painter.dispose();
+    return raster;
+  }
+
+  Future<List<int>> _paintRaster(
+    int height,
+    void Function(Canvas) paint,
+  ) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)..drawColor(Colors.white, BlendMode.src);
+    paint(canvas);
     final picture = recorder.endRecording();
     final rendered = await picture.toImage(profile.widthDots, height);
     final data = await rendered.toByteData(format: ui.ImageByteFormat.rawRgba);

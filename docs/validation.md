@@ -1,5 +1,22 @@
 # Validation evidence
 
+## Compact ticket amounts without printed revisions, 12 October 2026
+
+Validated step 17 with `VERSION` unchanged at 1.12.0. Printable documents replace revision text with a plain Additions heading. Item rows contain quantity/name and a right-aligned line amount; totals align below. Settings, database, archive and network versions are unchanged.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 114 Dart files passed formatting checks, final `flutter analyze --no-pub` reported no issues and `git diff --check` passed. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 269 tests passed with preview capture enabled. After correcting the large-amount PDF layout, all 31 affected printed-price, output/recovery and managed-order tests passed again. Existing interrupted printing, persistence, archive and failed/interrupted restore checks passed. |
+| Printed rows | English and Italian byte assertions verify a single amount on the same 32-column native row as quantity/name, with preserved alignment spaces and no each breakdown. Long names, unsupported native characters, zero amounts, mixed currencies, missing-price subtotals and large/custom typography are covered. |
+| Revision handling | Previews and encoder output omit revision numbers; additions retain their localised heading and original order number. Stored revision metadata and immutable ticket snapshots are retained. New reprints and PDFs use the current layout; queued recovery keeps its original bytes. |
+| PDF inspection | Generated ordinary and additions PDFs in both languages, extracted their text with `pdftotext -layout` and inspected representative `pdftoppm` renders. Large line and total amounts remain intact, including the maximum-price/quantity case, with no revision numbers or unit-price rows. |
+| Responsive UI | Captured 114 PNGs. Inspected a complete priced ticket on an English tablet, additions with long names, narrow Italian at 2x text and customised large typography. Names can wrap or use the full width; amounts remain readable and complete. |
+| Source and APK | Source ZIP verified under `LibreSlip/` with exclusions and SHA-256 checksums. Fresh Android Debug APK uses `io.thelicato.libreslip`, version 1.12.0, build 1, minSdk 34 and targetSdk 36. Flutter/Gradle APKs match and APK Signature Scheme v2 verifies. This is a development-key preview. |
+| Limitations | Previously queued attempts retain their previous layout; use an explicit new print attempt for the new format. Extremely large amounts can use a full-width line and a fitted amount font. No new physical phone, multi-device LAN or physical printer checks were performed; automated bytes and renders do not verify paper output. |
+
+Reproduce with `flutter test --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`; targeted checks use `flutter test test/printed_prices_test.dart test/ticket_output_test.dart test/managed_orders_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`.
+
 ## Phase selection and saved-item moves, 12 October 2026
 
 Validated step 16 with `VERSION` unchanged at 1.11.0. SQLite schema 18 separates live item placement from immutable saved ticket placement; existing rows need no rewrite. Settings format 11 and configuration document version 4 are unchanged. Authenticated phase moves use a separately advertised capability version 1.

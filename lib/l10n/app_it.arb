@@ -559,14 +559,6 @@
       }
     }
   },
-  "additionsRevision": "Aggiunte · revisione {revision}",
-  "@additionsRevision": {
-    "placeholders": {
-      "revision": {
-        "type": "int"
-      }
-    }
-  },
   "managedHistoryPending": "Invia le revisioni in attesa prima di eliminare le comande salvate.",
   "activeOrderLocal": "Questo ordine resta su questo telefono.",
   "previouslyCompleted": "Già completato",
@@ -745,5 +737,6 @@
       }
     }
   },
-  "phaseMovePending": "Invia al Server le aggiunte in attesa prima di spostare gli articoli."
+  "phaseMovePending": "Invia al Server le aggiunte in attesa prima di spostare gli articoli.",
+  "ticketAdditionsHeading": "Aggiunte"
 }

@@ -82,9 +82,9 @@ class TicketPreview extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              if (document.revisionLabel.isNotEmpty)
+              if (document.additionLabel.isNotEmpty)
                 Text(
-                  document.revisionLabel,
+                  document.additionLabel,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: previewSize(typography.details),
@@ -123,47 +123,55 @@ class TicketPreview extends StatelessWidget {
                 for (final line in section.lines)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(
-                          width: 42,
-                          child: Text(
-                            '${line.quantity}x',
+                        if (line.priceText.isNotEmpty)
+                          _AmountRow(
+                            label: '${line.quantity} x ${line.name}',
+                            amount: line.priceText,
                             style: TextStyle(
                               fontSize: previewSize(typography.items),
                               fontWeight: FontWeight.w700,
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
+                          )
+                        else
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                line.name,
-                                style: TextStyle(
-                                  fontSize: previewSize(typography.items),
-                                  fontWeight: FontWeight.w700,
+                              SizedBox(
+                                width: 42,
+                                child: Text(
+                                  '${line.quantity}x',
+                                  style: TextStyle(
+                                    fontSize: previewSize(typography.items),
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
-                              if (line.priceText.isNotEmpty)
-                                Text(
-                                  line.priceText,
+                              Expanded(
+                                child: Text(
+                                  line.name,
                                   style: TextStyle(
-                                    fontSize: previewSize(typography.details),
+                                    fontSize: previewSize(typography.items),
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              if (line.note.isNotEmpty)
-                                Text(
-                                  '${document.lineNotePrefix}: ${line.note}',
-                                  style: TextStyle(
-                                    fontSize: previewSize(typography.notes),
-                                  ),
-                                ),
+                              ),
                             ],
                           ),
-                        ),
+                        if (line.note.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: line.priceText.isEmpty ? 42 : 0,
+                            ),
+                            child: Text(
+                              '${document.lineNotePrefix}: ${line.note}',
+                              style: TextStyle(
+                                fontSize: previewSize(typography.notes),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -174,16 +182,18 @@ class TicketPreview extends StatelessWidget {
                   key: const ValueKey('ticket-price-summary'),
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      summary.label,
-                      style: TextStyle(
-                        fontSize: previewSize(typography.details),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    for (final amount in summary.totals)
+                    if (summary.totals.isEmpty)
                       Text(
-                        amount,
+                        summary.label,
+                        style: TextStyle(
+                          fontSize: previewSize(typography.details),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    for (var i = 0; i < summary.totals.length; i++)
+                      _AmountRow(
+                        label: i == 0 ? summary.label : '',
+                        amount: summary.totals[i],
                         style: TextStyle(
                           fontSize: previewSize(typography.details),
                           fontWeight: FontWeight.w700,
@@ -237,5 +247,66 @@ class _Rule extends StatelessWidget {
   Widget build(BuildContext context) => const Padding(
     padding: EdgeInsets.symmetric(vertical: 14),
     child: Divider(color: Color(0xFF333333), height: 1),
+  );
+}
+
+/// Reserve the amount's natural width; only the item name wraps beside it.
+class _AmountRow extends StatelessWidget {
+  const _AmountRow({
+    required this.label,
+    required this.amount,
+    required this.style,
+  });
+  final String label;
+  final String amount;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: amount,
+          style: DefaultTextStyle.of(context).style.merge(style),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      final labelWidth = constraints.maxWidth - painter.width - 8;
+      final largeAmount = painter.width > constraints.maxWidth * 0.6;
+      painter.dispose();
+      final words = label.split(RegExp(r'\s+'));
+      var wrapsInsideWord = false;
+      for (final word in words) {
+        final wordPainter = TextPainter(
+          text: TextSpan(
+            text: word,
+            style: DefaultTextStyle.of(context).style.merge(style),
+          ),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout();
+        wrapsInsideWord = wrapsInsideWord || wordPainter.width > labelWidth;
+        wordPainter.dispose();
+      }
+      final stacked = largeAmount || wrapsInsideWord;
+      if (stacked) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (label.isNotEmpty) Text(label, style: style),
+            Text(amount, textAlign: TextAlign.right, style: style),
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Text(label, style: style)),
+          const SizedBox(width: 8),
+          Text(amount, textAlign: TextAlign.right, style: style),
+        ],
+      );
+    },
   );
 }
