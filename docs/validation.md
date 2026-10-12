@@ -1,5 +1,21 @@
 # Validation evidence
 
+## Optional printed prices and totals, 12 October 2026
+
+Validated step 15 with `VERSION` unchanged at 1.11.0. Settings format 11 adds the default-off printed-price preference; database schema 17, configuration document version 4 and network formats are unchanged.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 113 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 256 active tests passed; normal execution skipped only opt-in workspace capture. Existing printing, persistence, migrations, shared delivery and failed or interrupted restore checks passed. |
+| Price content | Enabled documents use saved unit prices, quantity amounts and integer per-currency totals. Tests verify English and Italian decimals, zero prices, missing-price warnings, separate currencies, complete totals and additions-only totals. Disabled documents retain empty price content and existing price-free byte comparisons pass. Catalogue edits continue to preserve saved prices. |
+| Printing and recovery | The real Compose action created one saved ticket and one priced print attempt. Reprinting used the current option without changing ticket identity. Queued recovery retained its original priced bytes after disabling prices, while a new attempt omitted them. Currency spaces have verified CP858 support. Existing disconnected, interrupted and uncertain printing checks passed. |
+| Settings and portability | The toggle works independently of the catalogue-price setting and remains reachable on an Italian 320-pixel phone with doubled text. Controller recreation, configuration replacement, full backup and fresh-install restore retain it. Version 10 preferences default it off while retaining other options; malformed version 11 values fail before replacement. |
+| PDF output | Built actual 58 mm PDFs with bundled fonts in both languages. Poppler text extraction independently confirmed unit amounts, per-currency totals, missing-price warnings and localised labels. Disabled exports contained no fixture currencies. Inspected rendered Italian PDF output. Fictional review examples: [English PDF](previews/printed-prices-en.pdf) and [Italian PDF](previews/printed-prices-it.pdf). |
+| Responsive render inspection | One hundred and five screen captures passed framework and missed-tap checks. Inspected English tablet, Italian phone and doubled text, dark landscape and the Italian setting. Review images: [English prices](previews/printed-prices-preview-en.png) and [Italian subtotal](previews/printed-prices-preview-it.png). |
+| Android preview APK | Fresh 1.11.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, multi-phone LAN or physical printer verification was performed. Automated encoding and rendering do not establish physical-device behaviour or paper output. |
+
 ## Orders workspace and full-width composition controls, 12 October 2026
 
 Validated step 14 with `VERSION` unchanged at 1.11.0. Database, settings, archives and network formats are unchanged. Optional printed prices and totals remain a separate delivery step.

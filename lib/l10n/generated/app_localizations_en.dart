@@ -1563,11 +1563,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.';
 
   @override
+  String get printTicketPrices => 'Prices on tickets';
+
+  @override
+  String get printTicketPricesBody =>
+      'Show saved prices and totals in previews, printouts and PDFs. Off by default.';
+
+  @override
+  String get ticketPriceTotal => 'Total';
+
+  @override
+  String get ticketAdditionsTotal => 'Additions total';
+
+  @override
+  String ticketMissingPrices(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items have no price. Total incomplete.',
+      one: '1 item has no price. Total incomplete.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get productPrices => 'Product prices and estimates';
 
   @override
   String get productPricesBody =>
-      'Optional and off by default. Prices are captured when items are added. Estimates stay on this device; preparation tickets contain no prices.';
+      'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on tickets separately controls printed amounts.';
 
   @override
   String get unitPrice => 'Unit price (optional)';

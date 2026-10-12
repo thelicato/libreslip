@@ -1577,11 +1577,35 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine.';
 
   @override
+  String get printTicketPrices => 'Prezzi sulle comande';
+
+  @override
+  String get printTicketPricesBody =>
+      'Mostra prezzi salvati e totali in anteprime, stampe e PDF. Disattivato inizialmente.';
+
+  @override
+  String get ticketPriceTotal => 'Totale';
+
+  @override
+  String get ticketAdditionsTotal => 'Totale aggiunte';
+
+  @override
+  String ticketMissingPrices(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articoli senza prezzo. Totale incompleto.',
+      one: '1 articolo senza prezzo. Totale incompleto.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get productPrices => 'Prezzi e stime';
 
   @override
   String get productPricesBody =>
-      'Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. Le stime restano su questo dispositivo; le comande di preparazione non contengono prezzi.';
+      'Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. I prezzi restano su questo dispositivo. Prezzi sulle comande controlla separatamente gli importi stampati.';
 
   @override
   String get unitPrice => 'Prezzo unitario (facoltativo)';

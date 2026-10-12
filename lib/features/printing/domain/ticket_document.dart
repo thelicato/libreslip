@@ -20,6 +20,7 @@ class TicketDocument {
     this.courses = const [],
     this.ungroupedLabel = '',
     this.revisionLabel = '',
+    this.priceSummary,
   });
 
   final String heading;
@@ -39,6 +40,7 @@ class TicketDocument {
   final List<OrderCourse> courses;
   final String ungroupedLabel;
   final String revisionLabel;
+  final TicketDocumentPriceSummary? priceSummary;
 
   List<CourseSection<TicketDocumentLine>> get sections {
     validateCourses(courses, lines.map((line) => line.courseId));
@@ -69,6 +71,7 @@ class TicketDocument {
     TicketTypography typography = const TicketTypography(),
     String ungroupedLabel = '',
     String revisionLabel = '',
+    TicketPriceLabels? priceLabels,
   }) => TicketDocument(
     heading: ticket.heading.isEmpty ? fallbackHeading : ticket.heading,
     ticketLabel: ticketLabel,
@@ -86,6 +89,7 @@ class TicketDocument {
     courses: ticket.courses,
     ungroupedLabel: ungroupedLabel,
     revisionLabel: revisionLabel,
+    priceSummary: priceLabels?.summary(ticket),
     lines: [
       for (final line in ticket.printLines)
         TicketDocumentLine(
@@ -93,6 +97,7 @@ class TicketDocument {
           name: line.name,
           note: line.preparationNote,
           courseId: line.courseId,
+          priceText: priceLabels?.lineText(line) ?? '',
         ),
     ],
   );
@@ -104,10 +109,69 @@ class TicketDocumentLine {
     required this.name,
     this.note = '',
     this.courseId,
+    this.priceText = '',
   });
 
   final int quantity;
   final String name;
   final String note;
   final String? courseId;
+  final String priceText;
+}
+
+/// Prepares localised price text before handing a document to any renderer.
+class TicketPriceLabels {
+  const TicketPriceLabels({
+    required this.total,
+    required this.additionsTotal,
+    required this.subtotal,
+    required this.noPrice,
+    required this.missingPrices,
+    required this.separateCurrencies,
+    required this.formatLine,
+    required this.formatAmount,
+  });
+  final String total;
+  final String additionsTotal;
+  final String subtotal;
+  final String noPrice;
+  final String Function(int quantity) missingPrices;
+  final String separateCurrencies;
+  final String Function(ProductPrice price, int quantity) formatLine;
+  final String Function(int minorUnits, String currency) formatAmount;
+
+  String lineText(TicketLine line) =>
+      line.price == null ? noPrice : formatLine(line.price!, line.quantity);
+
+  TicketDocumentPriceSummary summary(SavedTicket ticket) {
+    final estimate = OrderPriceEstimate.fromLines(ticket.printLines);
+    final currencies = estimate.totals.keys.toList()..sort();
+    return TicketDocumentPriceSummary(
+      label: estimate.unpricedQuantity > 0
+          ? subtotal
+          : ticket.revision > 1
+          ? additionsTotal
+          : total,
+      totals: [
+        for (final currency in currencies)
+          formatAmount(estimate.totals[currency]!, currency),
+      ],
+      notes: [
+        if (estimate.unpricedQuantity > 0)
+          missingPrices(estimate.unpricedQuantity),
+        if (currencies.length > 1) separateCurrencies,
+      ],
+    );
+  }
+}
+
+class TicketDocumentPriceSummary {
+  const TicketDocumentPriceSummary({
+    required this.label,
+    required this.totals,
+    this.notes = const [],
+  });
+  final String label;
+  final List<String> totals;
+  final List<String> notes;
 }

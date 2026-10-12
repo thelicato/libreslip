@@ -112,6 +112,14 @@ class EscPosTicketEncoder {
           fontSize: typography.items,
           nativeFontSize: TicketTypography.defaultItems,
         );
+        if (line.priceText.isNotEmpty) {
+          await _writeStyled(
+            output,
+            line.priceText,
+            fontSize: typography.details,
+            nativeFontSize: TicketTypography.defaultDetails,
+          );
+        }
         if (line.note.isNotEmpty) {
           await _writeStyled(
             output,
@@ -120,6 +128,34 @@ class EscPosTicketEncoder {
             nativeFontSize: TicketTypography.defaultNotes,
           );
         }
+      }
+    }
+
+    if (document.priceSummary case final summary?) {
+      _line(output, '-' * profile.charactersPerLine);
+      await _writeStyled(
+        output,
+        summary.label,
+        bold: true,
+        fontSize: typography.details,
+        nativeFontSize: TicketTypography.defaultDetails,
+      );
+      for (final amount in summary.totals) {
+        await _writeStyled(
+          output,
+          amount,
+          bold: true,
+          fontSize: typography.details,
+          nativeFontSize: TicketTypography.defaultDetails,
+        );
+      }
+      for (final note in summary.notes) {
+        await _writeStyled(
+          output,
+          note,
+          fontSize: typography.notes,
+          nativeFontSize: TicketTypography.defaultNotes,
+        );
       }
     }
 
@@ -344,6 +380,7 @@ class EscPosTicketEncoder {
     0x00CC: 0xDE,
     0x00D2: 0xE3,
     0x00D9: 0xEB,
+    0x00A0: 0xFF,
     0x00A3: 0x9C,
     0x00B0: 0xF8,
     0x00B7: 0xFA,

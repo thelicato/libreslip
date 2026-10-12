@@ -8,6 +8,7 @@ import '../../networking/application/shared_orders_controller.dart';
 import '../../networking/presentation/server_destination_selector.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/domain/ticket_document.dart';
+import '../../printing/presentation/ticket_price_labels.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
@@ -408,6 +409,9 @@ class ComposePageState extends State<ComposePage> {
     final material = MaterialLocalizations.of(context);
     return TicketDocument.fromTicket(
       ticket: ticket,
+      priceLabels: widget.settings.printTicketPrices
+          ? ticketPriceLabels(context)
+          : null,
       fallbackHeading: l.defaultHeading,
       ticketLabel: l.ticketLabel,
       createdAt:

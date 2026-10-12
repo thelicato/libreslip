@@ -97,4 +97,10 @@ Open orders move from Compose to the Tickets workspace, above immutable saved ti
 
 Keep orders open renames the navigation, workspace heading, Overview shortcut, search and saved-row view action to Orders, Search orders and View order. Disabling it restores Tickets labels while retaining access to existing open orders. Stored snapshots and explicit print actions remain unchanged. Compact Compose stacks title and notes controls at full width in both languages. History metadata stacks on narrow or enlarged-text displays. No database, settings or protocol migration is needed; the app version is unchanged.
 
-Optional printed prices and totals requested on 12 October 2026 remain a separate delivery step.
+Optional printed prices and totals requested on 12 October 2026 are implemented in step 15.
+
+## 15. Optional prices and totals on tickets: implemented
+
+Client Settings adds Prices on tickets, off by default and independent of Product prices. Preview, printing and PDF sharing include saved unit prices, line amounts and totals only when enabled. Amounts come from immutable printed-line snapshots, use integer minor units and remain separate by currency. Missing prices are labelled and the summary becomes an incomplete subtotal; zero prices remain valid. Additions tickets contain and total only their new lines.
+
+Changing the preference affects new print attempts, explicit reprints and PDF exports. Queued attempts retain their original bytes and recovery still requires a connected printer. Existing ticket identities, saved content, history, Server envelopes and delivery progress are unchanged. The toggle persists in settings format 11 and configuration or full backups; settings versions 1 through 10 retain the default hidden amounts. Missing or malformed modern values fail before restore. No database or network migration is required and the app version is unchanged. Printed amounts do not record payments or financial transactions.

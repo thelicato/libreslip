@@ -240,6 +240,18 @@ class SettingsPage extends StatelessWidget {
                       ),
               ),
               SwitchListTile(
+                key: const ValueKey('toggle-ticket-prices'),
+                contentPadding: EdgeInsets.zero,
+                value: settings.printTicketPrices,
+                title: Text(l.printTicketPrices),
+                subtitle: Text(l.printTicketPricesBody),
+                onChanged: controller.saving
+                    ? null
+                    : (value) => controller.update(
+                        controller.settings.copyWith(printTicketPrices: value),
+                      ),
+              ),
+              SwitchListTile(
                 key: const ValueKey('toggle-managed-orders'),
                 contentPadding: EdgeInsets.zero,
                 value: orders.featureSettings.managedOrdersEnabled,

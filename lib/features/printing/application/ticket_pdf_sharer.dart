@@ -147,6 +147,11 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
                       '${line.quantity} x ${line.name}',
                       style: itemsBold,
                     ),
+                    if (line.priceText.isNotEmpty)
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(top: 2),
+                        child: pw.Text(line.priceText, style: details),
+                      ),
                     if (line.note.isNotEmpty)
                       pw.Padding(
                         padding: const pw.EdgeInsets.only(left: 10, top: 2),
@@ -158,6 +163,13 @@ class LocalTicketPdfSharer implements TicketPdfSharer {
                   ],
                 ),
               ),
+          ],
+          if (document.priceSummary case final summary?) ...[
+            pw.Divider(),
+            pw.Text(summary.label, style: detailsBold),
+            for (final amount in summary.totals)
+              pw.Text(amount, style: detailsBold),
+            for (final note in summary.notes) pw.Text(note, style: notes),
           ],
           if (document.orderNote.isNotEmpty) ...[
             pw.Divider(),

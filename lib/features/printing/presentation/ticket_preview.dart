@@ -147,6 +147,13 @@ class TicketPreview extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+                              if (line.priceText.isNotEmpty)
+                                Text(
+                                  line.priceText,
+                                  style: TextStyle(
+                                    fontSize: previewSize(typography.details),
+                                  ),
+                                ),
                               if (line.note.isNotEmpty)
                                 Text(
                                   '${document.lineNotePrefix}: ${line.note}',
@@ -160,6 +167,37 @@ class TicketPreview extends StatelessWidget {
                       ],
                     ),
                   ),
+              ],
+              if (document.priceSummary case final summary?) ...[
+                const _Rule(),
+                Column(
+                  key: const ValueKey('ticket-price-summary'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      summary.label,
+                      style: TextStyle(
+                        fontSize: previewSize(typography.details),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    for (final amount in summary.totals)
+                      Text(
+                        amount,
+                        style: TextStyle(
+                          fontSize: previewSize(typography.details),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    for (final note in summary.notes)
+                      Text(
+                        note,
+                        style: TextStyle(
+                          fontSize: previewSize(typography.notes),
+                        ),
+                      ),
+                  ],
+                ),
               ],
               if (document.orderNote.isNotEmpty) ...[
                 const _Rule(),

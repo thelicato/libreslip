@@ -17,7 +17,7 @@
 
 ## Overview
 
-LibreSlip keeps order preparation simple. Choose reusable items, adjust quantities, add the details the kitchen or preparation area needs, then print a clean 58 mm ticket without prices or payment information.
+LibreSlip keeps order preparation simple. Choose reusable items, adjust quantities, add the details the kitchen or preparation area needs, then print a clean 58 mm preparation ticket. Prices are hidden by default; an optional setting adds saved prices and totals without recording payments.
 
 There is no account, subscription or required cloud service. The catalogue, current order, ticket history, settings and backups stay under your control. Client mode works offline, while optional Server mode can send immutable order copies to another LibreSlip device on the same local network.
 
@@ -38,6 +38,8 @@ There is no account, subscription or required cloud service. The catalogue, curr
 ## Client mode
 
 Client mode is the everyday workspace. Add catalogue items, compose an order, connect the printer and print. **Require printer connection** in Client Settings is on by default, keeping this workflow. Turn it off to use **Save order** or **Save additions** when disconnected, retaining immutable history and sending eligible items to a paired Server without a print attempt. With a connected printer, the normal print action remains available. Printing and reprinting still require a connection.
+
+Enable **Product prices** to capture amounts when selecting items. **Prices on tickets** is a separate, disabled-by-default Client setting for previews, printing and PDFs. It uses saved unit prices and quantity totals, keeps currencies separate and labels incomplete subtotals. Additions tickets total only the new items.
 
 With **Keep orders open** enabled, the **Tickets** tab becomes **Orders**. Manage open orders there, view delivery progress, add items and close orders above saved ticket history. Disabling the option restores the Tickets labels while existing open orders remain accessible. Compact Compose gives the title and notes controls a full row each.
 

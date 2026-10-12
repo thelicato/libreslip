@@ -31,6 +31,7 @@ void main() {
       printerConnectionRequired: false,
       completeWholeSteps: true,
       hideServerOrderDetails: true,
+      printTicketPrices: true,
     );
     final decoded = AppSettings.fromJson(
       jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
@@ -52,6 +53,8 @@ void main() {
     expect(decoded.printerConnectionRequired, isFalse);
     expect(decoded.completeWholeSteps, isTrue);
     expect(decoded.hideServerOrderDetails, isTrue);
+    expect(decoded.printTicketPrices, isTrue);
+    expect(decoded.copyWith(language: 'en').printTicketPrices, isTrue);
     expect(decoded.copyWith(language: 'en').completeWholeSteps, isTrue);
     expect(decoded.copyWith(language: 'en').printerConnectionRequired, isFalse);
     expect(
@@ -221,9 +224,32 @@ void main() {
     },
   );
 
+  test('legacy printed prices default off and version 11 rejects missing or malformed values', () {
+    expect(const AppSettings().printTicketPrices, isFalse);
+    final legacy = {
+      ...const AppSettings(
+        printTicketPrices: true,
+        hideServerOrderDetails: true,
+      ).toJson(),
+      'version': 10,
+    }..remove('printTicketPrices');
+    final decoded = AppSettings.fromJson(legacy);
+    expect(decoded.printTicketPrices, isFalse);
+    expect(decoded.hideServerOrderDetails, isTrue);
+    for (final value in [null, 1, 'true']) {
+      expect(
+        () => AppSettings.fromJson({
+          ...const AppSettings().toJson(),
+          'printTicketPrices': value,
+        }),
+        throwsFormatException,
+      );
+    }
+  });
+
   test('unknown versions and malformed settings are rejected', () {
     for (final invalid in [
-      {...const AppSettings().toJson(), 'version': 11},
+      {...const AppSettings().toJson(), 'version': 12},
       {...const AppSettings().toJson()}..remove('typography'),
       {...const AppSettings().toJson(), 'language': 'fr'},
       {...const AppSettings().toJson(), 'theme': 'invalid'},
@@ -266,6 +292,7 @@ void main() {
         logoWidthPercent: 50,
         compactCompose: true,
         printerConnectionRequired: false,
+        printTicketPrices: true,
         completeWholeSteps: true,
       ),
     );
@@ -281,6 +308,7 @@ void main() {
     expect(next.settings.compactCompose, isTrue);
     expect(next.settings.printerConnectionRequired, isFalse);
     expect(next.settings.completeWholeSteps, isTrue);
+    expect(next.settings.printTicketPrices, isTrue);
   });
 
   test('a failed read neither overwrites data nor enables editing, and can recover', () async {

@@ -2836,6 +2836,36 @@ abstract class AppLocalizations {
   /// **'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.'**
   String get progressServerNewer;
 
+  /// No description provided for @printTicketPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices on tickets'**
+  String get printTicketPrices;
+
+  /// No description provided for @printTicketPricesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Show saved prices and totals in previews, printouts and PDFs. Off by default.'**
+  String get printTicketPricesBody;
+
+  /// No description provided for @ticketPriceTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get ticketPriceTotal;
+
+  /// No description provided for @ticketAdditionsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Additions total'**
+  String get ticketAdditionsTotal;
+
+  /// No description provided for @ticketMissingPrices.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item has no price. Total incomplete.} other{{count} items have no price. Total incomplete.}}'**
+  String ticketMissingPrices(int count);
+
   /// No description provided for @productPrices.
   ///
   /// In en, this message translates to:
@@ -2845,7 +2875,7 @@ abstract class AppLocalizations {
   /// No description provided for @productPricesBody.
   ///
   /// In en, this message translates to:
-  /// **'Optional and off by default. Prices are captured when items are added. Estimates stay on this device; preparation tickets contain no prices.'**
+  /// **'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on tickets separately controls printed amounts.'**
   String get productPricesBody;
 
   /// No description provided for @unitPrice.

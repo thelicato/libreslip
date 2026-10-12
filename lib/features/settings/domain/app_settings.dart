@@ -19,6 +19,7 @@ class AppSettings {
     this.printerConnectionRequired = true,
     this.completeWholeSteps = false,
     this.hideServerOrderDetails = false,
+    this.printTicketPrices = false,
   });
 
   final String heading;
@@ -40,6 +41,7 @@ class AppSettings {
   final bool printerConnectionRequired;
   final bool completeWholeSteps;
   final bool hideServerOrderDetails;
+  final bool printTicketPrices;
 
   Locale get locale =>
       language == 'it' ? const Locale('it', 'IT') : const Locale('en', 'GB');
@@ -60,6 +62,7 @@ class AppSettings {
     bool? printerConnectionRequired,
     bool? completeWholeSteps,
     bool? hideServerOrderDetails,
+    bool? printTicketPrices,
   }) => AppSettings(
     heading: heading ?? this.heading,
     footer: footer ?? this.footer,
@@ -78,10 +81,11 @@ class AppSettings {
     completeWholeSteps: completeWholeSteps ?? this.completeWholeSteps,
     hideServerOrderDetails:
         hideServerOrderDetails ?? this.hideServerOrderDetails,
+    printTicketPrices: printTicketPrices ?? this.printTicketPrices,
   );
 
   Map<String, Object?> toJson() => {
-    'version': 10,
+    'version': 11,
     'heading': heading,
     'footer': footer,
     'logoPath': logoPath,
@@ -95,6 +99,7 @@ class AppSettings {
     'printerConnectionRequired': printerConnectionRequired,
     'completeWholeSteps': completeWholeSteps,
     'hideServerOrderDetails': hideServerOrderDetails,
+    'printTicketPrices': printTicketPrices,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -102,33 +107,34 @@ class AppSettings {
     final footer = version == 1 ? '' : json['footer'];
     final logoPath = version == 1 ? null : json['logoPath'];
     final typographyJson = json['typography'];
-    final typography = ![3, 4, 5, 6, 7, 8, 9, 10].contains(version)
+    final typography = ![3, 4, 5, 6, 7, 8, 9, 10, 11].contains(version)
         ? const TicketTypography()
         : typographyJson is Map<String, dynamic>
         ? TicketTypography.fromJson(typographyJson)
         : throw const FormatException('Invalid ticket typography');
-    final appTextScale = [4, 5, 6, 7, 8, 9, 10].contains(version)
+    final appTextScale = [4, 5, 6, 7, 8, 9, 10, 11].contains(version)
         ? json['appTextScale']
         : defaultAppTextScale;
-    final preferredPrinterAddress = [5, 6, 7, 8, 9, 10].contains(version)
+    final preferredPrinterAddress = [5, 6, 7, 8, 9, 10, 11].contains(version)
         ? json['preferredPrinterAddress']
         : null;
-    final compactCompose = [6, 7, 8, 9, 10].contains(version)
+    final compactCompose = [6, 7, 8, 9, 10, 11].contains(version)
         ? json['compactCompose']
         : false;
-    final logoWidthPercent = [7, 8, 9, 10].contains(version)
+    final logoWidthPercent = [7, 8, 9, 10, 11].contains(version)
         ? json['logoWidthPercent']
         : defaultLogoWidthPercent;
-    final printerConnectionRequired = [8, 9, 10].contains(version)
+    final printerConnectionRequired = [8, 9, 10, 11].contains(version)
         ? json['printerConnectionRequired']
         : true;
-    final completeWholeSteps = [9, 10].contains(version)
+    final completeWholeSteps = [9, 10, 11].contains(version)
         ? json['completeWholeSteps']
         : false;
-    final hideServerOrderDetails = version == 10
+    final hideServerOrderDetails = [10, 11].contains(version)
         ? json['hideServerOrderDetails']
         : false;
-    if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].contains(version) ||
+    final printTicketPrices = version == 11 ? json['printTicketPrices'] : false;
+    if (![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].contains(version) ||
         json['heading'] is! String ||
         (json['heading'] as String).characters.length > 60 ||
         footer is! String ||
@@ -144,6 +150,7 @@ class AppSettings {
         printerConnectionRequired is! bool ||
         completeWholeSteps is! bool ||
         hideServerOrderDetails is! bool ||
+        printTicketPrices is! bool ||
         logoWidthPercent is! int ||
         !logoWidthOptions.contains(logoWidthPercent) ||
         (preferredPrinterAddress != null &&
@@ -166,6 +173,7 @@ class AppSettings {
       printerConnectionRequired: printerConnectionRequired,
       completeWholeSteps: completeWholeSteps,
       hideServerOrderDetails: hideServerOrderDetails,
+      printTicketPrices: printTicketPrices,
     );
   }
 }

@@ -84,6 +84,41 @@ void main() {
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       (
+        'prices-printed-complete-ticket-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'prices-printed-ticket-phone-it',
+        const Size(390, 844),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'prices-printed-ticket-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'prices-printed-ticket-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.dark,
+        3,
+      ),
+      (
+        'printed-prices-settings-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        4,
+      ),
+      (
         'managed-orders-workspace-tablet-en',
         const Size(1100, 1000),
         'en',
@@ -678,6 +713,7 @@ void main() {
       final settingsStore = MemorySettingsRepository()
         ..stored = AppSettings(
           language: language,
+          printTicketPrices: name.contains('printed'),
           completeWholeSteps: name.contains('whole-step'),
           printerConnectionRequired: !name.contains('printer-optional'),
           themeMode: mode,
@@ -1125,10 +1161,24 @@ void main() {
         );
       }
       if (pricePreview && page == 3) {
-        await tester.tap(find.text('View ticket'));
+        final view = find.byKey(
+          ValueKey('view-ticket-${orders.tickets.first.id}'),
+        );
+        await tester.ensureVisible(view);
+        await tester.pumpAndSettle();
+        await tester.tap(view);
         await tester.pumpAndSettle();
         await tester.ensureVisible(
-          find.byKey(const ValueKey('order-estimate')),
+          name.contains('printed')
+              ? find.byKey(const ValueKey('ticket-price-summary'))
+              : find.byKey(const ValueKey('order-estimate')),
+        );
+        await tester.pumpAndSettle();
+      }
+      if (name.contains('printed-prices-settings')) {
+        final toggle = find.byKey(const ValueKey('toggle-ticket-prices'));
+        await tester.ensureVisible(
+          find.descendant(of: toggle, matching: find.byType(Switch)),
         );
         await tester.pumpAndSettle();
       }

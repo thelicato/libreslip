@@ -11,6 +11,7 @@ import '../../settings/domain/app_settings.dart';
 import '../application/ticket_output_controller.dart';
 import '../domain/print_job.dart';
 import '../domain/ticket_document.dart';
+import 'ticket_price_labels.dart';
 import 'ticket_preview.dart';
 
 class TicketDetailDialog extends StatelessWidget {
@@ -216,6 +217,9 @@ class TicketDetailDialog extends StatelessWidget {
     final material = MaterialLocalizations.of(context);
     return TicketDocument.fromTicket(
       ticket: ticket,
+      priceLabels: settings.printTicketPrices
+          ? ticketPriceLabels(context)
+          : null,
       fallbackHeading: l.defaultHeading,
       ticketLabel: l.ticketLabel,
       createdAt:

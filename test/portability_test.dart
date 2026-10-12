@@ -67,6 +67,7 @@ void main() {
         preferredPrinterAddress: '00:11:22:33:44:55',
         printerConnectionRequired: false,
         completeWholeSteps: true,
+        printTicketPrices: true,
         hideServerOrderDetails: true,
       );
       await orders.saveFeatureSettings(
@@ -144,6 +145,7 @@ void main() {
       expect(settings.stored!.heading, 'Caffè Libertà');
       expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.completeWholeSteps, isTrue);
+      expect(settings.stored!.printTicketPrices, isTrue);
       expect(settings.stored!.hideServerOrderDetails, isTrue);
       expect(settings.stored!.language, 'it');
       expect(settings.stored!.themeMode, ThemeMode.dark);
@@ -199,6 +201,7 @@ void main() {
         language: 'it',
         printerConnectionRequired: false,
         completeWholeSteps: true,
+        printTicketPrices: true,
         hideServerOrderDetails: true,
       );
       await orders.saveFeatureSettings(
@@ -233,6 +236,7 @@ void main() {
       expect(settings.stored!.heading, 'Exported heading');
       expect(settings.stored!.printerConnectionRequired, isFalse);
       expect(settings.stored!.completeWholeSteps, isTrue);
+      expect(settings.stored!.printTicketPrices, isTrue);
       expect(settings.stored!.hideServerOrderDetails, isTrue);
       expect(settings.stored!.language, 'it');
       expect(await orders.loadItems(), hasLength(1));
@@ -252,6 +256,7 @@ void main() {
       heading: 'Fresh destination',
       printerConnectionRequired: false,
       completeWholeSteps: true,
+      printTicketPrices: true,
     );
     final pairedAt = DateTime.now().toUtc();
     await orders.savePairedServer(
@@ -333,6 +338,7 @@ void main() {
     expect(destinationSettings.stored!.heading, 'Fresh destination');
     expect(destinationSettings.stored!.printerConnectionRequired, isFalse);
     expect(destinationSettings.stored!.completeWholeSteps, isTrue);
+    expect(destinationSettings.stored!.printTicketPrices, isTrue);
     expect((await destination.loadItems()).single.id, item.id);
     expect((await destination.loadTickets()).single.id, ticket.id);
     expect(
@@ -711,6 +717,32 @@ void main() {
         throwsA(isA<PortabilityException>()),
       );
       expect(settings.stored!.completeWholeSteps, isFalse);
+    }
+  });
+
+  test('printed-price settings restore legacy defaults and reject malformed archives atomically', () async {
+    settings.stored = const AppSettings(printTicketPrices: true);
+    final bytes = await service.createArchive(
+      PortableArchiveKind.configuration,
+    );
+    final legacy = _rewriteEntry(bytes, 'configuration.json', (configuration) {
+      final preferences = configuration['settings'] as Map;
+      preferences['version'] = 10;
+      preferences.remove('printTicketPrices');
+    });
+    await service.restore(await service.inspectArchive(legacy));
+    expect(settings.stored!.printTicketPrices, isFalse);
+    for (final value in [null, 0, 'true']) {
+      final invalid = _rewriteEntry(bytes, 'configuration.json', (
+        configuration,
+      ) {
+        (configuration['settings'] as Map)['printTicketPrices'] = value;
+      });
+      await expectLater(
+        service.inspectArchive(invalid),
+        throwsA(isA<PortabilityException>()),
+      );
+      expect(settings.stored!.printTicketPrices, isFalse);
     }
   });
 
