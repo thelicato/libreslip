@@ -2533,7 +2533,7 @@ abstract class AppLocalizations {
   /// No description provided for @additionBody.
   ///
   /// In en, this message translates to:
-  /// **'Add new items below. Previously submitted items, titles, notes and course names stay fixed.'**
+  /// **'Add new items below. Saved quantities, titles and notes stay fixed.'**
   String get additionBody;
 
   /// No description provided for @previouslyOrdered.
@@ -3111,6 +3111,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared with {count} Servers'**
   String sharedOrdersServers(int count);
+
+  /// No description provided for @addItemsToPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Add items to phase'**
+  String get addItemsToPhase;
+
+  /// No description provided for @orderPhase.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase {number}'**
+  String orderPhase(String number);
+
+  /// No description provided for @moveOrderItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Move items'**
+  String get moveOrderItems;
+
+  /// No description provided for @moveOrderItemsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a phase for each item. Shared moves need a Server connection.'**
+  String get moveOrderItemsBody;
+
+  /// No description provided for @phaseMoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Move not confirmed. Refresh the order and check the Server connection.'**
+  String get phaseMoveFailed;
+
+  /// No description provided for @phaseMoveUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the Server to move saved items between phases.'**
+  String get phaseMoveUnsupported;
+
+  /// No description provided for @phaseMovePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Send pending additions to the Server before moving items.'**
+  String get phaseMovePending;
 }
 
 class _AppLocalizationsDelegate

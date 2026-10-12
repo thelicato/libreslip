@@ -55,6 +55,71 @@ class _SharedPersistence {
     );
   });
 
+  Future<SharedOrderSnapshot> moveLine(
+    String actor,
+    OrderPhaseChange change,
+  ) async => (await repository._db).transaction((tx) async {
+    await _requireActor(tx, actor);
+    final rows = await tx.query(
+      'server_orders',
+      where: 'id = ? AND managed_order_id IS NOT NULL',
+      whereArgs: [change.orderId],
+    );
+    if (rows.length != 1) throw const ProgressSyncException('missing');
+    final current = await SqliteOrderRepository._loadServerOrder(
+      tx,
+      change.orderId,
+    );
+    final matching = current.lines
+        .where((line) => line.id == change.lineId)
+        .toList();
+    if (matching.length != 1) {
+      throw const FormatException('Invalid phase item');
+    }
+    final courses = [...current.courses];
+    if (change.courseId != null &&
+        !courses.any((c) => c.id == change.courseId)) {
+      final course = change.course;
+      if (course == null || course.id != change.courseId) {
+        throw const FormatException('Invalid phase destination');
+      }
+      courses.add(_uniqueCourse(course, courses));
+      validateCourses(courses, [change.courseId]);
+    }
+    // A lost acknowledgement can be retried without adding a revision. An
+    // intervening different move is rejected rather than overwritten.
+    if (matching.single.courseId == change.courseId) {
+      return SharedOrderSnapshot.fromOrder(current);
+    }
+    if (current.revision != change.expectedRevision) {
+      throw const ServerOrderConflictException();
+    }
+    await tx.update(
+      'server_order_lines',
+      {'course_id': change.courseId},
+      where: 'order_id = ? AND order_line_id = ?',
+      whereArgs: [current.id, change.lineId],
+    );
+    await tx.update(
+      'server_orders',
+      {
+        'revision': current.revision + 1,
+        'courses_json': jsonEncode(courses.map((c) => c.toJson()).toList()),
+      },
+      where: 'id = ?',
+      whereArgs: [current.id],
+    );
+    final moved = await SqliteOrderRepository._loadServerOrder(tx, current.id);
+    final snapshot = SharedOrderSnapshot.fromOrder(moved);
+    await tx.update(
+      'server_orders',
+      {'payload_checksum': snapshot.envelope.payloadChecksum},
+      where: 'id = ?',
+      whereArgs: [current.id],
+    );
+    return snapshot;
+  });
+
   static Future<void> _requireActor(DatabaseExecutor tx, String actor) async {
     if ((await tx.query(
           'server_clients',
@@ -127,8 +192,7 @@ class _SharedPersistence {
         } else if (previous.length != 1 ||
             previous.single.name != line.name ||
             previous.single.quantity != line.quantity ||
-            previous.single.preparationNote != line.preparationNote ||
-            previous.single.courseId != line.courseId) {
+            previous.single.preparationNote != line.preparationNote) {
           throw const ServerOrderConflictException();
         }
       }
@@ -426,9 +490,18 @@ class _SharedPersistence {
         } else if (!old.single.sendToServer ||
             old.single.name != line.name ||
             old.single.quantity != line.quantity ||
-            old.single.preparationNote != line.preparationNote ||
-            old.single.courseId != line.courseId) {
+            old.single.preparationNote != line.preparationNote) {
           throw const FormatException('Changed immutable shared item');
+        } else if (old.single.courseId != line.courseId) {
+          final baseline = links.isEmpty ? null : _link(links.single).baseline;
+          if (baseline != null &&
+              incoming.revision <= baseline.envelope.revision) {
+            throw const FormatException('Unversioned shared phase change');
+          }
+          lines[lines.indexOf(old.single)] = old.single.copyWith(
+            courseId: line.courseId,
+            clearCourse: line.courseId == null,
+          );
         }
       }
       if (lines.length > NetworkProtocol.maxLines) {
@@ -487,7 +560,12 @@ class _SharedPersistence {
       final changedContent =
           previous == null ||
           lines.length != previous.lines.length ||
-          courses.length != previous.courses.length;
+          courses.length != previous.courses.length ||
+          lines.any(
+            (line) => previous.lines.any(
+              (old) => old.id == line.id && old.courseId != line.courseId,
+            ),
+          );
       final revision = previous == null
           ? incoming.revision
           : (changedContent ? previous.revision + 1 : previous.revision);

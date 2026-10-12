@@ -80,6 +80,9 @@ class OrderWorkspaceController extends ChangeNotifier {
     }
   }
 
+  Future<List<ManagedOrder>> loadCurrentOrders() =>
+      _repository.loadManagedOrders();
+
   ManagedOrder? get editingOrder {
     for (final order in managedOrders) {
       if (order.id == activeDraft?.managedOrderId) return order;
@@ -111,6 +114,30 @@ class OrderWorkspaceController extends ChangeNotifier {
     final replacement = await _repository.createDraft();
     drafts = [replacement];
     activeDraftId = replacement.id;
+  });
+
+  Future<bool> moveSavedLine(
+    String orderId,
+    String lineId,
+    String? courseId, {
+    required int expectedRevision,
+  }) => _perform(() async {
+    await flushWrites();
+    final repository = _repository;
+    if (repository is! OrderPhaseStore) {
+      throw const OrderStorageException('Phase changes are unavailable.');
+    }
+    try {
+      await (repository as OrderPhaseStore).moveManagedLine(
+        orderId,
+        lineId,
+        courseId,
+        expectedRevision: expectedRevision,
+      );
+    } finally {
+      drafts = await _repository.loadDrafts();
+      managedOrders = await _repository.loadManagedOrders();
+    }
   });
 
   Future<bool> setLineDelivered(

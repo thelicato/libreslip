@@ -1377,7 +1377,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get additionBody =>
-      'Add new items below. Previously submitted items, titles, notes and course names stay fixed.';
+      'Add new items below. Saved quantities, titles and notes stay fixed.';
 
   @override
   String get previouslyOrdered => 'Previously ordered';
@@ -1738,6 +1738,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String sharedOrdersServers(int count) {
     return 'Shared with $count Servers';
   }
+
+  @override
+  String get addItemsToPhase => 'Add items to phase';
+
+  @override
+  String orderPhase(String number) {
+    return 'Phase $number';
+  }
+
+  @override
+  String get moveOrderItems => 'Move items';
+
+  @override
+  String get moveOrderItemsBody =>
+      'Choose a phase for each item. Shared moves need a Server connection.';
+
+  @override
+  String get phaseMoveFailed =>
+      'Move not confirmed. Refresh the order and check the Server connection.';
+
+  @override
+  String get phaseMoveUnsupported =>
+      'Update the Server to move saved items between phases.';
+
+  @override
+  String get phaseMovePending =>
+      'Send pending additions to the Server before moving items.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -105,6 +105,78 @@ class SharedOrdersController extends ChangeNotifier
     }
   }
 
+  /// Shared placement is confirmed by the Server before changing local state.
+  /// If an acknowledgement is lost, the next foreground sync recovers it.
+  Future<void> moveLine(
+    ManagedOrder displayed,
+    String lineId,
+    String? courseId,
+  ) async {
+    if (_disposed || busy || !enabled || workspace.saving) {
+      throw const ClientTransportException('sharing_paused');
+    }
+    if (transport is! OrderPhaseTransport) {
+      throw const ClientTransportException('unsupported_phase_moves');
+    }
+    busy = true;
+    notifyListeners();
+    try {
+      await workspace.refreshSharedOrders(() async {
+        final link = await store.loadSharedLink(displayed.id);
+        final server = delivery.serverFor(displayed.destinationId);
+        final current = (await workspace.loadCurrentOrders())
+            .where((o) => o.id == displayed.id)
+            .single;
+        final persistedDeliveries = store is ClientDeliveryStore
+            ? await (store as ClientDeliveryStore).loadClientDeliveries()
+            : delivery.deliveries;
+        if (persistedDeliveries.any(
+          (d) =>
+              d.destinationId == displayed.destinationId &&
+              d.envelope.managedOrderId == displayed.id &&
+              d.status != ClientDeliveryStatus.delivered,
+        )) {
+          throw const ClientTransportException('phase_move_pending');
+        }
+        if (link == null ||
+            server == null ||
+            current.closedAt != null ||
+            current.revision != displayed.revision) {
+          throw const ClientTransportException('conflict');
+        }
+        final token = await secrets.readServerAccessToken(server.id);
+        if (token == null || token.isEmpty) {
+          throw const ClientTransportException('credentials');
+        }
+        final snapshot = await (transport as OrderPhaseTransport)
+            .moveSharedLine(
+              server: server,
+              accessToken: token,
+              clientId: mode.configuration!.installationId,
+              change: OrderPhaseChange(
+                orderId: link.baseline.serverOrderId,
+                lineId: lineId,
+                courseId: courseId,
+                expectedRevision: link.baseline.envelope.revision,
+                course: courseId == null
+                    ? null
+                    : current.courses.firstWhere((c) => c.id == courseId),
+              ),
+            );
+        if (_disposed || !enabled || delivery.serverFor(server.id) == null) {
+          throw const ClientTransportException('cancelled');
+        }
+        await store.mergeSharedOrder(server.id, snapshot);
+      });
+    } finally {
+      busy = false;
+      if (!_disposed) {
+        notifyListeners();
+        unawaited(synchronise());
+      }
+    }
+  }
+
   Future<void> synchronise({
     String? resolveOrderId,
     ProgressResolution? resolution,

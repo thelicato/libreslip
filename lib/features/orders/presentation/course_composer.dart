@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../application/order_workspace_controller.dart';
@@ -29,6 +30,18 @@ class CourseComposer extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (draft.courses.isNotEmpty) ...[
+            PhaseSelector(
+              key: const ValueKey('addition-phase-selector'),
+              courses: draft.courses,
+              courseId: draft.activeCourseId,
+              label: l.addItemsToPhase,
+              onChanged: busy || controller.saving
+                  ? null
+                  : controller.selectCourse,
+            ),
+            const SizedBox(height: 12),
+          ],
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -136,6 +149,77 @@ class CourseHeading extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The number is only a destination label. Dividers remain unnamed on tickets.
+class PhaseSelector extends StatelessWidget {
+  const PhaseSelector({
+    super.key,
+    required this.courses,
+    required this.courseId,
+    required this.label,
+    this.onChanged,
+  });
+  final List<OrderCourse> courses;
+  final String? courseId;
+  final String label;
+  final void Function(String?)? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final numbers = NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final ids = <String?>[null, ...courses.map((course) => course.id)];
+    return MergeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          InputDecorator(
+            decoration: InputDecoration(enabled: onChanged != null),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                key: ValueKey('phase-selection-$courseId'),
+                value: ids.indexOf(courseId).toString(),
+                isExpanded: true,
+                isDense: true,
+                itemHeight: null,
+                items: [
+                  for (var i = 0; i < ids.length; i++)
+                    DropdownMenuItem(
+                      value: '$i',
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            i > 0 && !courses[i - 1].isDivider
+                                ? courses[i - 1].name
+                                : courses.any((course) => course.isDivider)
+                                ? l.orderPhase(numbers.format(i + 1))
+                                : l.ungrouped,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+                onChanged: onChanged == null
+                    ? null
+                    : (value) {
+                        if (value != null) onChanged!(ids[int.parse(value)]);
+                      },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

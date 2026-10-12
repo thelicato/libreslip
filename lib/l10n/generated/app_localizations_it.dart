@@ -1390,7 +1390,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get additionBody =>
-      'Aggiungi nuovi articoli qui sotto. Articoli già inviati, titoli, note e nomi delle portate restano invariati.';
+      'Aggiungi nuovi articoli qui sotto. Quantità, titoli e note salvati restano invariati.';
 
   @override
   String get previouslyOrdered => 'Già ordinato';
@@ -1753,6 +1753,33 @@ class AppLocalizationsIt extends AppLocalizations {
   String sharedOrdersServers(int count) {
     return 'Condivisi con $count Server';
   }
+
+  @override
+  String get addItemsToPhase => 'Aggiungi articoli alla fase';
+
+  @override
+  String orderPhase(String number) {
+    return 'Fase $number';
+  }
+
+  @override
+  String get moveOrderItems => 'Sposta articoli';
+
+  @override
+  String get moveOrderItemsBody =>
+      'Scegli la fase di ogni articolo. Per gli ordini condivisi serve il Server.';
+
+  @override
+  String get phaseMoveFailed =>
+      'Spostamento non confermato. Aggiorna l’ordine e verifica la connessione al Server.';
+
+  @override
+  String get phaseMoveUnsupported =>
+      'Aggiorna il Server per spostare gli articoli salvati tra le fasi.';
+
+  @override
+  String get phaseMovePending =>
+      'Invia al Server le aggiunte in attesa prima di spostare gli articoli.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

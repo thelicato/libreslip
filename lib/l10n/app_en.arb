@@ -539,7 +539,7 @@
   "newOrderKeptOpen": "This order will stay open for later additions.",
   "addToOrder": "Add items",
   "additionEditing": "Adding to an active order",
-  "additionBody": "Add new items below. Previously submitted items, titles, notes and course names stay fixed.",
+  "additionBody": "Add new items below. Saved quantities, titles and notes stay fixed.",
   "previouslyOrdered": "Previously ordered",
   "orderAdditions": "Additions",
   "fullOrderSnapshot": "Full order at this revision",
@@ -646,7 +646,13 @@
   "ticketPriceTotal": "Total",
   "ticketAdditionsTotal": "Additions total",
   "ticketMissingPrices": "{count, plural, =1{1 item has no price. Total incomplete.} other{{count} items have no price. Total incomplete.}}",
-  "@ticketMissingPrices": {"placeholders": {"count": {"type": "int"}}},
+  "@ticketMissingPrices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "productPrices": "Product prices and estimates",
   "productPricesBody": "Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on tickets separately controls printed amounts.",
   "unitPrice": "Unit price (optional)",
@@ -725,5 +731,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addItemsToPhase": "Add items to phase",
+  "orderPhase": "Phase {number}",
+  "moveOrderItems": "Move items",
+  "moveOrderItemsBody": "Choose a phase for each item. Shared moves need a Server connection.",
+  "phaseMoveFailed": "Move not confirmed. Refresh the order and check the Server connection.",
+  "phaseMoveUnsupported": "Update the Server to move saved items between phases.",
+  "@orderPhase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "phaseMovePending": "Send pending additions to the Server before moving items."
 }

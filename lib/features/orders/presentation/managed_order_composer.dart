@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/shared_orders_controller.dart';
+import '../../networking/domain/client_transport.dart';
 import '../../networking/presentation/progress_sync_controls.dart';
 import '../../networking/presentation/shared_order_controls.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
+import 'course_composer.dart';
 import 'delivery_progress.dart';
 import 'order_identity.dart';
 import 'order_estimate.dart';
@@ -347,6 +350,24 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                   icon: const Icon(Icons.add_rounded),
                                   label: Text(l.addToOrder),
                                 ),
+                                if (order.courses.isNotEmpty)
+                                  OutlinedButton.icon(
+                                    key: ValueKey(
+                                      'move-order-items-${order.id}',
+                                    ),
+                                    onPressed:
+                                        controller.saving ||
+                                            (sharedOrders?.busy ?? false)
+                                        ? null
+                                        : () => _showPhaseMoves(
+                                            context,
+                                            order.id,
+                                            controller,
+                                            sharedOrders,
+                                          ),
+                                    icon: const Icon(Icons.swap_vert_rounded),
+                                    label: Text(l.moveOrderItems),
+                                  ),
                                 TextButton(
                                   key: ValueKey('close-order-${order.id}'),
                                   onPressed:
@@ -518,3 +539,116 @@ Future<bool?> _confirm(BuildContext context, String title, String body) =>
         );
       },
     );
+
+Future<void> _showPhaseMoves(
+  BuildContext context,
+  String orderId,
+  OrderWorkspaceController controller,
+  SharedOrdersController? shared,
+) => showDialog<void>(
+  context: context,
+  builder: (context) => AnimatedBuilder(
+    animation: Listenable.merge([controller, ?shared]),
+    builder: (context, _) {
+      final l = AppLocalizations.of(context);
+      final order = controller.managedOrders
+          .where((o) => o.id == orderId)
+          .firstOrNull;
+      final numbers = NumberFormat.decimalPattern(
+        Localizations.localeOf(context).toLanguageTag(),
+      );
+      final busy = controller.saving || (shared?.busy ?? false);
+      return AlertDialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
+          vertical: 24,
+        ),
+        scrollable: true,
+        title: Text(l.moveOrderItems),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l.moveOrderItemsBody),
+              const SizedBox(height: 16),
+              if (order != null)
+                for (final line in order.lines)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        PhaseSelector(
+                          key: ValueKey(
+                            'saved-phase-${line.id}-${order.revision}-$busy',
+                          ),
+                          courses: order.courses,
+                          courseId: line.courseId,
+                          label:
+                              '${numbers.format(line.quantity)} × ${line.name}',
+                          onChanged: busy || order.closedAt != null
+                              ? null
+                              : (destination) async {
+                                  if (destination == line.courseId) return;
+                                  String? error;
+                                  try {
+                                    if (order.destinationId != null &&
+                                        line.sendToServer) {
+                                      if (shared == null) {
+                                        throw const ClientTransportException(
+                                          'unsupported_phase_moves',
+                                        );
+                                      }
+                                      await shared.moveLine(
+                                        order,
+                                        line.id,
+                                        destination,
+                                      );
+                                    } else if (!await controller.moveSavedLine(
+                                      order.id,
+                                      line.id,
+                                      destination,
+                                      expectedRevision: order.revision,
+                                    )) {
+                                      error = l.phaseMoveFailed;
+                                    }
+                                  } on ClientTransportException catch (e) {
+                                    error = switch (e.code) {
+                                      'unsupported_phase_moves' =>
+                                        l.phaseMoveUnsupported,
+                                      'phase_move_pending' =>
+                                        l.phaseMovePending,
+                                      _ => l.phaseMoveFailed,
+                                    };
+                                  } catch (_) {
+                                    error = l.phaseMoveFailed;
+                                  }
+                                  if (error != null && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(error)),
+                                    );
+                                  }
+                                },
+                        ),
+                        if (line.preparationNote.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(line.preparationNote),
+                          ),
+                      ],
+                    ),
+                  ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: busy ? null : () => Navigator.pop(context),
+            child: Text(l.close),
+          ),
+        ],
+      );
+    },
+  ),
+);

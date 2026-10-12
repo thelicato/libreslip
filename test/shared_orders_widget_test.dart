@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/core/theme/app_theme.dart';
 import 'package:libreslip/features/orders/presentation/managed_order_composer.dart';
+import 'package:libreslip/features/orders/presentation/course_composer.dart';
+import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/l10n/generated/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -111,6 +113,141 @@ void main() {
         await tester.pumpAndSettle();
         expect(f.b.order.deliveredQuantity('soup'), 2);
         expect(f.b.sync.conflicts, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  for (final (language, size, scale, wholeSteps) in [
+    ('en', const Size(1100, 900), 1.0, false),
+    ('it', const Size(320, 740), 2.0, true),
+    ('en', const Size(915, 412), 1.0, true),
+  ]) {
+    testWidgets(
+      'saved phase moves and addition selection $language $size whole steps $wholeSteps',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        const capture = bool.fromEnvironment('LIBRESLIP_CAPTURE_PREVIEWS');
+        if (capture) await _fonts();
+        final f = await SharedFixture.create();
+        addTearDown(f.dispose);
+        final divider = OrderCourse.divider(id: 'widget-phase', ordinal: 1);
+        await f.seed(courses: [divider], soupNote: 'No salt');
+        await f.syncBoth();
+        final boundary = GlobalKey();
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundary,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              locale: Locale(language, language == 'it' ? 'IT' : 'GB'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: AppTheme.build(Brightness.light),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(scale)),
+                child: child!,
+              ),
+              home: Scaffold(
+                body: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: ListenableBuilder(
+                        listenable: f.a.workspace,
+                        builder: (context, _) =>
+                            f.a.workspace.editingOrder == null
+                            ? OpenOrdersPanel(
+                                onOpenCompose: () {},
+                                controller: f.a.workspace,
+                                delivery: f.a.delivery,
+                                sharedOrders: f.a.sync,
+                                completeWholeSteps: wholeSteps,
+                              )
+                            : CourseComposer(controller: f.a.workspace),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final view = find.byKey(ValueKey('view-order-${f.a.order.id}'));
+        await tester.ensureVisible(view);
+        await tester.tap(view);
+        await tester.pumpAndSettle();
+        final moves = find.byKey(ValueKey('move-order-items-${f.a.order.id}'));
+        await tester.ensureVisible(moves);
+        await tester.pumpAndSettle();
+        await tester.tap(moves);
+        await tester.pumpAndSettle();
+        if (capture) {
+          await _capture(
+            tester,
+            boundary,
+            'phase-moves-$language-${size.width.toInt()}',
+          );
+        }
+        final soup = find.widgetWithText(PhaseSelector, '3 × Soup');
+        final dropdown = find.descendant(
+          of: soup,
+          matching: find.byType(DropdownButton<String>),
+        );
+        await tester.ensureVisible(dropdown);
+        await tester.pumpAndSettle();
+        await tester.tap(dropdown);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(language == 'it' ? 'Fase 2' : 'Phase 2').last,
+        );
+        await tester.pumpAndSettle();
+        expect(f.a.order.lines.first.courseId, divider.id);
+        await f.b.sync.synchronise();
+        expect(f.b.order.lines.first.courseId, divider.id);
+        expect(tester.takeException(), isNull);
+        final l = AppLocalizations.of(
+          tester.element(find.byType(PhaseSelector).first),
+        );
+        await tester.tap(find.widgetWithText(TextButton, l.close).last);
+        await tester.pumpAndSettle();
+        final add = find.byKey(ValueKey('add-to-order-${f.a.order.id}'));
+        await tester.ensureVisible(add);
+        await tester.pumpAndSettle();
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        final selection = find.byKey(const ValueKey('addition-phase-selector'));
+        expect(selection, findsOneWidget);
+        if (capture) {
+          await _capture(
+            tester,
+            boundary,
+            'addition-phase-$language-${size.width.toInt()}',
+          );
+        }
+        await tester.tap(
+          find.descendant(
+            of: selection,
+            matching: find.byType(DropdownButton<String>),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(language == 'it' ? 'Fase 2' : 'Phase 2').last,
+        );
+        await tester.pumpAndSettle();
+        expect(f.a.workspace.activeDraft!.activeCourseId, divider.id);
+        await f.a.workspace.saveItem(name: 'Juice');
+        f.a.workspace.addCatalogueItem(
+          f.a.workspace.items.firstWhere((i) => i.name == 'Juice'),
+        );
+        await f.a.workspace.flushWrites();
+        expect(f.a.workspace.activeDraft!.lines.single.courseId, divider.id);
         expect(tester.takeException(), isNull);
       },
     );

@@ -491,3 +491,13 @@ class OrderPriceEstimate {
   late final Map<String, int> totals;
   late final int unpricedQuantity;
 }
+
+/// Live phase placement is separate from immutable saved ticket snapshots.
+abstract interface class OrderPhaseStore {
+  Future<void> moveManagedLine(
+    String orderId,
+    String lineId,
+    String? courseId, {
+    required int expectedRevision,
+  });
+}

@@ -287,7 +287,7 @@ void main() {
     );
     expect((await repository.loadActiveServer())!.id, 'original');
     final snapshot = await repository.createPortableSnapshot();
-    expect(snapshot['schemaVersion'], 17);
+    expect(snapshot['schemaVersion'], SqliteOrderRepository.databaseVersion);
     expect(
       (snapshot['tables'] as Map).containsKey('network_destinations'),
       isFalse,

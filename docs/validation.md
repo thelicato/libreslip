@@ -1,5 +1,23 @@
 # Validation evidence
 
+## Phase selection and saved-item moves, 12 October 2026
+
+Validated step 16 with `VERSION` unchanged at 1.11.0. SQLite schema 18 separates live item placement from immutable saved ticket placement; existing rows need no rewrite. Settings format 11 and configuration document version 4 are unchanged. Authenticated phase moves use a separately advertised capability version 1.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 114 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `git diff --check` passed. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 266 tests passed with preview capture enabled, including the optional workspace capture. After final text and layout adjustments, all 28 affected course, managed-order and shared-dialogue tests passed again; all 13 phase recovery and shared-dialogue checks also passed after adding the pending-additions recovery message. |
+| Persistence and migration | Schema 17 upgrade preserves history and queued print bytes. Local moves survive restart, retain identifiers, notes, prices and delivered quantities and rebase persistent additions without losing their selected phase. Stale revisions and invalid destinations are rejected. |
+| Archives and recovery | A full ZIP backup restores moved live placements and original ticket placements on a fresh database. Delivered counts and queued print bytes round-trip. Corrupt quantities and a falsely downgraded schema are rejected without replacing usable data. Existing interrupted print and failed/interrupted restore regression tests passed. |
+| Shared moves | Two Clients receive matching live placements through foreground sync. A real pinned HTTPS Server accepts paired moves and rejects unauthorised requests. Unsupported Servers receive no phase mutation. Offline attempts retain the confirmed local assignment, lost acknowledgements recover on refresh, duplicate retries add no revision and stale different moves cannot overwrite newer placements. |
+| Concurrent work | Persistent pending-delivery checks block moving a Client's shared items before its additions are acknowledged. Another Client's move survives appending an already-frozen addition. Unsaved additions keep their stable identifiers and selected phase when rebased. Private items remain local and can move offline. Old whole-step actions fail after a placement change. |
+| Responsive and localised UI | Captured 111 PNGs, including saved moves and phase selection in wide English, landscape and 320-pixel Italian at 2x text. Inspected representative renders; item labels and addition labels wrap, dialogue margins use narrow screens, and controls remain reachable in both completion modes. |
+| Source and Android preview | Source ZIP verified under a single `LibreSlip/` root with exclusions and SHA-256 checksums. Fresh debug APK uses `io.thelicato.libreslip`, version 1.11.0, build 1, minSdk 34 and targetSdk 36. Flutter and Gradle outputs match and Android Debug signing verifies with APK Signature Scheme v2. This is a development-key preview. |
+| Limitations | Shared saved-item moves need a reachable, updated Server and updated Clients; they are confirmed online rather than queued offline. Local orders and private items retain offline phase moves. No new physical-device installation, multi-phone LAN or physical printer verification was performed. |
+
+Reproduce the full suite and renders with `flutter test --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`. Final affected screens use `flutter test test/course_groups_test.dart test/managed_orders_test.dart test/shared_orders_widget_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`.
+
 ## Optional printed prices and totals, 12 October 2026
 
 Validated step 15 with `VERSION` unchanged at 1.11.0. Settings format 11 adds the default-off printed-price preference; database schema 17, configuration document version 4 and network formats are unchanged.
@@ -121,7 +139,6 @@ Validated step 8 with `VERSION` unchanged at 1.7.0.
 | Responsive and localised rendering | Seventy-six captures passed framework and missed-tap checks. Inspected shared Active orders and conflict choices in English tablet and dark landscape layouts and Italian 320-pixel doubled text. The actual dialog controls remained reachable and resolved conflicts in both languages. Review images: [shared orders](previews/shared-orders-en-1100.png) and [delivery conflict](previews/shared-conflict-en-1100.png). |
 | Android preview APK | Fresh 1.7.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
 | Platform and hardware checks | No new physical-device installation, offline cold launch, Android process-death, permission-denial, two-phone LAN or physical printer verification was performed. Host persistence, TLS and widget checks do not establish physical-device behaviour or paper output. |
-
 
 ## Unnamed order dividers, 5 October 2026
 

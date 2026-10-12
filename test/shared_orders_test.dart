@@ -400,7 +400,7 @@ void main() {
   test('pinned HTTPS allows paired shared edits, rejects unauthorised Clients and excludes ordinary tickets', () async {
     final f = await SharedFixture.create();
     addTearDown(f.dispose);
-    await f.seed();
+    await f.seed(courses: [OrderCourse.divider(id: 'https', ordinal: 1)]);
     final secret = SharedServerSecrets();
     final identity = await ServerIdentityService(secret).loadOrCreate();
     final host = LocalHttpsServer(f.server, secret, port: 0);
@@ -450,6 +450,37 @@ void main() {
     await f.b.sync.synchronise();
     await f.a.sync.synchronise();
     expect(f.a.order.deliveredQuantity('soup'), 1);
+    final destination = f.a.order.courses.single.id;
+    await f.a.sync.moveLine(f.a.order, 'soup', destination);
+    while (f.a.sync.busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    await f.syncBoth();
+    expect(f.b.order.lines.first.courseId, destination);
+    expect(f.b.order.deliveredQuantity('soup'), 1);
+    expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    final moved = (await f.server.loadServerOrders()).single;
+    await expectLater(
+      pinned.moveSharedLine(
+        server: f.b.delivery.activeServer!,
+        accessToken: 'wrong',
+        clientId: f.b.mode.configuration!.installationId,
+        change: OrderPhaseChange(
+          orderId: moved.id,
+          lineId: 'soup',
+          courseId: null,
+          expectedRevision: moved.revision,
+        ),
+      ),
+      throwsA(
+        isA<ClientTransportException>().having(
+          (e) => e.code,
+          'code',
+          'unauthorised',
+        ),
+      ),
+    );
+
     await expectLater(
       pinned.sharedOrderIds(
         server: f.b.delivery.activeServer!,
@@ -780,6 +811,27 @@ void main() {
       isEmpty,
     );
     expect(requests, 1);
+    await expectLater(
+      transport.moveSharedLine(
+        server: server,
+        accessToken: 'token',
+        clientId: 'client',
+        change: const OrderPhaseChange(
+          orderId: 'order',
+          lineId: 'item',
+          courseId: null,
+          expectedRevision: 1,
+        ),
+      ),
+      throwsA(
+        isA<ClientTransportException>().having(
+          (e) => e.code,
+          'code',
+          'unsupported_phase_moves',
+        ),
+      ),
+    );
+    expect(requests, 1);
   });
   test('shared revision inventory paginates and only a changed order needs a snapshot on later refresh', () async {
     final f = await SharedFixture.create();
@@ -974,7 +1026,10 @@ class SharedFixture {
     return SharedFixture(server, transport, a, b);
   }
 
-  Future<void> seed() async {
+  Future<void> seed({
+    List<OrderCourse> courses = const [],
+    String soupNote = '',
+  }) async {
     final private = await a.repository.saveItem(
       name: 'Private',
       sendToServer: false,
@@ -983,14 +1038,21 @@ class SharedFixture {
     final ticket = await a.repository.convertDraftToTicket(
       draft.copyWith(
         reference: 'Table 4',
+        courses: courses,
         lines: [
-          const TicketLine(
+          TicketLine(
             id: 'soup',
             name: 'Soup',
             quantity: 3,
+            preparationNote: soupNote,
             price: ProductPrice(minorUnits: 650, currency: 'EUR'),
           ),
-          const TicketLine(id: 'water', name: 'Water', quantity: 2),
+          TicketLine(
+            id: 'water',
+            name: 'Water',
+            quantity: 2,
+            courseId: courses.firstOrNull?.id,
+          ),
           TicketLine(
             id: 'private',
             catalogueItemId: private.id,
@@ -1152,16 +1214,47 @@ class SharedClient {
 }
 
 class SharedTestTransport
-    implements ClientServerTransport, SharedOrdersTransport {
+    implements
+        ClientServerTransport,
+        SharedOrdersTransport,
+        OrderPhaseTransport {
   SharedTestTransport(this.repository);
   final SqliteOrderRepository repository;
   bool offline = false, loseProgressAck = false, loseAppendAck = false;
   bool supportsShared = true;
+  bool supportsPhaseMoves = true, losePhaseAck = false;
+  int phaseWrites = 0;
   final List<String> progressOperations = [];
   int snapshotReads = 0;
   Future<void> Function()? afterProgressWrite;
   void check() {
     if (offline) throw const ClientTransportException('unreachable');
+  }
+
+  @override
+  Future<SharedOrderSnapshot> moveSharedLine({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderPhaseChange change,
+  }) async {
+    check();
+    if (!supportsPhaseMoves) {
+      throw const ClientTransportException('unsupported_phase_moves');
+    }
+    SharedOrderSnapshot applied;
+    try {
+      applied = await repository.moveSharedLine(clientId, change);
+    } on ServerOrderConflictException {
+      throw const ClientTransportException('conflict');
+    }
+    phaseWrites++;
+    if (losePhaseAck) {
+      losePhaseAck = false;
+      offline = true;
+      throw const ClientTransportException('unreachable');
+    }
+    return applied;
   }
 
   @override

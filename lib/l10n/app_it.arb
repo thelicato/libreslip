@@ -539,7 +539,7 @@
   "newOrderKeptOpen": "Questo ordine resterà aperto per aggiunte successive.",
   "addToOrder": "Aggiungi articoli",
   "additionEditing": "Aggiunta a un ordine aperto",
-  "additionBody": "Aggiungi nuovi articoli qui sotto. Articoli già inviati, titoli, note e nomi delle portate restano invariati.",
+  "additionBody": "Aggiungi nuovi articoli qui sotto. Quantità, titoli e note salvati restano invariati.",
   "previouslyOrdered": "Già ordinato",
   "orderAdditions": "Aggiunte",
   "fullOrderSnapshot": "Ordine completo a questa revisione",
@@ -646,7 +646,13 @@
   "ticketPriceTotal": "Totale",
   "ticketAdditionsTotal": "Totale aggiunte",
   "ticketMissingPrices": "{count, plural, =1{1 articolo senza prezzo. Totale incompleto.} other{{count} articoli senza prezzo. Totale incompleto.}}",
-  "@ticketMissingPrices": {"placeholders": {"count": {"type": "int"}}},
+  "@ticketMissingPrices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "productPrices": "Prezzi e stime",
   "productPricesBody": "Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. I prezzi restano su questo dispositivo. Prezzi sulle comande controlla separatamente gli importi stampati.",
   "unitPrice": "Prezzo unitario (facoltativo)",
@@ -725,5 +731,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "addItemsToPhase": "Aggiungi articoli alla fase",
+  "orderPhase": "Fase {number}",
+  "moveOrderItems": "Sposta articoli",
+  "moveOrderItemsBody": "Scegli la fase di ogni articolo. Per gli ordini condivisi serve il Server.",
+  "phaseMoveFailed": "Spostamento non confermato. Aggiorna l’ordine e verifica la connessione al Server.",
+  "phaseMoveUnsupported": "Aggiorna il Server per spostare gli articoli salvati tra le fasi.",
+  "@orderPhase": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "phaseMovePending": "Invia al Server le aggiunte in attesa prima di spostare gli articoli."
 }

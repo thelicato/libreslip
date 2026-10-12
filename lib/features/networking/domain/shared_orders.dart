@@ -204,3 +204,73 @@ abstract interface class SharedOrdersTransport {
     required OrderProgressChange change,
   });
 }
+
+/// A compare-and-set change to one live item's placement.
+class OrderPhaseChange {
+  const OrderPhaseChange({
+    required this.orderId,
+    required this.lineId,
+    required this.courseId,
+    required this.expectedRevision,
+    this.course,
+  });
+  final OrderCourse? course;
+  final String orderId;
+  final String lineId;
+  final String? courseId;
+  final int expectedRevision;
+  Map<String, Object?> toJson() => {
+    'orderId': orderId,
+    'lineId': lineId,
+    'courseId': courseId,
+    'expectedRevision': expectedRevision,
+    'course': course?.toJson(),
+  };
+  factory OrderPhaseChange.fromJson(Object? value) {
+    if (value is! Map ||
+        value.length != 5 ||
+        value['orderId'] is! String ||
+        !validOrderId(value['orderId'] as String) ||
+        value['lineId'] is! String ||
+        !validOrderId(value['lineId'] as String) ||
+        !value.containsKey('courseId') ||
+        !value.containsKey('course') ||
+        (value['courseId'] != null &&
+            (value['courseId'] is! String ||
+                !validOrderId(value['courseId'] as String))) ||
+        value['expectedRevision'] is! int ||
+        (value['expectedRevision'] as int) < 1 ||
+        (value['expectedRevision'] as int) > 9007199254740991) {
+      throw const FormatException('Invalid phase change');
+    }
+    final course = value['course'] == null
+        ? null
+        : parseCourses([value['course']]).single;
+    if (course != null && course.id != value['courseId']) {
+      throw const FormatException('Invalid phase definition');
+    }
+    return OrderPhaseChange(
+      orderId: value['orderId'] as String,
+      lineId: value['lineId'] as String,
+      courseId: value['courseId'] as String?,
+      expectedRevision: value['expectedRevision'] as int,
+      course: course,
+    );
+  }
+}
+
+abstract interface class OrderPhaseServerStore {
+  Future<SharedOrderSnapshot> moveSharedLine(
+    String actorId,
+    OrderPhaseChange change,
+  );
+}
+
+abstract interface class OrderPhaseTransport {
+  Future<SharedOrderSnapshot> moveSharedLine({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderPhaseChange change,
+  });
+}

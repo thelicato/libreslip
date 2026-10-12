@@ -14,7 +14,8 @@ class PinnedHttpsClient
     implements
         ClientServerTransport,
         OrderProgressTransport,
-        SharedOrdersTransport {
+        SharedOrdersTransport,
+        OrderPhaseTransport {
   const PinnedHttpsClient();
 
   static const _responseLimit = 65536;
@@ -280,6 +281,48 @@ class PinnedHttpsClient
     orderId: change.orderId,
     change: change,
   );
+
+  @override
+  Future<SharedOrderSnapshot> moveSharedLine({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderPhaseChange change,
+  }) async {
+    final status = await _request(
+      server.baseUrl.resolve('/v1/status'),
+      fingerprint: server.certificateFingerprint,
+    );
+    if (status.statusCode != HttpStatus.ok ||
+        status.body['protocol'] != NetworkProtocol.name ||
+        status.body['serverInstallationId'] != server.id) {
+      throw const ClientTransportException('server_identity');
+    }
+    final versions = status.body['phaseMoveVersions'];
+    if (versions is! List || !versions.contains(1)) {
+      throw const ClientTransportException('unsupported_phase_moves');
+    }
+    final response = await _sharedRequest(
+      server,
+      accessToken,
+      clientId,
+      '/v1/shared-phase',
+      body: change.toJson(),
+    );
+    try {
+      final snapshot = SharedOrderSnapshot.fromJson(response);
+      if (snapshot.serverOrderId != change.orderId ||
+          !snapshot.envelope.lines.any(
+            (line) =>
+                line.id == change.lineId && line.courseId == change.courseId,
+          )) {
+        throw const FormatException('Wrong phase response');
+      }
+      return snapshot;
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+  }
 
   Future<void> _checkSharedSupport(PairedServer server) async {
     final response = await _request(

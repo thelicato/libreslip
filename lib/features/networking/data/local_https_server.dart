@@ -97,6 +97,7 @@ class LocalHttpsServer implements ServerHost {
           ],
           'progressVersions': [if (_store is ServerProgressStore) 1],
           'sharedOrderVersions': [if (_store is SharedServerStore) 1],
+          'phaseMoveVersions': [if (_store is OrderPhaseServerStore) 1],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,
           'certificateFingerprint': identity.certificateFingerprint,
@@ -114,7 +115,8 @@ class LocalHttpsServer implements ServerHost {
       }
       if (request.uri.path == '/v1/shared-orders' ||
           request.uri.path == '/v1/shared-additions' ||
-          request.uri.path == '/v1/shared-progress') {
+          request.uri.path == '/v1/shared-progress' ||
+          request.uri.path == '/v1/shared-phase') {
         await _shared(request, onOrderReceived: onOrderReceived);
         return;
       }
@@ -389,6 +391,24 @@ class LocalHttpsServer implements ServerHost {
     final decoded = jsonDecode(
       await _readBody(request, SharedOrderSnapshot.maxBytes),
     );
+    if (request.uri.path == '/v1/shared-phase') {
+      if (store is! OrderPhaseServerStore) {
+        await _writeError(
+          request.response,
+          HttpStatus.notFound,
+          'unsupported_phase_moves',
+        );
+        return;
+      }
+      final change = OrderPhaseChange.fromJson(decoded);
+      final applied = await (store as OrderPhaseServerStore).moveSharedLine(
+        actor,
+        change,
+      );
+      onOrderReceived();
+      await _writeJson(request.response, HttpStatus.ok, applied.toJson());
+      return;
+    }
     if (request.uri.path == '/v1/shared-progress') {
       final change = OrderProgressChange.fromJson(decoded);
       final applied = await shared.changeSharedProgress(actor, change);

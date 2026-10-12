@@ -27,11 +27,15 @@ class SqliteOrderRepository
         ServerProgressStore,
         ProgressRecoveryStore,
         SharedClientStore,
-        SharedServerStore {
+        SharedServerStore,
+        OrderPhaseStore,
+        OrderPhaseServerStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
-  static const databaseVersion = 17;
+  // Schema 18 permits live managed-line placement to differ from immutable
+  // ticket snapshots. Existing rows need no rewrite during this migration.
+  static const databaseVersion = 18;
   static const portableSchemaVersions = {
     5,
     6,
@@ -45,6 +49,7 @@ class SqliteOrderRepository
     14,
     15,
     16,
+    17,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -60,6 +65,12 @@ class SqliteOrderRepository
     }
     return database;
   }
+
+  @override
+  Future<SharedOrderSnapshot> moveSharedLine(
+    String actor,
+    OrderPhaseChange change,
+  ) => _SharedPersistence(this).moveLine(actor, change);
 
   @override
   Future<List<SharedOrderHead>> sharedOrderIds(String after) =>
@@ -2693,6 +2704,55 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<void> moveManagedLine(
+    String orderId,
+    String lineId,
+    String? courseId, {
+    required int expectedRevision,
+  }) async {
+    await (await _db).transaction((tx) async {
+      final rows = await tx.query(
+        'managed_orders',
+        where: 'id = ? AND closed_at IS NULL',
+        whereArgs: [orderId],
+      );
+      if (rows.length != 1) {
+        throw const OrderStorageException('The active order was not found.');
+      }
+      final order = _managedFromRow(rows.single);
+      final line = order.lines.where((line) => line.id == lineId).single;
+      if (order.revision != expectedRevision ||
+          (courseId != null && !order.courses.any((c) => c.id == courseId)) ||
+          (order.destinationId != null && line.sendToServer)) {
+        throw const OrderStorageException('Invalid or stale phase change.');
+      }
+      if (line.courseId == courseId) return;
+      await tx.update(
+        'managed_orders',
+        {
+          'lines_json': encodeOrderLines([
+            for (final line in order.lines)
+              if (line.id == lineId)
+                line.copyWith(courseId: courseId, clearCourse: courseId == null)
+              else
+                line,
+          ]),
+          'revision': order.revision + 1,
+          'updated_at': _timestamp(DateTime.now().toUtc()),
+        },
+        where: 'id = ?',
+        whereArgs: [orderId],
+      );
+      await tx.update(
+        'drafts',
+        {'base_revision': order.revision + 1},
+        where: 'managed_order_id = ?',
+        whereArgs: [orderId],
+      );
+    });
+  }
+
+  @override
   Future<OrderDraft> beginOrderAddition(String orderId, String draftId) async {
     return (await _db).transaction((tx) async {
       final drafts = await tx.query('drafts');
@@ -2976,7 +3036,8 @@ class SqliteOrderRepository
             matching.single.name != line['name_snapshot'] ||
             matching.single.quantity != line['quantity'] ||
             matching.single.preparationNote != line['preparation_note'] ||
-            matching.single.courseId != line['course_id'] ||
+            ((snapshot['schemaVersion'] as int) < 18 &&
+                matching.single.courseId != line['course_id']) ||
             matching.single.price !=
                 ProductPrice.fromColumns(
                   line['price_minor_units'],
