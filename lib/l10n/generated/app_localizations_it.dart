@@ -1386,19 +1386,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addToOrder => 'Aggiungi articoli';
 
   @override
-  String get additionEditing => 'Aggiunta a un ordine aperto';
-
-  @override
-  String get additionBody =>
-      'Aggiungi nuovi articoli qui sotto. Quantità, titoli e note salvati restano invariati.';
-
-  @override
-  String get previouslyOrdered => 'Già ordinato';
-
-  @override
-  String get orderAdditions => 'Aggiunte';
-
-  @override
   String get fullOrderSnapshot => 'Ordine completo a questa revisione';
 
   @override
@@ -1750,21 +1737,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get addItemsToPhase => 'Aggiungi articoli alla fase';
-
-  @override
-  String orderPhase(String number) {
-    return 'Fase $number';
-  }
-
-  @override
-  String get moveOrderItems => 'Sposta articoli';
-
-  @override
-  String get moveOrderItemsBody =>
-      'Scegli la fase di ogni articolo. Per gli ordini condivisi serve il Server.';
-
-  @override
   String get phaseMoveFailed =>
       'Spostamento non confermato. Aggiorna l’ordine e verifica la connessione al Server.';
 
@@ -1778,6 +1750,26 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ticketAdditionsHeading => 'Aggiunte';
+
+  @override
+  String get editOrder => 'Modifica ordine';
+
+  @override
+  String get editingOrder => 'Modifica ordine';
+
+  @override
+  String get savedItemsLabel => 'Salvato';
+
+  @override
+  String get orderEditHelp =>
+      'Gli spostamenti sono immediati. Stampa o salva per aggiungere nuovi articoli.';
+
+  @override
+  String get catalogueLastPhaseBody =>
+      'Le aggiunte rapide vanno nell’ultima fase. Usa Aggiungi articoli nella fase desiderata.';
+
+  @override
+  String get finishEditing => 'Termina modifica';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

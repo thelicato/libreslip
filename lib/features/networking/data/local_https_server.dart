@@ -97,7 +97,9 @@ class LocalHttpsServer implements ServerHost {
           ],
           'progressVersions': [if (_store is ServerProgressStore) 1],
           'sharedOrderVersions': [if (_store is SharedServerStore) 1],
-          'phaseMoveVersions': [if (_store is OrderPhaseServerStore) 1],
+          'phaseMoveVersions': [
+            if (_store is OrderPhaseServerStore) ...[1, 2],
+          ],
           'serverInstallationId': configuration.installationId,
           'serverName': configuration.serverName,
           'certificateFingerprint': identity.certificateFingerprint,

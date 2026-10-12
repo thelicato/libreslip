@@ -459,6 +459,21 @@ void main() {
     expect(f.b.order.lines.first.courseId, destination);
     expect(f.b.order.deliveredQuantity('soup'), 1);
     expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    expect(await f.a.workspace.beginAddition(f.a.order.id), isTrue);
+    expect(f.a.workspace.addDivider(), isTrue);
+    final addedPhase = f.a.workspace.activeDraft!.courses.last.id;
+    await f.a.sync.moveLine(f.a.order, 'soup', addedPhase);
+    while (f.a.sync.busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    await f.syncBoth();
+    expect(f.b.order.lines.first.courseId, addedPhase);
+    expect(
+      f.b.order.courses.map((c) => c.id),
+      f.a.workspace.activeDraft!.courses.map((c) => c.id),
+    );
+    await f.a.workspace.cancelAddition();
+
     final moved = (await f.server.loadServerOrders()).single;
     await expectLater(
       pinned.moveSharedLine(
@@ -757,7 +772,7 @@ void main() {
       context,
     );
     addTearDown(() => host.close(force: true));
-    var supported = false, requests = 0;
+    var supported = false, requests = 0, phaseVersion = 0;
     host.listen((request) async {
       request.response.headers.contentType = ContentType.json;
       if (request.uri.path == '/v1/status') {
@@ -767,6 +782,7 @@ void main() {
             'version': 1,
             'serverInstallationId': 'old-server',
             'sharedOrderVersions': [if (supported) 1],
+            'phaseMoveVersions': [if (phaseVersion > 0) phaseVersion],
           }),
         );
       } else {
@@ -820,6 +836,31 @@ void main() {
           orderId: 'order',
           lineId: 'item',
           courseId: null,
+          expectedRevision: 1,
+        ),
+      ),
+      throwsA(
+        isA<ClientTransportException>().having(
+          (e) => e.code,
+          'code',
+          'unsupported_phase_moves',
+        ),
+      ),
+    );
+    expect(requests, 1);
+    phaseVersion = 1;
+    final phase = OrderCourse.divider(id: 'new', ordinal: 1);
+    await expectLater(
+      transport.moveSharedLine(
+        server: server,
+        accessToken: 'token',
+        clientId: 'client',
+        change: OrderPhaseChange(
+          orderId: 'order',
+          lineId: 'item',
+          courseId: phase.id,
+          course: phase,
+          courses: [phase],
           expectedRevision: 1,
         ),
       ),

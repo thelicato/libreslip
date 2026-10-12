@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/shared_orders_controller.dart';
-import '../../networking/domain/client_transport.dart';
 import '../../networking/presentation/progress_sync_controls.dart';
 import '../../networking/presentation/shared_order_controls.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
-import 'course_composer.dart';
 import 'delivery_progress.dart';
 import 'order_identity.dart';
 import 'order_estimate.dart';
@@ -19,62 +16,37 @@ class ManagedOrderComposer extends StatelessWidget {
     super.key,
     required this.controller,
     this.busy = false,
-    this.delivery,
-    this.sharedOrders,
-    this.completeWholeSteps = false,
   });
   final OrderWorkspaceController controller;
   final bool busy;
-  final ClientDeliveryController? delivery;
-  final SharedOrdersController? sharedOrders;
-  final bool completeWholeSteps;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final order = controller.editingOrder;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (order != null) ...[
-              Text(
-                l.additionEditing,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              OrderIdentity(
-                reference: order.reference,
-                numberLabel: l.orderNumber(order.number),
-              ),
-              Text(l.orderRevision(order.revision + 1)),
-              if (order.destinationId == null) Text(l.activeOrderLocal),
-              const SizedBox(height: 8),
-              Text(l.additionBody),
-              ExpansionTile(
-                key: const ValueKey('previously-ordered'),
-                tilePadding: EdgeInsets.zero,
-                title: Text(l.previouslyOrdered),
-                childrenPadding: const EdgeInsets.symmetric(vertical: 12),
-                children: [
-                  _OrderContents(
-                    order: order,
-                    controller: controller,
-                    delivery: delivery,
-                    sharedOrders: sharedOrders,
-                    completeWholeSteps: completeWholeSteps,
-                  ),
-                ],
-              ),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  l.editingOrder,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                TextButton.icon(
                   key: const ValueKey('cancel-addition'),
                   onPressed: busy
                       ? null
                       : () async {
+                          if (controller.activeDraft?.lines.isEmpty ?? true) {
+                            await controller.cancelAddition();
+                            return;
+                          }
                           if (await _confirm(
                                 context,
                                 l.cancelAddition,
@@ -85,14 +57,15 @@ class ManagedOrderComposer extends StatelessWidget {
                           }
                         },
                   icon: const Icon(Icons.close_rounded),
-                  label: Text(l.cancelAddition),
+                  label: Text(
+                    (controller.activeDraft?.lines.isEmpty ?? true)
+                        ? l.finishEditing
+                        : l.cancelAddition,
+                  ),
                 ),
-              ),
-              Text(
-                l.orderAdditions,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
+              ],
+            ),
+            Text(l.orderEditHelp),
           ],
         ),
       ),
@@ -186,21 +159,47 @@ class OpenOrdersPanel extends StatelessWidget {
                           l.serverDisconnected,
                     ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    key: ValueKey('view-order-${order.id}'),
-                    onPressed: controller.saving
-                        ? null
-                        : () => showManagedOrder(
-                            context,
-                            controller: controller,
-                            orderId: order.id,
-                            onOpenCompose: onOpenCompose,
-                            delivery: delivery,
-                            sharedOrders: sharedOrders,
-                            completeWholeSteps: completeWholeSteps,
-                          ),
-                    icon: const Icon(Icons.visibility_outlined),
-                    label: Text(l.viewOrder),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        key: ValueKey('edit-order-${order.id}'),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: Text(l.editOrder),
+                        onPressed:
+                            controller.saving ||
+                                (sharedOrders?.unavailableIds.contains(
+                                      order.id,
+                                    ) ??
+                                    false) ||
+                                (!controller.canBeginAddition &&
+                                    controller.editingOrder?.id != order.id)
+                            ? null
+                            : () async {
+                                if (controller.editingOrder?.id == order.id ||
+                                    await controller.beginAddition(order.id)) {
+                                  onOpenCompose();
+                                }
+                              },
+                      ),
+                      OutlinedButton.icon(
+                        key: ValueKey('view-order-${order.id}'),
+                        onPressed: controller.saving
+                            ? null
+                            : () => showManagedOrder(
+                                context,
+                                controller: controller,
+                                orderId: order.id,
+                                onOpenCompose: onOpenCompose,
+                                delivery: delivery,
+                                sharedOrders: sharedOrders,
+                                completeWholeSteps: completeWholeSteps,
+                              ),
+                        icon: const Icon(Icons.visibility_outlined),
+                        label: Text(l.viewOrder),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -347,27 +346,9 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                             onOpenCompose();
                                           }
                                         },
-                                  icon: const Icon(Icons.add_rounded),
-                                  label: Text(l.addToOrder),
+                                  icon: const Icon(Icons.edit_outlined),
+                                  label: Text(l.editOrder),
                                 ),
-                                if (order.courses.isNotEmpty)
-                                  OutlinedButton.icon(
-                                    key: ValueKey(
-                                      'move-order-items-${order.id}',
-                                    ),
-                                    onPressed:
-                                        controller.saving ||
-                                            (sharedOrders?.busy ?? false)
-                                        ? null
-                                        : () => _showPhaseMoves(
-                                            context,
-                                            order.id,
-                                            controller,
-                                            sharedOrders,
-                                          ),
-                                    icon: const Icon(Icons.swap_vert_rounded),
-                                    label: Text(l.moveOrderItems),
-                                  ),
                                 TextButton(
                                   key: ValueKey('close-order-${order.id}'),
                                   onPressed:
@@ -539,116 +520,3 @@ Future<bool?> _confirm(BuildContext context, String title, String body) =>
         );
       },
     );
-
-Future<void> _showPhaseMoves(
-  BuildContext context,
-  String orderId,
-  OrderWorkspaceController controller,
-  SharedOrdersController? shared,
-) => showDialog<void>(
-  context: context,
-  builder: (context) => AnimatedBuilder(
-    animation: Listenable.merge([controller, ?shared]),
-    builder: (context, _) {
-      final l = AppLocalizations.of(context);
-      final order = controller.managedOrders
-          .where((o) => o.id == orderId)
-          .firstOrNull;
-      final numbers = NumberFormat.decimalPattern(
-        Localizations.localeOf(context).toLanguageTag(),
-      );
-      final busy = controller.saving || (shared?.busy ?? false);
-      return AlertDialog(
-        insetPadding: EdgeInsets.symmetric(
-          horizontal: MediaQuery.sizeOf(context).width < 600 ? 16 : 40,
-          vertical: 24,
-        ),
-        scrollable: true,
-        title: Text(l.moveOrderItems),
-        content: SizedBox(
-          width: 480,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l.moveOrderItemsBody),
-              const SizedBox(height: 16),
-              if (order != null)
-                for (final line in order.lines)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        PhaseSelector(
-                          key: ValueKey(
-                            'saved-phase-${line.id}-${order.revision}-$busy',
-                          ),
-                          courses: order.courses,
-                          courseId: line.courseId,
-                          label:
-                              '${numbers.format(line.quantity)} × ${line.name}',
-                          onChanged: busy || order.closedAt != null
-                              ? null
-                              : (destination) async {
-                                  if (destination == line.courseId) return;
-                                  String? error;
-                                  try {
-                                    if (order.destinationId != null &&
-                                        line.sendToServer) {
-                                      if (shared == null) {
-                                        throw const ClientTransportException(
-                                          'unsupported_phase_moves',
-                                        );
-                                      }
-                                      await shared.moveLine(
-                                        order,
-                                        line.id,
-                                        destination,
-                                      );
-                                    } else if (!await controller.moveSavedLine(
-                                      order.id,
-                                      line.id,
-                                      destination,
-                                      expectedRevision: order.revision,
-                                    )) {
-                                      error = l.phaseMoveFailed;
-                                    }
-                                  } on ClientTransportException catch (e) {
-                                    error = switch (e.code) {
-                                      'unsupported_phase_moves' =>
-                                        l.phaseMoveUnsupported,
-                                      'phase_move_pending' =>
-                                        l.phaseMovePending,
-                                      _ => l.phaseMoveFailed,
-                                    };
-                                  } catch (_) {
-                                    error = l.phaseMoveFailed;
-                                  }
-                                  if (error != null && context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(error)),
-                                    );
-                                  }
-                                },
-                        ),
-                        if (line.preparationNote.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(line.preparationNote),
-                          ),
-                      ],
-                    ),
-                  ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: busy ? null : () => Navigator.pop(context),
-            child: Text(l.close),
-          ),
-        ],
-      );
-    },
-  ),
-);

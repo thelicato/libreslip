@@ -294,14 +294,20 @@ class OrderWorkspaceController extends ChangeNotifier {
     if (path != null && _imageStore != null) await _imageStore.remove(path);
   }
 
-  void addCatalogueItem(CatalogueItem item) {
+  void addCatalogueItem(CatalogueItem item) =>
+      addCatalogueItemInCourse(item, activeDraft?.activeCourseId);
+
+  /// Adding inside a phase never changes the catalogue's default destination.
+  void addCatalogueItemInCourse(CatalogueItem item, String? courseId) {
     final draft = activeDraft;
-    if (saving || draft == null) return;
+    if (saving ||
+        draft == null ||
+        (courseId != null && !draft.courses.any((c) => c.id == courseId))) {
+      return;
+    }
     final lines = [...draft.lines];
     final existingIndex = lines.indexWhere(
-      (line) =>
-          line.catalogueItemId == item.id &&
-          line.courseId == draft.activeCourseId,
+      (line) => line.catalogueItemId == item.id && line.courseId == courseId,
     );
     if (existingIndex >= 0) {
       final existing = lines[existingIndex];
@@ -315,7 +321,7 @@ class OrderWorkspaceController extends ChangeNotifier {
           catalogueItemId: item.id,
           name: item.name,
           quantity: 1,
-          courseId: draft.activeCourseId,
+          courseId: courseId,
           price: featureSettings.pricesEnabled ? item.price : null,
         ),
       );

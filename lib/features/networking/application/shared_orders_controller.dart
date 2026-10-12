@@ -148,6 +148,13 @@ class SharedOrdersController extends ChangeNotifier
         if (token == null || token.isEmpty) {
           throw const ClientTransportException('credentials');
         }
+        final draft = workspace.activeDraft;
+        final newPhase =
+            courseId != null &&
+            !link.baseline.envelope.courses.any((c) => c.id == courseId);
+        final courses = newPhase && draft?.managedOrderId == current.id
+            ? draft!.courses
+            : current.courses;
         final snapshot = await (transport as OrderPhaseTransport)
             .moveSharedLine(
               server: server,
@@ -160,7 +167,8 @@ class SharedOrdersController extends ChangeNotifier
                 expectedRevision: link.baseline.envelope.revision,
                 course: courseId == null
                     ? null
-                    : current.courses.firstWhere((c) => c.id == courseId),
+                    : courses.firstWhere((c) => c.id == courseId),
+                courses: newPhase ? courses : null,
               ),
             );
         if (_disposed || !enabled || delivery.serverFor(server.id) == null) {

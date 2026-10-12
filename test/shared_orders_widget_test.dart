@@ -8,7 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libreslip/core/theme/app_theme.dart';
 import 'package:libreslip/features/orders/presentation/managed_order_composer.dart';
-import 'package:libreslip/features/orders/presentation/course_composer.dart';
+import 'package:libreslip/features/orders/presentation/compose_page.dart';
+import 'package:libreslip/features/settings/domain/app_settings.dart';
 import 'package:libreslip/features/orders/domain/order_models.dart';
 import 'package:libreslip/l10n/generated/app_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -118,13 +119,13 @@ void main() {
     );
   }
 
-  for (final (language, size, scale, wholeSteps) in [
+  for (final (language, size, scale, compact) in [
     ('en', const Size(1100, 900), 1.0, false),
     ('it', const Size(320, 740), 2.0, true),
     ('en', const Size(915, 412), 1.0, true),
   ]) {
     testWidgets(
-      'saved phase moves and addition selection $language $size whole steps $wholeSteps',
+      'one order editor shows all phases and moves saved and new items $language $size',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -137,6 +138,10 @@ void main() {
         final divider = OrderCourse.divider(id: 'widget-phase', ordinal: 1);
         await f.seed(courses: [divider], soupNote: 'No salt');
         await f.syncBoth();
+        await f.a.workspace.saveItem(name: 'Juice');
+        final juice = f.a.workspace.items.firstWhere((i) => i.name == 'Juice');
+        final printing = ValueNotifier(false);
+        addTearDown(printing.dispose);
         final boundary = GlobalKey();
         await tester.pumpWidget(
           RepaintBoundary(
@@ -146,7 +151,9 @@ void main() {
               locale: Locale(language, language == 'it' ? 'IT' : 'GB'),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              theme: AppTheme.build(Brightness.light),
+              theme: AppTheme.build(
+                size.width == 915 ? Brightness.dark : Brightness.light,
+              ),
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context)
                     .copyWith(textScaler: TextScaler.linear(scale)),
@@ -156,7 +163,7 @@ void main() {
                 body: SafeArea(
                   child: SingleChildScrollView(
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: ListenableBuilder(
                         listenable: f.a.workspace,
                         builder: (context, _) =>
@@ -166,9 +173,14 @@ void main() {
                                 controller: f.a.workspace,
                                 delivery: f.a.delivery,
                                 sharedOrders: f.a.sync,
-                                completeWholeSteps: wholeSteps,
                               )
-                            : CourseComposer(controller: f.a.workspace),
+                            : ComposePage(
+                                controller: f.a.workspace,
+                                settings: AppSettings(compactCompose: compact),
+                                printing: printing,
+                                delivery: f.a.delivery,
+                                sharedOrders: f.a.sync,
+                              ),
                       ),
                     ),
                   ),
@@ -178,76 +190,94 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final view = find.byKey(ValueKey('view-order-${f.a.order.id}'));
-        await tester.ensureVisible(view);
-        await tester.tap(view);
+        final edit = find.byKey(ValueKey('edit-order-${f.a.order.id}'));
+        await tester.ensureVisible(edit);
         await tester.pumpAndSettle();
-        final moves = find.byKey(ValueKey('move-order-items-${f.a.order.id}'));
-        await tester.ensureVisible(moves);
+        await tester.tap(edit);
         await tester.pumpAndSettle();
-        await tester.tap(moves);
+        expect(
+          find.byKey(const ValueKey('addition-phase-selector')),
+          findsNothing,
+        );
+        expect(find.byKey(const ValueKey('previously-ordered')), findsNothing);
+        expect(find.byKey(const ValueKey('order-line-soup')), findsOneWidget);
+        expect(find.byKey(const ValueKey('order-line-water')), findsOneWidget);
+        final down = find.byKey(const ValueKey('line-below-divider-soup'));
+        await tester.ensureVisible(down);
         await tester.pumpAndSettle();
         if (capture) {
           await _capture(
             tester,
             boundary,
-            'phase-moves-$language-${size.width.toInt()}',
+            'unified-order-editor-$language-${size.width.toInt()}',
           );
         }
-        final soup = find.widgetWithText(PhaseSelector, '3 × Soup');
-        final dropdown = find.descendant(
-          of: soup,
-          matching: find.byType(DropdownButton<String>),
-        );
-        await tester.ensureVisible(dropdown);
-        await tester.pumpAndSettle();
-        await tester.tap(dropdown);
-        await tester.pumpAndSettle();
-        await tester.tap(
-          find.text(language == 'it' ? 'Fase 2' : 'Phase 2').last,
-        );
+        await tester.tap(down);
         await tester.pumpAndSettle();
         expect(f.a.order.lines.first.courseId, divider.id);
         await f.b.sync.synchronise();
         expect(f.b.order.lines.first.courseId, divider.id);
-        expect(tester.takeException(), isNull);
-        final l = AppLocalizations.of(
-          tester.element(find.byType(PhaseSelector).first),
-        );
-        await tester.tap(find.widgetWithText(TextButton, l.close).last);
+        expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+        // A button captured before another Client's move must not overwrite it.
+        final staleUp = tester
+            .widget<IconButton>(
+              find.byKey(const ValueKey('line-above-divider-soup')),
+            )
+            .onPressed!;
+        expect(await f.b.workspace.beginAddition(f.b.order.id), isTrue);
+        expect(f.b.workspace.addDivider(), isTrue);
+        final remotePhase = f.b.workspace.activeDraft!.courses.last.id;
+        await f.b.sync.moveLine(f.b.order, 'soup', remotePhase);
+        await f.a.sync.synchronise();
+        final writes = f.transport.phaseWrites;
+        staleUp();
         await tester.pumpAndSettle();
-        final add = find.byKey(ValueKey('add-to-order-${f.a.order.id}'));
+        expect(f.transport.phaseWrites, writes);
+        expect(f.a.order.lines.first.courseId, remotePhase);
+        // Dismiss the expected stale-action notice before reviewing additions.
+        ScaffoldMessenger.of(tester.element(find.byType(ComposePage)))
+            .removeCurrentSnackBar();
+        await tester.pumpAndSettle();
+
+        final add = find.byKey(const ValueKey('add-in-phase-first'));
         await tester.ensureVisible(add);
         await tester.pumpAndSettle();
         await tester.tap(add);
         await tester.pumpAndSettle();
-        final selection = find.byKey(const ValueKey('addition-phase-selector'));
-        expect(selection, findsOneWidget);
+        final increment = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byKey(ValueKey('compose-item-${juice.id}')),
+        );
+        await tester.ensureVisible(increment);
+        await tester.pumpAndSettle();
         if (capture) {
           await _capture(
             tester,
             boundary,
-            'addition-phase-$language-${size.width.toInt()}',
+            'phase-catalogue-$language-${size.width.toInt()}',
           );
         }
-        await tester.tap(
-          find.descendant(
-            of: selection,
-            matching: find.byType(DropdownButton<String>),
-          ),
-        );
+        await tester.tap(increment);
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.text(language == 'it' ? 'Fase 2' : 'Phase 2').last,
-        );
+        expect(f.a.workspace.activeDraft!.lines.single.courseId, isNull);
+        final l = AppLocalizations.of(tester.element(find.byType(AlertDialog)));
+        await tester.tap(find.widgetWithText(TextButton, l.close).last);
         await tester.pumpAndSettle();
-        expect(f.a.workspace.activeDraft!.activeCourseId, divider.id);
-        await f.a.workspace.saveItem(name: 'Juice');
-        f.a.workspace.addCatalogueItem(
-          f.a.workspace.items.firstWhere((i) => i.name == 'Juice'),
-        );
-        await f.a.workspace.flushWrites();
+        final added = f.a.workspace.activeDraft!.lines.single;
+        final move = find.byKey(ValueKey('line-below-divider-${added.id}'));
+        await tester.ensureVisible(move);
+        await tester.pumpAndSettle();
+        await tester.tap(move);
+        await tester.pumpAndSettle();
         expect(f.a.workspace.activeDraft!.lines.single.courseId, divider.id);
+        expect(find.byKey(ValueKey('order-line-${added.id}')), findsOneWidget);
+        if (capture) {
+          await _capture(
+            tester,
+            boundary,
+            'unified-order-additions-$language-${size.width.toInt()}',
+          );
+        }
         expect(tester.takeException(), isNull);
       },
     );

@@ -538,10 +538,6 @@
   "activeOrdersEmpty": "Per iniziare, salva un ordine con Mantieni ordini aperti attivo.",
   "newOrderKeptOpen": "Questo ordine resterà aperto per aggiunte successive.",
   "addToOrder": "Aggiungi articoli",
-  "additionEditing": "Aggiunta a un ordine aperto",
-  "additionBody": "Aggiungi nuovi articoli qui sotto. Quantità, titoli e note salvati restano invariati.",
-  "previouslyOrdered": "Già ordinato",
-  "orderAdditions": "Aggiunte",
   "fullOrderSnapshot": "Ordine completo a questa revisione",
   "printAdditions": "Stampa aggiunte",
   "finishCompositionFirst": "Stampa o termina la composizione attuale prima di scegliere un ordine aperto.",
@@ -724,19 +720,14 @@
       }
     }
   },
-  "addItemsToPhase": "Aggiungi articoli alla fase",
-  "orderPhase": "Fase {number}",
-  "moveOrderItems": "Sposta articoli",
-  "moveOrderItemsBody": "Scegli la fase di ogni articolo. Per gli ordini condivisi serve il Server.",
   "phaseMoveFailed": "Spostamento non confermato. Aggiorna l’ordine e verifica la connessione al Server.",
   "phaseMoveUnsupported": "Aggiorna il Server per spostare gli articoli salvati tra le fasi.",
-  "@orderPhase": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
   "phaseMovePending": "Invia al Server le aggiunte in attesa prima di spostare gli articoli.",
-  "ticketAdditionsHeading": "Aggiunte"
+  "ticketAdditionsHeading": "Aggiunte",
+  "editOrder": "Modifica ordine",
+  "editingOrder": "Modifica ordine",
+  "savedItemsLabel": "Salvato",
+  "orderEditHelp": "Gli spostamenti sono immediati. Stampa o salva per aggiungere nuovi articoli.",
+  "catalogueLastPhaseBody": "Le aggiunte rapide vanno nell’ultima fase. Usa Aggiungi articoli nella fase desiderata.",
+  "finishEditing": "Termina modifica"
 }

@@ -538,10 +538,6 @@
   "activeOrdersEmpty": "Save an order with Keep orders open enabled to start.",
   "newOrderKeptOpen": "This order will stay open for later additions.",
   "addToOrder": "Add items",
-  "additionEditing": "Adding to an active order",
-  "additionBody": "Add new items below. Saved quantities, titles and notes stay fixed.",
-  "previouslyOrdered": "Previously ordered",
-  "orderAdditions": "Additions",
   "fullOrderSnapshot": "Full order at this revision",
   "printAdditions": "Print additions",
   "finishCompositionFirst": "Print or finish the current composition before selecting an active order.",
@@ -724,19 +720,14 @@
       }
     }
   },
-  "addItemsToPhase": "Add items to phase",
-  "orderPhase": "Phase {number}",
-  "moveOrderItems": "Move items",
-  "moveOrderItemsBody": "Choose a phase for each item. Shared moves need a Server connection.",
   "phaseMoveFailed": "Move not confirmed. Refresh the order and check the Server connection.",
   "phaseMoveUnsupported": "Update the Server to move saved items between phases.",
-  "@orderPhase": {
-    "placeholders": {
-      "number": {
-        "type": "String"
-      }
-    }
-  },
   "phaseMovePending": "Send pending additions to the Server before moving items.",
-  "ticketAdditionsHeading": "Additions"
+  "ticketAdditionsHeading": "Additions",
+  "editOrder": "Edit order",
+  "editingOrder": "Editing order",
+  "savedItemsLabel": "Saved",
+  "orderEditHelp": "Moves apply immediately. Print or save to add new items.",
+  "catalogueLastPhaseBody": "Quick additions go to the last phase. Use Add items inside a phase to add there.",
+  "finishEditing": "Finish editing"
 }

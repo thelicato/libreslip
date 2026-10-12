@@ -77,6 +77,25 @@ class _SharedPersistence {
       throw const FormatException('Invalid phase item');
     }
     final courses = [...current.courses];
+    if (change.courses != null) {
+      validateCourses(change.courses!, [change.courseId]);
+      final inventory = change.courses!;
+      if (inventory.length < current.courses.length ||
+          List.generate(
+            current.courses.length,
+            (i) =>
+                inventory[i].id != current.courses[i].id ||
+                (!inventory[i].isDivider &&
+                    inventory[i].name != current.courses[i].name),
+          ).contains(true)) {
+        throw const ServerOrderConflictException();
+      }
+      for (final course in change.courses!) {
+        if (!courses.any((old) => old.id == course.id)) {
+          courses.add(_uniqueCourse(course, courses));
+        }
+      }
+    }
     if (change.courseId != null &&
         !courses.any((c) => c.id == change.courseId)) {
       final course = change.course;

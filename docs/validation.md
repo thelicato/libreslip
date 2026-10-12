@@ -1,5 +1,22 @@
 # Validation evidence
 
+## Unified composition and order editing, 12 October 2026
+
+Validated step 18 with `VERSION` unchanged at 1.12.0. Both Compose layouts derive one phase list from saved items and persistent additions. SQLite schema 18, settings format 11 and configuration document version 4 are unchanged. Phase structure support adds capability version 2 while preserving version 1 requests.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 114 Dart files passed formatting checks, final `flutter analyze --no-pub` reported no issues and `git diff --check` passed. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 271 tests passed with preview capture enabled. All seven shared-order widget checks passed again after the final compact control adjustment and capture cleanup. Existing persistence, migration, interrupted printing and failed/interrupted restore checks passed. |
+| Editing flow | Direct Edit order from Orders opens Compose with saved items and new additions in every phase. Per-phase Add items opens the local searchable catalogue. The same inline arrows move saved and new lines. Phase selectors, the separate move dialogue and the previously-ordered expansion are removed. Saved snapshots and quantities remain intact; Finish editing ends a session containing only moves. |
+| Local persistence and portability | A saved item can move into a newly created divider before new additions are saved. The course inventory and revision update transactionally, pending additions rebase, and the original ticket stays unchanged. A portable database replacement round-trips the new inventory and live placement. Existing complete backup and rollback tests also pass. |
+| Client synchronisation | Two Clients receive the same placements and ordered phase inventory. Moving into a new phase publishes its structure without publishing unsaved items. A later addition retains both its destination and the saved item's move. A callback captured before another Client's move sends no stale mutation and cannot overwrite the newer placement. Real pinned HTTPS checks exercise phase promotion; older Servers receive no unsupported extended request. |
+| Responsive and localised UI | Nine editor and catalogue captures cover wide English, Italian at 320 pixels with 2x text, and dark landscape. Inspected the full saved phase list, the catalogue dialogue and saved/new rows with dividers and inline controls. Framework and missed-tap checks pass. |
+| Source and APK | Source ZIP verified under `LibreSlip/` with exclusions and SHA-256 checksums. The fresh Android Debug APK uses `io.thelicato.libreslip`, version 1.12.0, build 1, minSdk 34 and targetSdk 36. Flutter/Gradle APKs match and APK Signature Scheme v2 verifies. This is a development-key preview. |
+| Limitations | Shared saved-item moves require a reachable Server; moves into newly created phases require capability version 2 on that Server. Local orders and private items retain offline moves. No new physical phone, multi-device LAN or printer verification was performed. |
+
+Reproduce with `flutter test --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`. Focused checks use `flutter test test/order_phase_moves_test.dart test/shared_orders_test.dart test/shared_orders_widget_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`.
+
 ## Compact ticket amounts without printed revisions, 12 October 2026
 
 Validated step 17 with `VERSION` unchanged at 1.12.0. Printable documents replace revision text with a plain Additions heading. Item rows contain quantity/name and a right-aligned line amount; totals align below. Settings, database, archive and network versions are unchanged.

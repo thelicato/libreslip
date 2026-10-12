@@ -2721,8 +2721,24 @@ class SqliteOrderRepository
       }
       final order = _managedFromRow(rows.single);
       final line = order.lines.where((line) => line.id == lineId).single;
+      var courses = order.courses;
+      if (courseId != null && !courses.any((c) => c.id == courseId)) {
+        final drafts = await tx.query(
+          'drafts',
+          where: 'managed_order_id = ?',
+          whereArgs: [orderId],
+        );
+        if (drafts.length == 1) {
+          final draft = await _draftFromRow(tx, drafts.single);
+          courses = draft.courses;
+        }
+      }
+      validateCourses(courses, [
+        ...order.lines.map((line) => line.courseId),
+        courseId,
+      ]);
       if (order.revision != expectedRevision ||
-          (courseId != null && !order.courses.any((c) => c.id == courseId)) ||
+          (courseId != null && !courses.any((c) => c.id == courseId)) ||
           (order.destinationId != null && line.sendToServer)) {
         throw const OrderStorageException('Invalid or stale phase change.');
       }
@@ -2738,6 +2754,7 @@ class SqliteOrderRepository
                 line,
           ]),
           'revision': order.revision + 1,
+          'courses_json': jsonEncode(courses.map((c) => c.toJson()).toList()),
           'updated_at': _timestamp(DateTime.now().toUtc()),
         },
         where: 'id = ?',

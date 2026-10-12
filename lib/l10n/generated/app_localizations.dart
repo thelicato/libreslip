@@ -2524,30 +2524,6 @@ abstract class AppLocalizations {
   /// **'Add items'**
   String get addToOrder;
 
-  /// No description provided for @additionEditing.
-  ///
-  /// In en, this message translates to:
-  /// **'Adding to an active order'**
-  String get additionEditing;
-
-  /// No description provided for @additionBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Add new items below. Saved quantities, titles and notes stay fixed.'**
-  String get additionBody;
-
-  /// No description provided for @previouslyOrdered.
-  ///
-  /// In en, this message translates to:
-  /// **'Previously ordered'**
-  String get previouslyOrdered;
-
-  /// No description provided for @orderAdditions.
-  ///
-  /// In en, this message translates to:
-  /// **'Additions'**
-  String get orderAdditions;
-
   /// No description provided for @fullOrderSnapshot.
   ///
   /// In en, this message translates to:
@@ -3106,30 +3082,6 @@ abstract class AppLocalizations {
   /// **'Shared with {count} Servers'**
   String sharedOrdersServers(int count);
 
-  /// No description provided for @addItemsToPhase.
-  ///
-  /// In en, this message translates to:
-  /// **'Add items to phase'**
-  String get addItemsToPhase;
-
-  /// No description provided for @orderPhase.
-  ///
-  /// In en, this message translates to:
-  /// **'Phase {number}'**
-  String orderPhase(String number);
-
-  /// No description provided for @moveOrderItems.
-  ///
-  /// In en, this message translates to:
-  /// **'Move items'**
-  String get moveOrderItems;
-
-  /// No description provided for @moveOrderItemsBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a phase for each item. Shared moves need a Server connection.'**
-  String get moveOrderItemsBody;
-
   /// No description provided for @phaseMoveFailed.
   ///
   /// In en, this message translates to:
@@ -3153,6 +3105,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Additions'**
   String get ticketAdditionsHeading;
+
+  /// No description provided for @editOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit order'**
+  String get editOrder;
+
+  /// No description provided for @editingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing order'**
+  String get editingOrder;
+
+  /// No description provided for @savedItemsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get savedItemsLabel;
+
+  /// No description provided for @orderEditHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Moves apply immediately. Print or save to add new items.'**
+  String get orderEditHelp;
+
+  /// No description provided for @catalogueLastPhaseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick additions go to the last phase. Use Add items inside a phase to add there.'**
+  String get catalogueLastPhaseBody;
+
+  /// No description provided for @finishEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish editing'**
+  String get finishEditing;
 }
 
 class _AppLocalizationsDelegate

@@ -213,8 +213,10 @@ class OrderPhaseChange {
     required this.courseId,
     required this.expectedRevision,
     this.course,
+    this.courses,
   });
   final OrderCourse? course;
+  final List<OrderCourse>? courses;
   final String orderId;
   final String lineId;
   final String? courseId;
@@ -225,10 +227,12 @@ class OrderPhaseChange {
     'courseId': courseId,
     'expectedRevision': expectedRevision,
     'course': course?.toJson(),
+    if (courses != null) 'courses': courses!.map((c) => c.toJson()).toList(),
   };
   factory OrderPhaseChange.fromJson(Object? value) {
     if (value is! Map ||
-        value.length != 5 ||
+        (value.length != 5 && value.length != 6) ||
+        (value.length == 6 && !value.containsKey('courses')) ||
         value['orderId'] is! String ||
         !validOrderId(value['orderId'] as String) ||
         value['lineId'] is! String ||
@@ -255,6 +259,9 @@ class OrderPhaseChange {
       courseId: value['courseId'] as String?,
       expectedRevision: value['expectedRevision'] as int,
       course: course,
+      courses: value.containsKey('courses')
+          ? parseCourses(value['courses'])
+          : null,
     );
   }
 }

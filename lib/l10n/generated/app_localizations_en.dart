@@ -1373,19 +1373,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToOrder => 'Add items';
 
   @override
-  String get additionEditing => 'Adding to an active order';
-
-  @override
-  String get additionBody =>
-      'Add new items below. Saved quantities, titles and notes stay fixed.';
-
-  @override
-  String get previouslyOrdered => 'Previously ordered';
-
-  @override
-  String get orderAdditions => 'Additions';
-
-  @override
   String get fullOrderSnapshot => 'Full order at this revision';
 
   @override
@@ -1735,21 +1722,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get addItemsToPhase => 'Add items to phase';
-
-  @override
-  String orderPhase(String number) {
-    return 'Phase $number';
-  }
-
-  @override
-  String get moveOrderItems => 'Move items';
-
-  @override
-  String get moveOrderItemsBody =>
-      'Choose a phase for each item. Shared moves need a Server connection.';
-
-  @override
   String get phaseMoveFailed =>
       'Move not confirmed. Refresh the order and check the Server connection.';
 
@@ -1763,6 +1735,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketAdditionsHeading => 'Additions';
+
+  @override
+  String get editOrder => 'Edit order';
+
+  @override
+  String get editingOrder => 'Editing order';
+
+  @override
+  String get savedItemsLabel => 'Saved';
+
+  @override
+  String get orderEditHelp =>
+      'Moves apply immediately. Print or save to add new items.';
+
+  @override
+  String get catalogueLastPhaseBody =>
+      'Quick additions go to the last phase. Use Add items inside a phase to add there.';
+
+  @override
+  String get finishEditing => 'Finish editing';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

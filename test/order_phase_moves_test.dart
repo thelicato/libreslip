@@ -92,6 +92,91 @@ void main() {
     );
   });
 
+  test('saved local items move into a new phase and rebase the same composition without rewriting tickets', () async {
+    final repository = SqliteOrderRepository(
+      factory: databaseFactoryFfiNoIsolate,
+      databasePath: inMemoryDatabasePath,
+    );
+    final workspace = OrderWorkspaceController(repository);
+    await workspace.load();
+    addTearDown(workspace.dispose);
+    addTearDown(repository.close);
+    await workspace.updateFeatureSettings(
+      const OrderFeatureSettings(
+        managedOrdersEnabled: true,
+        courseGroupsEnabled: true,
+      ),
+    );
+    await workspace.saveItem(name: 'Soup');
+    workspace.addCatalogueItem(workspace.items.single);
+    final ticket = (await workspace.saveActiveTicket(heading: 'Kitchen'))!;
+    await workspace.beginAddition(workspace.managedOrders.single.id);
+    expect(workspace.addDivider(), isTrue);
+    final phase = workspace.activeDraft!.courses.last.id;
+    expect(
+      await workspace.moveSavedLine(
+        workspace.editingOrder!.id,
+        ticket.lines.single.id,
+        phase,
+        expectedRevision: 1,
+      ),
+      isTrue,
+    );
+    expect(workspace.editingOrder!.lines.single.courseId, phase);
+    expect(
+      workspace.activeDraft!.baseRevision,
+      workspace.editingOrder!.revision,
+    );
+    expect(workspace.tickets.single.lines.single.courseId, isNull);
+    workspace.addCatalogueItemInCourse(workspace.items.single, null);
+    expect(workspace.activeDraft!.lines.single.courseId, isNull);
+    final snapshot = await repository.createPortableSnapshot();
+    await repository.replaceWithPortableSnapshot(snapshot);
+    expect((await repository.loadDrafts()).single.courses.single.id, phase);
+    expect(
+      (await repository.loadManagedOrders()).single.lines.single.courseId,
+      phase,
+    );
+  });
+
+  test('publishing a new phase preserves preceding pending phases and other Clients receive the same structure', () async {
+    final f = await SharedFixture.create();
+    addTearDown(f.dispose);
+    await f.seed(courses: [phases.first]);
+    await f.syncBoth();
+    await f.a.workspace.beginAddition(f.a.order.id);
+    await f.a.workspace.saveItem(name: 'Coffee');
+    final coffee = f.a.workspace.items.firstWhere(
+      (item) => item.name == 'Coffee',
+    );
+    expect(f.a.workspace.addDivider(), isTrue);
+    final firstNew = f.a.workspace.activeDraft!.courses.last.id;
+    f.a.workspace.addCatalogueItemInCourse(coffee, firstNew);
+    expect(f.a.workspace.addDivider(), isTrue);
+    final secondNew = f.a.workspace.activeDraft!.courses.last.id;
+    final inventory = f.a.workspace.activeDraft!.courses
+        .map((c) => c.id)
+        .toList();
+    await f.a.sync.moveLine(f.a.order, 'soup', secondNew);
+    await idle(f);
+    await f.syncBoth();
+    expect(f.a.order.courses.map((c) => c.id), inventory);
+    expect(f.b.order.courses.map((c) => c.id), inventory);
+    expect(f.b.order.lines.first.courseId, secondNew);
+    expect(f.b.order.lines.any((line) => line.name == 'Coffee'), isFalse);
+    expect(f.a.workspace.activeDraft!.lines.single.courseId, firstNew);
+    expect(f.a.workspace.activeDraft!.baseRevision, f.a.order.revision);
+    expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    final ticket = (await f.a.workspace.saveActiveTicket(
+      heading: 'Kitchen',
+      requirePrintForDelivery: false,
+    ))!;
+    await f.a.delivery.ticketReady(ticket.id);
+    await f.syncBoth();
+    expect(f.b.order.lines.last.courseId, firstNew);
+    expect(f.b.order.lines.first.courseId, secondNew);
+  });
+
   test('schema 17 upgrades without rewriting history; offline saved moves and selected additions recover', () async {
     final dir = await Directory.systemTemp.createTemp('libreslip-phase-');
     addTearDown(() => dir.delete(recursive: true));

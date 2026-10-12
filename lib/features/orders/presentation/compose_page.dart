@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/application/shared_orders_controller.dart';
+import '../../networking/domain/client_transport.dart';
 import '../../networking/presentation/server_destination_selector.dart';
 import '../../printing/application/ticket_output_controller.dart';
 import '../../printing/domain/ticket_document.dart';
@@ -57,6 +58,27 @@ class ComposePageState extends State<ComposePage> {
       final l = AppLocalizations.of(context);
       final draft = widget.controller.activeDraft;
       if (draft == null) return const SizedBox.shrink();
+      final displayedOrder = widget.controller.editingOrder;
+      final busy =
+          widget.controller.saving ||
+          widget.printing.value ||
+          (widget.sharedOrders?.busy ?? false);
+      final orderLines = _OrderLines(
+        draft: draft,
+        savedOrder: displayedOrder,
+        busy: busy,
+        grouped: widget.controller.courseControlsAvailable,
+        preparationNotesEnabled:
+            widget.controller.featureSettings.preparationNotesEnabled,
+        onQuantityChanged: widget.controller.setQuantity,
+        onEditNote: _editPreparationNote,
+        onRemoveLine: widget.controller.removeLine,
+        onLineCourseChanged: (id, course) =>
+            _moveLine(id, course, displayedOrder),
+        onAddInPhase: _addInPhase,
+        onSavedIncrement: _incrementSaved,
+        catalogue: widget.controller.items,
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -80,10 +102,7 @@ class ComposePageState extends State<ComposePage> {
             const SizedBox(height: 18),
           if (draft.managedOrderId != null) ...[
             ManagedOrderComposer(
-              completeWholeSteps: widget.settings.completeWholeSteps,
               controller: widget.controller,
-              delivery: widget.delivery,
-              sharedOrders: widget.sharedOrders,
               busy: widget.printing.value || widget.controller.saving,
             ),
             const SizedBox(height: 12),
@@ -113,7 +132,11 @@ class ComposePageState extends State<ComposePage> {
                 return _CompactComposePanel(
                   items: widget.controller.items,
                   categories: widget.controller.categories,
-                  draft: draft,
+                  draft: draft.copyWith(
+                    activeCourseId: draft.courses.lastOrNull?.id,
+                    clearActiveCourse: draft.courses.isEmpty,
+                  ),
+                  orderLines: orderLines,
                   orderNumber: widget.controller.compositionNumber,
                   features: draft.managedOrderId == null
                       ? widget.controller.featureSettings
@@ -129,16 +152,13 @@ class ComposePageState extends State<ComposePage> {
                         )
                       : null,
                   grouped: widget.controller.courseControlsAvailable,
-                  onQuantityChanged: widget.controller.setQuantity,
-                  onRemoveLine: widget.controller.removeLine,
-                  onLineCourseChanged: widget.controller.setLineCourse,
                   busy: widget.controller.saving || widget.printing.value,
                   query: _query,
                   categoryId: _categoryId,
                   onQueryChanged: (value) => setState(() => _query = value),
                   onCategoryChanged: (value) =>
                       setState(() => _categoryId = value),
-                  onIncrement: widget.controller.addCatalogueItem,
+                  onIncrement: _addToLastPhase,
                   onDecrement: (line) => line.quantity > 1
                       ? widget.controller.setQuantity(
                           line.id,
@@ -158,13 +178,17 @@ class ComposePageState extends State<ComposePage> {
                 query: _query,
                 categoryId: _categoryId,
                 standalone: split,
+                destinationHint: draft.courses.isNotEmpty
+                    ? l.catalogueLastPhaseBody
+                    : null,
                 onQueryChanged: (value) => setState(() => _query = value),
                 onCategoryChanged: (value) =>
                     setState(() => _categoryId = value),
-                onAdd: widget.controller.addCatalogueItem,
+                onAdd: _addToLastPhase,
               );
               final order = _OrderPanel(
                 draft: draft,
+                orderLines: orderLines,
                 orderNumber: widget.controller.compositionNumber,
                 features: draft.managedOrderId == null
                     ? widget.controller.featureSettings
@@ -179,14 +203,10 @@ class ComposePageState extends State<ComposePage> {
                       )
                     : null,
                 grouped: widget.controller.courseControlsAvailable,
-                onLineCourseChanged: widget.controller.setLineCourse,
                 busy: widget.controller.saving || widget.printing.value,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
-                onQuantityChanged: widget.controller.setQuantity,
-                onEditNote: _editPreparationNote,
-                onRemoveLine: widget.controller.removeLine,
                 onResetOrderNumber: _resetOrderNumber,
               );
               if (split) {
@@ -210,6 +230,169 @@ class ComposePageState extends State<ComposePage> {
       );
     },
   );
+
+  void _addToLastPhase(CatalogueItem item) =>
+      widget.controller.addCatalogueItemInCourse(
+        item,
+        widget.controller.activeDraft?.courses.lastOrNull?.id,
+      );
+
+  void _incrementSaved(TicketLine line) {
+    final item = widget.controller.items
+        .where((item) => item.id == line.catalogueItemId)
+        .firstOrNull;
+    if (item != null) {
+      widget.controller.addCatalogueItemInCourse(item, line.courseId);
+    }
+  }
+
+  Future<void> _moveLine(
+    String lineId,
+    String? courseId,
+    ManagedOrder? order,
+  ) async {
+    final saved = order?.lines.where((line) => line.id == lineId).firstOrNull;
+    if (saved == null) {
+      widget.controller.setLineCourse(lineId, courseId);
+      return;
+    }
+    final l = AppLocalizations.of(context);
+    String? error;
+    try {
+      if (order!.destinationId != null && saved.sendToServer) {
+        final shared = widget.sharedOrders;
+        if (shared == null) {
+          throw const ClientTransportException('unsupported_phase_moves');
+        }
+        await shared.moveLine(order, lineId, courseId);
+      } else if (!await widget.controller.moveSavedLine(
+        order.id,
+        lineId,
+        courseId,
+        expectedRevision: order.revision,
+      )) {
+        error = l.phaseMoveFailed;
+      }
+    } on ClientTransportException catch (e) {
+      error = switch (e.code) {
+        'unsupported_phase_moves' => l.phaseMoveUnsupported,
+        'phase_move_pending' => l.phaseMovePending,
+        _ => l.phaseMoveFailed,
+      };
+    } catch (_) {
+      error = l.phaseMoveFailed;
+    }
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
+  Future<void> _addInPhase(String? courseId) async {
+    var query = '';
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, update) => ListenableBuilder(
+          listenable: widget.controller,
+          builder: (context, _) {
+            final l = AppLocalizations.of(context);
+            final draft = widget.controller.activeDraft;
+            final busy = widget.controller.saving || widget.printing.value;
+            final items = widget.controller.items
+                .where(
+                  (item) =>
+                      item.name.toLowerCase().contains(query.toLowerCase()),
+                )
+                .toList();
+            return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 24,
+              ),
+              title: Text(l.addItems),
+              content: SizedBox(
+                width: 560,
+                height: MediaQuery.sizeOf(context).height * 0.55,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        key: const ValueKey('phase-item-search'),
+                        decoration: InputDecoration(
+                          labelText: l.searchItems,
+                          prefixIcon: const Icon(Icons.search_rounded),
+                        ),
+                        onChanged: (value) => update(() => query = value),
+                      ),
+                      const SizedBox(height: 12),
+                      if (items.isEmpty)
+                        Text(
+                          widget.controller.items.isEmpty
+                              ? l.emptyItemsBody
+                              : l.noItemsFound,
+                        ),
+                      for (final item in items)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _CompactCatalogueRow(
+                            busy: busy,
+                            item: item,
+                            lines:
+                                draft?.lines
+                                    .where(
+                                      (line) =>
+                                          line.catalogueItemId == item.id &&
+                                          line.courseId == courseId,
+                                    )
+                                    .toList() ??
+                                [],
+                            preparationNotesEnabled: widget
+                                .controller
+                                .featureSettings
+                                .preparationNotesEnabled,
+                            onIncrement: () {
+                              if (!busy) {
+                                widget.controller.addCatalogueItemInCourse(
+                                  item,
+                                  courseId,
+                                );
+                              }
+                            },
+                            onDecrement: (line) {
+                              if (!busy) {
+                                if (line.quantity > 1) {
+                                  widget.controller.setQuantity(
+                                    line.id,
+                                    line.quantity - 1,
+                                  );
+                                } else {
+                                  widget.controller.removeLine(line.id);
+                                }
+                              }
+                            },
+                            onEditNote: (line) {
+                              if (!busy) _editPreparationNote(line);
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: busy ? null : () => Navigator.pop(context),
+                  child: Text(l.close),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   Future<void> _editPreparationNote(TicketLine line) async {
     final l = AppLocalizations.of(context);
@@ -484,13 +667,11 @@ class _CompactComposePanel extends StatelessWidget {
     required this.items,
     required this.categories,
     required this.draft,
+    required this.orderLines,
     required this.orderNumber,
     required this.features,
     this.dividerControl,
     required this.grouped,
-    required this.onQuantityChanged,
-    required this.onRemoveLine,
-    required this.onLineCourseChanged,
     required this.busy,
     required this.query,
     required this.categoryId,
@@ -507,13 +688,11 @@ class _CompactComposePanel extends StatelessWidget {
   final List<CatalogueItem> items;
   final List<ItemCategory> categories;
   final OrderDraft draft;
+  final Widget orderLines;
   final int orderNumber;
   final OrderFeatureSettings features;
   final Widget? dividerControl;
   final bool grouped;
-  final void Function(String, int) onQuantityChanged;
-  final ValueChanged<String> onRemoveLine;
-  final void Function(String, String?) onLineCourseChanged;
   final bool busy;
   final String query;
   final String? categoryId;
@@ -559,8 +738,9 @@ class _CompactComposePanel extends StatelessWidget {
                   ? null
                   : onResetOrderNumber,
             ),
-            if (features.orderReferenceEnabled ||
-                features.orderNotesEnabled) ...[
+            if (draft.managedOrderId == null &&
+                (features.orderReferenceEnabled ||
+                    features.orderNotesEnabled)) ...[
               const SizedBox(height: 4),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -640,6 +820,7 @@ class _CompactComposePanel extends StatelessWidget {
                 );
               },
             ),
+            if (draft.courses.isNotEmpty) Text(l.catalogueLastPhaseBody),
             const SizedBox(height: 10),
             if (filtered.isEmpty)
               Padding(
@@ -663,6 +844,7 @@ class _CompactComposePanel extends StatelessWidget {
                         SizedBox(
                           width: width,
                           child: _CompactCatalogueRow(
+                            busy: busy,
                             item: item,
                             lines: draft.lines
                                 .where(
@@ -684,7 +866,7 @@ class _CompactComposePanel extends StatelessWidget {
                   );
                 },
               ),
-            if (grouped && draft.lines.isNotEmpty) ...[
+            if (grouped || draft.managedOrderId != null) ...[
               const Divider(height: 28),
               Text(
                 l.groupedOrderSummary,
@@ -692,16 +874,11 @@ class _CompactComposePanel extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 12),
-              _OrderLines(
-                busy: busy,
-                draft: draft,
-                grouped: true,
-                preparationNotesEnabled: features.preparationNotesEnabled,
-                onQuantityChanged: onQuantityChanged,
-                onEditNote: onEditNote,
-                onRemoveLine: onRemoveLine,
-                onLineCourseChanged: onLineCourseChanged,
-              ),
+              orderLines,
+            ],
+            if (draft.managedOrderId != null && draft.orderNote.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(draft.orderNote),
             ],
             ?dividerControl,
           ],
@@ -719,9 +896,11 @@ class _CompactCatalogueRow extends StatelessWidget {
     required this.onIncrement,
     required this.onDecrement,
     required this.onEditNote,
+    this.busy = false,
   });
 
   final CatalogueItem item;
+  final bool busy;
   final List<TicketLine> lines;
   final bool preparationNotesEnabled;
   final VoidCallback onIncrement;
@@ -774,7 +953,7 @@ class _CompactCatalogueRow extends StatelessWidget {
                     if (preparationNotesEnabled && quantity > 0)
                       IconButton(
                         key: ValueKey('compact-note-${item.id}'),
-                        onPressed: noteLine == null
+                        onPressed: busy || noteLine == null
                             ? null
                             : () => onEditNote(noteLine!),
                         tooltip: l.preparationNote,
@@ -793,7 +972,7 @@ class _CompactCatalogueRow extends StatelessWidget {
                         children: [
                           IconButton(
                             key: ValueKey('compact-minus-${item.id}'),
-                            onPressed: decrementLine == null
+                            onPressed: busy || decrementLine == null
                                 ? null
                                 : () => onDecrement(decrementLine),
                             tooltip: l.decreaseQuantity,
@@ -819,7 +998,9 @@ class _CompactCatalogueRow extends StatelessWidget {
                           ),
                           IconButton(
                             key: ValueKey('compose-item-${item.id}'),
-                            onPressed: quantity >= 999 ? null : onIncrement,
+                            onPressed: busy || quantity >= 999
+                                ? null
+                                : onIncrement,
                             tooltip: l.increaseQuantity,
                             constraints: const BoxConstraints(
                               minWidth: 48,
@@ -885,6 +1066,7 @@ class _CataloguePanel extends StatelessWidget {
     required this.onQueryChanged,
     required this.onCategoryChanged,
     required this.onAdd,
+    this.destinationHint,
   });
 
   final List<CatalogueItem> items;
@@ -895,6 +1077,7 @@ class _CataloguePanel extends StatelessWidget {
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<CatalogueItem> onAdd;
+  final String? destinationHint;
 
   @override
   Widget build(BuildContext context) {
@@ -916,6 +1099,7 @@ class _CataloguePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(l.addItems, style: Theme.of(context).textTheme.titleLarge),
+          if (destinationHint != null) Text(destinationHint!),
           const SizedBox(height: 14),
           TextField(
             decoration: InputDecoration(
@@ -1000,34 +1184,28 @@ class _CataloguePanel extends StatelessWidget {
 class _OrderPanel extends StatelessWidget {
   const _OrderPanel({
     required this.draft,
+    required this.orderLines,
     required this.orderNumber,
     required this.features,
     this.dividerControl,
     required this.grouped,
-    required this.onLineCourseChanged,
     required this.busy,
     required this.standalone,
     required this.onReferenceChanged,
     required this.onOrderNoteChanged,
-    required this.onQuantityChanged,
-    required this.onEditNote,
-    required this.onRemoveLine,
     required this.onResetOrderNumber,
   });
 
   final OrderDraft draft;
+  final Widget orderLines;
   final int orderNumber;
   final OrderFeatureSettings features;
   final Widget? dividerControl;
   final bool grouped;
-  final void Function(String, String?) onLineCourseChanged;
   final bool busy;
   final bool standalone;
   final ValueChanged<String> onReferenceChanged;
   final ValueChanged<String> onOrderNoteChanged;
-  final void Function(String, int) onQuantityChanged;
-  final ValueChanged<TicketLine> onEditNote;
-  final ValueChanged<String> onRemoveLine;
   final VoidCallback onResetOrderNumber;
 
   @override
@@ -1049,7 +1227,8 @@ class _OrderPanel extends StatelessWidget {
                 ? null
                 : onResetOrderNumber,
           ),
-          if (features.orderReferenceEnabled) ...[
+          if (features.orderReferenceEnabled &&
+              draft.managedOrderId == null) ...[
             const SizedBox(height: 16),
             TextFormField(
               key: ValueKey('reference-${draft.id}'),
@@ -1065,7 +1244,7 @@ class _OrderPanel extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          if (draft.lines.isEmpty)
+          if (draft.lines.isEmpty && draft.managedOrderId == null)
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -1093,18 +1272,15 @@ class _OrderPanel extends StatelessWidget {
               ),
             )
           else
-            _OrderLines(
-              busy: busy,
-              draft: draft,
-              grouped: grouped,
-              preparationNotesEnabled: features.preparationNotesEnabled,
-              onQuantityChanged: onQuantityChanged,
-              onEditNote: onEditNote,
-              onRemoveLine: onRemoveLine,
-              onLineCourseChanged: onLineCourseChanged,
-            ),
+            orderLines,
+          if (draft.lines.isEmpty && draft.managedOrderId == null && grouped)
+            orderLines,
           ?dividerControl,
-          if (features.orderNotesEnabled) ...[
+          if (draft.managedOrderId != null && draft.orderNote.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(draft.orderNote),
+          ],
+          if (features.orderNotesEnabled && draft.managedOrderId == null) ...[
             const SizedBox(height: 12),
             TextFormField(
               key: ValueKey('order-note-${draft.id}'),
@@ -1138,57 +1314,70 @@ class _OrderLines extends StatelessWidget {
     required this.onEditNote,
     required this.onRemoveLine,
     required this.onLineCourseChanged,
+    required this.onAddInPhase,
+    required this.onSavedIncrement,
+    required this.catalogue,
+    this.savedOrder,
   });
   final OrderDraft draft;
-  final bool busy;
-  final bool grouped;
-  final bool preparationNotesEnabled;
+  final ManagedOrder? savedOrder;
+  final bool busy, grouped, preparationNotesEnabled;
   final void Function(String, int) onQuantityChanged;
   final ValueChanged<TicketLine> onEditNote;
   final ValueChanged<String> onRemoveLine;
   final void Function(String, String?) onLineCourseChanged;
+  final ValueChanged<String?> onAddInPhase;
+  final ValueChanged<TicketLine> onSavedIncrement;
+  final List<CatalogueItem> catalogue;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      for (final section in courseSections(
-        draft.courses,
-        draft.lines,
-        (line) => line.courseId,
-      )) ...[
-        if (grouped)
-          CourseHeading(course: section.course, courses: draft.courses),
-        for (final line in section.lines)
-          _OrderLineCard(
-            line: line,
-            preparationNotesEnabled: preparationNotesEnabled,
-            coursePicker: grouped && draft.courses.isNotEmpty
-                ? _LineDividerMoves(
-                    draft: draft,
-                    line: line,
-                    busy: busy,
-                    onMove: onLineCourseChanged,
-                  )
-                : null,
-            onQuantityChanged: (value) => onQuantityChanged(line.id, value),
-            onEditNote: () => onEditNote(line),
-            onRemove: () => onRemoveLine(line.id),
-          ),
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final savedIds =
+        savedOrder?.lines.map((line) => line.id).toSet() ?? <String>{};
+    final lines = [...?savedOrder?.lines, ...draft.lines];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final course in <OrderCourse?>[null, ...draft.courses]) ...[
+          if (grouped) CourseHeading(course: course, courses: draft.courses),
+          for (final line in lines.where((line) => line.courseId == course?.id))
+            _OrderLineCard(
+              line: line,
+              busy: busy,
+              submitted: savedIds.contains(line.id),
+              isAddition: savedOrder != null && !savedIds.contains(line.id),
+              preparationNotesEnabled: preparationNotesEnabled,
+              coursePicker: grouped && draft.courses.isNotEmpty
+                  ? _LineDividerMoves(
+                      draft: draft,
+                      line: line,
+                      busy: busy,
+                      onMove: onLineCourseChanged,
+                    )
+                  : null,
+              onSavedIncrement:
+                  catalogue.any((item) => item.id == line.catalogueItemId)
+                  ? () => onSavedIncrement(line)
+                  : null,
+              onQuantityChanged: (value) => onQuantityChanged(line.id, value),
+              onEditNote: () => onEditNote(line),
+              onRemove: () => onRemoveLine(line.id),
+            ),
+          if (grouped || savedOrder != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: OutlinedButton.icon(
+                key: ValueKey('add-in-phase-${course?.id ?? 'first'}'),
+                onPressed: busy ? null : () => onAddInPhase(course?.id),
+                icon: const Icon(Icons.add_rounded),
+                label: Text(l.addToOrder),
+              ),
+            ),
+        ],
       ],
-      if (grouped &&
-          draft.courses.lastOrNull?.isDivider == true &&
-          !draft.lines.any(
-            (line) => line.courseId == draft.courses.last.id,
-          )) ...[
-        CourseHeading(course: draft.courses.last, courses: draft.courses),
-        Text(
-          AppLocalizations.of(context).dividerEmptyBody,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
-    ],
-  );
+    );
+  }
 }
 
 class _LineDividerMoves extends StatelessWidget {
@@ -1242,6 +1431,10 @@ class _OrderLineCard extends StatelessWidget {
     required this.onEditNote,
     required this.onRemove,
     this.coursePicker,
+    this.busy = false,
+    this.submitted = false,
+    this.isAddition = false,
+    this.onSavedIncrement,
   });
 
   final TicketLine line;
@@ -1250,6 +1443,8 @@ class _OrderLineCard extends StatelessWidget {
   final VoidCallback onEditNote;
   final VoidCallback onRemove;
   final Widget? coursePicker;
+  final bool busy, submitted, isAddition;
+  final VoidCallback? onSavedIncrement;
 
   @override
   Widget build(BuildContext context) {
@@ -1271,13 +1466,19 @@ class _OrderLineCard extends StatelessWidget {
               Expanded(
                 child: Text(line.name, style: theme.textTheme.titleMedium),
               ),
-              IconButton(
-                onPressed: onRemove,
-                tooltip: l.removeLine,
-                icon: const Icon(Icons.close_rounded),
-              ),
+              if (!submitted)
+                IconButton(
+                  onPressed: busy ? null : onRemove,
+                  tooltip: l.removeLine,
+                  icon: const Icon(Icons.close_rounded),
+                ),
             ],
           ),
+          if (submitted || isAddition)
+            Text(
+              submitted ? l.savedItemsLabel : l.latestAdditions,
+              style: theme.textTheme.labelSmall,
+            ),
           LayoutBuilder(
             builder: (context, constraints) {
               final style = theme.textTheme.titleMedium!;
@@ -1294,18 +1495,19 @@ class _OrderLineCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 child: Row(
                   children: [
-                    IconButton(
-                      key: ValueKey('line-minus-${line.id}'),
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
+                    if (!submitted)
+                      IconButton(
+                        key: ValueKey('line-minus-${line.id}'),
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
+                        onPressed: !busy && !submitted && line.quantity > 1
+                            ? () => onQuantityChanged(line.quantity - 1)
+                            : null,
+                        tooltip: l.decreaseQuantity,
+                        icon: const Icon(Icons.remove_rounded),
                       ),
-                      onPressed: line.quantity > 1
-                          ? () => onQuantityChanged(line.quantity - 1)
-                          : null,
-                      tooltip: l.decreaseQuantity,
-                      icon: const Icon(Icons.remove_rounded),
-                    ),
                     Expanded(
                       child: Text(
                         '${line.quantity}',
@@ -1313,18 +1515,23 @@ class _OrderLineCard extends StatelessWidget {
                         style: style,
                       ),
                     ),
-                    IconButton(
-                      key: ValueKey('line-plus-${line.id}'),
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
+                    if (!submitted || onSavedIncrement != null)
+                      IconButton(
+                        key: ValueKey('line-plus-${line.id}'),
+                        constraints: const BoxConstraints(
+                          minWidth: 48,
+                          minHeight: 48,
+                        ),
+                        onPressed: busy
+                            ? null
+                            : submitted
+                            ? onSavedIncrement
+                            : line.quantity < 999
+                            ? () => onQuantityChanged(line.quantity + 1)
+                            : null,
+                        tooltip: l.increaseQuantity,
+                        icon: const Icon(Icons.add_rounded),
                       ),
-                      onPressed: line.quantity < 999
-                          ? () => onQuantityChanged(line.quantity + 1)
-                          : null,
-                      tooltip: l.increaseQuantity,
-                      icon: const Icon(Icons.add_rounded),
-                    ),
                   ],
                 ),
               );
@@ -1351,10 +1558,10 @@ class _OrderLineCard extends StatelessWidget {
               );
             },
           ),
-          if (preparationNotesEnabled) ...[
+          if (preparationNotesEnabled && !submitted) ...[
             const SizedBox(height: 6),
             TextButton.icon(
-              onPressed: onEditNote,
+              onPressed: busy ? null : onEditNote,
               icon: const Icon(Icons.sticky_note_2_outlined),
               label: Text(l.preparationNote),
             ),
@@ -1368,6 +1575,8 @@ class _OrderLineCard extends StatelessWidget {
               ),
             ],
           ],
+          if (submitted && line.preparationNote.isNotEmpty)
+            Text(line.preparationNote),
         ],
       ),
     );

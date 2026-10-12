@@ -299,7 +299,8 @@ class PinnedHttpsClient
       throw const ClientTransportException('server_identity');
     }
     final versions = status.body['phaseMoveVersions'];
-    if (versions is! List || !versions.contains(1)) {
+    if (versions is! List ||
+        !versions.contains(change.courses == null ? 1 : 2)) {
       throw const ClientTransportException('unsupported_phase_moves');
     }
     final response = await _sharedRequest(
