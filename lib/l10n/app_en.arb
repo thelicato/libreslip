@@ -728,6 +728,9 @@
   "editingOrder": "Editing order",
   "savedItemsLabel": "Saved",
   "orderEditHelp": "Moves apply immediately. Print or save to add new items.",
-  "catalogueLastPhaseBody": "Quick additions go to the last phase. Use Add items inside a phase to add there.",
-  "finishEditing": "Finish editing"
+  "catalogueLastPhaseBody": "New items go to the last phase. Use the arrows to move them.",
+  "finishEditing": "Finish editing",
+  "pastOrders": "Past orders",
+  "orderPrintHistory": "Print history",
+  "orderPrintHistoryBody": "Saved print snapshots for this order. Open one to reprint or recover a print attempt."
 }

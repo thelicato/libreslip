@@ -728,6 +728,9 @@
   "editingOrder": "Modifica ordine",
   "savedItemsLabel": "Salvato",
   "orderEditHelp": "Gli spostamenti sono immediati. Stampa o salva per aggiungere nuovi articoli.",
-  "catalogueLastPhaseBody": "Le aggiunte rapide vanno nell’ultima fase. Usa Aggiungi articoli nella fase desiderata.",
-  "finishEditing": "Termina modifica"
+  "catalogueLastPhaseBody": "I nuovi articoli vanno nell’ultima fase. Usa le frecce per spostarli.",
+  "finishEditing": "Termina modifica",
+  "pastOrders": "Ordini precedenti",
+  "orderPrintHistory": "Cronologia stampe",
+  "orderPrintHistoryBody": "Copie salvate per questo ordine. Aprine una per ristampare o recuperare un tentativo di stampa."
 }

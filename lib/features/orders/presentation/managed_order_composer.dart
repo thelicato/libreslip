@@ -81,6 +81,7 @@ Future<void> showManagedOrder(
   ClientDeliveryController? delivery,
   SharedOrdersController? sharedOrders,
   bool completeWholeSteps = false,
+  VoidCallback? onViewPrintHistory,
 }) => showDialog<void>(
   context: context,
   builder: (_) => _ActiveOrdersDialog(
@@ -90,6 +91,7 @@ Future<void> showManagedOrder(
     delivery: delivery,
     sharedOrders: sharedOrders,
     completeWholeSteps: completeWholeSteps,
+    onViewPrintHistory: onViewPrintHistory,
   ),
 );
 
@@ -102,6 +104,7 @@ class OpenOrdersPanel extends StatelessWidget {
     this.sharedOrders,
     this.completeWholeSteps = false,
     this.query = '',
+    this.onViewPrintHistory,
   });
   final OrderWorkspaceController controller;
   final VoidCallback onOpenCompose;
@@ -109,6 +112,7 @@ class OpenOrdersPanel extends StatelessWidget {
   final SharedOrdersController? sharedOrders;
   final bool completeWholeSteps;
   final String query;
+  final ValueChanged<String>? onViewPrintHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -195,6 +199,13 @@ class OpenOrdersPanel extends StatelessWidget {
                                 delivery: delivery,
                                 sharedOrders: sharedOrders,
                                 completeWholeSteps: completeWholeSteps,
+                                onViewPrintHistory:
+                                    onViewPrintHistory != null &&
+                                        controller.tickets.any(
+                                          (t) => t.managedOrderId == order.id,
+                                        )
+                                    ? () => onViewPrintHistory!(order.id)
+                                    : null,
                               ),
                         icon: const Icon(Icons.visibility_outlined),
                         label: Text(l.viewOrder),
@@ -218,6 +229,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
     this.delivery,
     this.sharedOrders,
     this.completeWholeSteps = false,
+    this.onViewPrintHistory,
   });
   final OrderWorkspaceController controller;
   final String orderId;
@@ -225,6 +237,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
   final bool completeWholeSteps;
+  final VoidCallback? onViewPrintHistory;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -330,6 +343,15 @@ class _ActiveOrdersDialog extends StatelessWidget {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
+                                if (onViewPrintHistory != null)
+                                  TextButton.icon(
+                                    key: const ValueKey('view-print-history'),
+                                    onPressed: controller.saving
+                                        ? null
+                                        : onViewPrintHistory,
+                                    icon: const Icon(Icons.history_rounded),
+                                    label: Text(l.orderPrintHistory),
+                                  ),
                                 FilledButton.icon(
                                   key: ValueKey('add-to-order-${order.id}'),
                                   onPressed:

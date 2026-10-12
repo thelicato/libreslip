@@ -100,16 +100,7 @@ void main() {
         await tap(navigation);
         final view = find.byKey(ValueKey('view-order-$id'));
         expect(view, findsOneWidget);
-        final historyView = find.byKey(ValueKey('view-ticket-${saved.id}'));
-        expect(
-          find.descendant(
-            of: historyView,
-            matching: find.text(
-              language == 'it' ? 'Vedi ordine' : 'View order',
-            ),
-          ),
-          findsOneWidget,
-        );
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
         await tap(view);
         await tap(find.byKey(ValueKey('add-to-order-$id')));
         expect(env.controller.editingOrder?.id, id);
@@ -128,6 +119,39 @@ void main() {
           hasLength(1),
         );
         expect(addition.revision, 2);
+        await tap(navigation);
+        expect(find.byKey(ValueKey('view-order-$id')), findsOneWidget);
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
+        expect(
+          find.byKey(ValueKey('view-ticket-${addition.id}')),
+          findsNothing,
+        );
+        await tap(find.byKey(ValueKey('view-order-$id')));
+        await tap(find.byKey(const ValueKey('view-print-history')));
+        expect(
+          find.byKey(const ValueKey('order-print-history')),
+          findsOneWidget,
+        );
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsOneWidget);
+        expect(
+          find.byKey(ValueKey('view-ticket-${addition.id}')),
+          findsOneWidget,
+        );
+        await tap(find.byKey(ValueKey('view-ticket-${saved.id}')));
+        expect(
+          find.byKey(const ValueKey('view-print-history')),
+          findsOneWidget,
+        );
+        for (var i = 0; i < 3; i++) {
+          await tap(
+            find
+                .widgetWithText(
+                  TextButton,
+                  language == 'it' ? 'Chiudi' : 'Close',
+                )
+                .last,
+          );
+        }
         await tap(find.byKey(const ValueKey('nav-4')));
         final toggle = find.byKey(const ValueKey('toggle-managed-orders'));
         await tester.scrollUntilVisible(
@@ -140,14 +164,10 @@ void main() {
         expect(navigationLabel(), language == 'it' ? 'Comande' : 'Tickets');
         await tap(navigation);
         expect(find.byKey(ValueKey('view-order-$id')), findsOneWidget);
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
         expect(
-          find.descendant(
-            of: find.byKey(ValueKey('view-ticket-${saved.id}')),
-            matching: find.text(
-              language == 'it' ? 'Vedi comanda' : 'View ticket',
-            ),
-          ),
-          findsOneWidget,
+          find.byKey(ValueKey('view-ticket-${addition.id}')),
+          findsNothing,
         );
         await tap(find.byKey(ValueKey('view-order-$id')));
         await tap(find.byKey(ValueKey('close-order-$id')));
@@ -157,6 +177,11 @@ void main() {
         );
         await tap(confirm);
         expect(env.controller.managedOrders, isEmpty);
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
+        expect(
+          find.byKey(ValueKey('view-ticket-${addition.id}')),
+          findsOneWidget,
+        );
         expect(find.byType(AlertDialog), findsNothing);
         expect(
           (await env.repository.loadTickets()).map((ticket) => ticket.id),

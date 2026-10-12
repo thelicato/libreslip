@@ -22,6 +22,7 @@ class TicketDetailDialog extends StatelessWidget {
     this.output,
     this.delivery,
     this.pricesEnabled = false,
+    this.onViewHistory,
   });
 
   final SavedTicket ticket;
@@ -29,6 +30,7 @@ class TicketDetailDialog extends StatelessWidget {
   final AppSettings settings;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
+  final VoidCallback? onViewHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +145,15 @@ class TicketDetailDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (onViewHistory != null) ...[
+                TextButton.icon(
+                  key: const ValueKey('view-print-history'),
+                  onPressed: working ? null : onViewHistory,
+                  icon: const Icon(Icons.history_rounded),
+                  label: Text(l.orderPrintHistory),
+                ),
+                const SizedBox(height: 10),
+              ],
               if (controller != null)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(

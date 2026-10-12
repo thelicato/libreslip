@@ -5,10 +5,13 @@ abstract final class AppTheme {
   static const lime = Color(0xFFD5F284);
   static const teal = Color(0xFF196B5B);
   static const cream = Color(0xFFF6F7F2);
+  static const secondaryAction = Color(0xFFEDEAF8);
+  static const secondaryActionDark = Color(0xFF30303F);
   static const radius = 24.0;
 
   static ThemeData build(Brightness brightness) {
     final dark = brightness == Brightness.dark;
+    final actionBackground = dark ? secondaryActionDark : secondaryAction;
     final scheme = ColorScheme.fromSeed(
       seedColor: teal,
       brightness: brightness,
@@ -60,8 +63,22 @@ abstract final class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          backgroundColor: actionBackground,
+          disabledBackgroundColor: actionBackground.withValues(alpha: 0.5),
+          foregroundColor: dark ? const Color(0xFFE5DFF5) : ink,
+          side: BorderSide.none,
           minimumSize: const Size(48, 52),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          backgroundColor: actionBackground,
+          disabledBackgroundColor: actionBackground.withValues(alpha: 0.5),
+          foregroundColor: dark ? const Color(0xFFE5DFF5) : ink,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

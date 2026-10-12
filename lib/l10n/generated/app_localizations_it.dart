@@ -1766,10 +1766,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get catalogueLastPhaseBody =>
-      'Le aggiunte rapide vanno nell’ultima fase. Usa Aggiungi articoli nella fase desiderata.';
+      'I nuovi articoli vanno nell’ultima fase. Usa le frecce per spostarli.';
 
   @override
   String get finishEditing => 'Termina modifica';
+
+  @override
+  String get pastOrders => 'Ordini precedenti';
+
+  @override
+  String get orderPrintHistory => 'Cronologia stampe';
+
+  @override
+  String get orderPrintHistoryBody =>
+      'Copie salvate per questo ordine. Aprine una per ristampare o recuperare un tentativo di stampa.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

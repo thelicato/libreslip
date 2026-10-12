@@ -1,5 +1,22 @@
 # Validation evidence
 
+## Single order cards and catalogue, 12 October 2026
+
+Validated step 19 with `VERSION` unchanged at 1.13.0. This is a presentation change: storage, settings, archive, print documents and network versions are unchanged. Existing saved revisions and print jobs retain their original identifiers and contents.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 114 Dart files passed formatting checks, final `flutter analyze --no-pub` reported no issues and `git diff --check` passed. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 271 tests passed with preview capture enabled after the final theme correction. Existing persistence, migrations, interrupted printing, backup and failed/interrupted restore checks pass. |
+| Order entries and history | Tests update an order to a second saved revision and verify one live order card with no duplicate snapshot cards. View order → Print history exposes both original snapshots and opens the earlier one. After closure, only the latest saved revision appears in the main list. Grouping persists when Keep orders open is disabled; classic labels and ordinary ticket behaviour remain available. Shared mirrors without local print history remain searchable. |
+| Single catalogue | The actual editor uses only the normal catalogue on wide English, narrow Italian with 2x text and dark landscape. Tests verify no item-picker dialogue, last-phase additions and repeated moves through every phase, alongside saved-item synchronisation and stale-action protection. |
+| Button layout | Secondary outlined and text actions use opaque light lavender or adapted dark backgrounds through shared theme tokens. Default text-button geometry is retained after checks caught large-text Server actions wrapping incorrectly. Both Server completion modes, undo and deletion now pass at 320 pixels with enlarged Italian text. |
+| Render inspection | Inspected the single-card English Orders workspace, narrow Italian Orders, normal catalogue, mixed saved/new editor rows, dark actions and access to an immutable printed addition through Print history. Updated preview navigation opens the actual history path. Framework and final missed-tap checks pass. |
+| Source and APK | Source ZIP verified under `LibreSlip/` with exclusions and SHA-256 checksums. Fresh Android Debug APK uses `io.thelicato.libreslip`, version 1.13.0, build 1, minSdk 34 and targetSdk 36. Flutter/Gradle APKs match and APK Signature Scheme v2 verifies. This is a development-key preview. |
+| Limitations | Earlier revisions remain as private local print snapshots, accessed inside an order rather than repeated in the main list. No new physical-device installation, multi-phone LAN or physical printer verification was performed. |
+
+Reproduce with `flutter test --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`. Focused UI checks use `flutter test test/orders_workspace_test.dart test/shared_orders_widget_test.dart test/server_board_test.dart --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`.
+
 ## Unified composition and order editing, 12 October 2026
 
 Validated step 18 with `VERSION` unchanged at 1.12.0. Both Compose layouts derive one phase list from saved items and persistent additions. SQLite schema 18, settings format 11 and configuration document version 4 are unchanged. Phase structure support adds capability version 2 while preserving version 1 requests.

@@ -3133,7 +3133,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogueLastPhaseBody.
   ///
   /// In en, this message translates to:
-  /// **'Quick additions go to the last phase. Use Add items inside a phase to add there.'**
+  /// **'New items go to the last phase. Use the arrows to move them.'**
   String get catalogueLastPhaseBody;
 
   /// No description provided for @finishEditing.
@@ -3141,6 +3141,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish editing'**
   String get finishEditing;
+
+  /// No description provided for @pastOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Past orders'**
+  String get pastOrders;
+
+  /// No description provided for @orderPrintHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Print history'**
+  String get orderPrintHistory;
+
+  /// No description provided for @orderPrintHistoryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved print snapshots for this order. Open one to reprint or recover a print attempt.'**
+  String get orderPrintHistoryBody;
 }
 
 class _AppLocalizationsDelegate

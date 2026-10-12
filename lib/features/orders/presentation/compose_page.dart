@@ -75,7 +75,6 @@ class ComposePageState extends State<ComposePage> {
         onRemoveLine: widget.controller.removeLine,
         onLineCourseChanged: (id, course) =>
             _moveLine(id, course, displayedOrder),
-        onAddInPhase: _addInPhase,
         onSavedIncrement: _incrementSaved,
         catalogue: widget.controller.items,
       );
@@ -286,112 +285,6 @@ class ComposePageState extends State<ComposePage> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error)));
     }
-  }
-
-  Future<void> _addInPhase(String? courseId) async {
-    var query = '';
-    await showDialog<void>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, update) => ListenableBuilder(
-          listenable: widget.controller,
-          builder: (context, _) {
-            final l = AppLocalizations.of(context);
-            final draft = widget.controller.activeDraft;
-            final busy = widget.controller.saving || widget.printing.value;
-            final items = widget.controller.items
-                .where(
-                  (item) =>
-                      item.name.toLowerCase().contains(query.toLowerCase()),
-                )
-                .toList();
-            return AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 24,
-              ),
-              title: Text(l.addItems),
-              content: SizedBox(
-                width: 560,
-                height: MediaQuery.sizeOf(context).height * 0.55,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        key: const ValueKey('phase-item-search'),
-                        decoration: InputDecoration(
-                          labelText: l.searchItems,
-                          prefixIcon: const Icon(Icons.search_rounded),
-                        ),
-                        onChanged: (value) => update(() => query = value),
-                      ),
-                      const SizedBox(height: 12),
-                      if (items.isEmpty)
-                        Text(
-                          widget.controller.items.isEmpty
-                              ? l.emptyItemsBody
-                              : l.noItemsFound,
-                        ),
-                      for (final item in items)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: _CompactCatalogueRow(
-                            busy: busy,
-                            item: item,
-                            lines:
-                                draft?.lines
-                                    .where(
-                                      (line) =>
-                                          line.catalogueItemId == item.id &&
-                                          line.courseId == courseId,
-                                    )
-                                    .toList() ??
-                                [],
-                            preparationNotesEnabled: widget
-                                .controller
-                                .featureSettings
-                                .preparationNotesEnabled,
-                            onIncrement: () {
-                              if (!busy) {
-                                widget.controller.addCatalogueItemInCourse(
-                                  item,
-                                  courseId,
-                                );
-                              }
-                            },
-                            onDecrement: (line) {
-                              if (!busy) {
-                                if (line.quantity > 1) {
-                                  widget.controller.setQuantity(
-                                    line.id,
-                                    line.quantity - 1,
-                                  );
-                                } else {
-                                  widget.controller.removeLine(line.id);
-                                }
-                              }
-                            },
-                            onEditNote: (line) {
-                              if (!busy) _editPreparationNote(line);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: busy ? null : () => Navigator.pop(context),
-                  child: Text(l.close),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
   }
 
   Future<void> _editPreparationNote(TicketLine line) async {
@@ -1314,7 +1207,6 @@ class _OrderLines extends StatelessWidget {
     required this.onEditNote,
     required this.onRemoveLine,
     required this.onLineCourseChanged,
-    required this.onAddInPhase,
     required this.onSavedIncrement,
     required this.catalogue,
     this.savedOrder,
@@ -1326,13 +1218,11 @@ class _OrderLines extends StatelessWidget {
   final ValueChanged<TicketLine> onEditNote;
   final ValueChanged<String> onRemoveLine;
   final void Function(String, String?) onLineCourseChanged;
-  final ValueChanged<String?> onAddInPhase;
   final ValueChanged<TicketLine> onSavedIncrement;
   final List<CatalogueItem> catalogue;
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
     final savedIds =
         savedOrder?.lines.map((line) => line.id).toSet() ?? <String>{};
     final lines = [...?savedOrder?.lines, ...draft.lines];
@@ -1363,16 +1253,6 @@ class _OrderLines extends StatelessWidget {
               onQuantityChanged: (value) => onQuantityChanged(line.id, value),
               onEditNote: () => onEditNote(line),
               onRemove: () => onRemoveLine(line.id),
-            ),
-          if (grouped || savedOrder != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: OutlinedButton.icon(
-                key: ValueKey('add-in-phase-${course?.id ?? 'first'}'),
-                onPressed: busy ? null : () => onAddInPhase(course?.id),
-                icon: const Icon(Icons.add_rounded),
-                label: Text(l.addToOrder),
-              ),
             ),
         ],
       ],

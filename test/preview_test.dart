@@ -1392,7 +1392,27 @@ void main() {
           name == 'dividers-ticket-preview-phone-it' ||
           name == 'courses-ticket-preview-phone-it' ||
           name == 'managed-ticket-preview-phone-it') {
-        await tester.tap(find.text('Comanda 1').first);
+        if (name == 'managed-ticket-preview-phone-it') {
+          final order = orders.managedOrders.single;
+          final view = find.byKey(ValueKey('view-order-${order.id}'));
+          await tester.ensureVisible(view);
+          await tester.pumpAndSettle();
+          await tester.tap(view);
+          await tester.pumpAndSettle();
+          final history = find.byKey(const ValueKey('view-print-history'));
+          await tester.ensureVisible(history);
+          await tester.pumpAndSettle();
+          await tester.tap(history);
+          await tester.pumpAndSettle();
+          final snapshot = find.byKey(
+            ValueKey('view-ticket-${orders.tickets.first.id}'),
+          );
+          await tester.ensureVisible(snapshot);
+          await tester.pumpAndSettle();
+          await tester.tap(snapshot);
+        } else {
+          await tester.tap(find.text('Comanda 1').first);
+        }
         await tester.pumpAndSettle();
       }
       if (name == 'overview-dashboard-phone-it') {

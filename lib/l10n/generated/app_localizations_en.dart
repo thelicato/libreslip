@@ -1751,10 +1751,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogueLastPhaseBody =>
-      'Quick additions go to the last phase. Use Add items inside a phase to add there.';
+      'New items go to the last phase. Use the arrows to move them.';
 
   @override
   String get finishEditing => 'Finish editing';
+
+  @override
+  String get pastOrders => 'Past orders';
+
+  @override
+  String get orderPrintHistory => 'Print history';
+
+  @override
+  String get orderPrintHistoryBody =>
+      'Saved print snapshots for this order. Open one to reprint or recover a print attempt.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

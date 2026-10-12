@@ -50,7 +50,24 @@ class _TicketsPageState extends State<TicketsPage> {
       final query = _query.trim().toLowerCase();
       final managed = widget.controller.featureSettings.managedOrdersEnabled;
       final showOpen = managed || widget.controller.managedOrders.isNotEmpty;
-      final tickets = widget.controller.tickets
+      final openIds = widget.controller.managedOrders.map((o) => o.id).toSet();
+      final latest = <String, SavedTicket>{};
+      for (final ticket in widget.controller.tickets) {
+        final id = ticket.managedOrderId;
+        if (id == null || openIds.contains(id)) continue;
+        final previous = latest[id];
+        if (previous == null || ticket.revision > previous.revision) {
+          latest[id] = ticket;
+        }
+      }
+      final history = widget.controller.tickets
+          .where(
+            (ticket) =>
+                ticket.managedOrderId == null ||
+                latest[ticket.managedOrderId]?.id == ticket.id,
+          )
+          .toList();
+      final tickets = history
           .where(
             (ticket) =>
                 query.isEmpty ||
@@ -91,14 +108,17 @@ class _TicketsPageState extends State<TicketsPage> {
                 sharedOrders: widget.sharedOrders,
                 completeWholeSteps: widget.settings.completeWholeSteps,
                 onOpenCompose: widget.onOpenCompose,
+                onViewPrintHistory: _showPrintHistory,
                 query: query,
               ),
-              const SizedBox(height: 24),
-              Text(
-                l.savedTicketsStat,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
+              if (history.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Text(
+                  managed ? l.pastOrders : l.savedTicketsStat,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+              ],
             ],
             if (widget.controller.tickets.isNotEmpty)
               Align(
@@ -118,11 +138,11 @@ class _TicketsPageState extends State<TicketsPage> {
             if (pendingManaged) Text(l.managedHistoryPending),
             const SizedBox(height: 18),
           ],
-          if (widget.controller.tickets.isEmpty && showOpen)
-            Text(l.emptyTicketsTitle)
+          if (history.isEmpty && showOpen)
+            const SizedBox.shrink()
           else if (widget.controller.tickets.isEmpty)
             _EmptyTickets(onCompose: widget.onOpenCompose)
-          else if (widget.controller.tickets.isNotEmpty && tickets.isEmpty)
+          else if (tickets.isEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(28),
@@ -135,11 +155,15 @@ class _TicketsPageState extends State<TicketsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TicketCard(
                   ticket: ticket,
-                  viewLabel: managed ? l.viewOrder : l.viewTicket,
+                  viewLabel: managed || ticket.managedOrderId != null
+                      ? l.viewOrder
+                      : l.viewTicket,
                   delivery: widget.delivery?.deliveryForTicket(ticket.id),
                   enabled: !widget.controller.saving,
                   onView: () => _showTicket(ticket),
-                  onDelete: () => _deleteTicket(ticket),
+                  onDelete: ticket.managedOrderId == null
+                      ? () => _deleteTicket(ticket)
+                      : null,
                 ),
               ),
           if (widget.controller.saveFailed) ...[
@@ -219,14 +243,71 @@ class _TicketsPageState extends State<TicketsPage> {
     }
   }
 
-  Future<void> _showTicket(SavedTicket ticket) => showDialog<void>(
+  Future<void> _showTicket(SavedTicket ticket, {bool fromHistory = false}) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => TicketDetailDialog(
+          ticket: ticket,
+          pricesEnabled: widget.controller.featureSettings.pricesEnabled,
+          settings: widget.settings,
+          output: widget.output,
+          delivery: widget.delivery,
+          onViewHistory: fromHistory || ticket.managedOrderId == null
+              ? null
+              : () => _showPrintHistory(ticket.managedOrderId!),
+        ),
+      );
+
+  Future<void> _showPrintHistory(String orderId) => showDialog<void>(
     context: context,
-    builder: (context) => TicketDetailDialog(
-      ticket: ticket,
-      pricesEnabled: widget.controller.featureSettings.pricesEnabled,
-      settings: widget.settings,
-      output: widget.output,
-      delivery: widget.delivery,
+    builder: (context) => ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        final l = AppLocalizations.of(context);
+        final snapshots = widget.controller.tickets
+            .where((ticket) => ticket.managedOrderId == orderId)
+            .toList();
+        return AlertDialog(
+          key: const ValueKey('order-print-history'),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          title: Text(l.orderPrintHistory),
+          content: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(l.orderPrintHistoryBody),
+                  const SizedBox(height: 12),
+                  if (snapshots.isEmpty) Text(l.emptyTicketsTitle),
+                  for (final ticket in snapshots)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _TicketCard(
+                        ticket: ticket,
+                        viewLabel: l.viewTicket,
+                        delivery: widget.delivery?.deliveryForTicket(ticket.id),
+                        enabled: !widget.controller.saving,
+                        onView: () => _showTicket(ticket, fromHistory: true),
+                        onDelete: () => _deleteTicket(ticket),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l.close),
+            ),
+          ],
+        );
+      },
     ),
   );
 }
@@ -246,7 +327,7 @@ class _TicketCard extends StatelessWidget {
   final ClientDelivery? delivery;
   final bool enabled;
   final VoidCallback onView;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -341,22 +422,23 @@ class _TicketCard extends StatelessWidget {
                     icon: const Icon(Icons.visibility_outlined),
                     label: Text(viewLabel),
                   ),
-                  TextButton.icon(
-                    key: ValueKey('delete-ticket-${ticket.id}'),
-                    onPressed:
-                        enabled &&
-                            !(ticket.managedOrderId != null &&
-                                delivery != null &&
-                                delivery!.status !=
-                                    ClientDeliveryStatus.delivered)
-                        ? onDelete
-                        : null,
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: Text(l.deleteTicket),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
+                  if (onDelete != null)
+                    TextButton.icon(
+                      key: ValueKey('delete-ticket-${ticket.id}'),
+                      onPressed:
+                          enabled &&
+                              !(ticket.managedOrderId != null &&
+                                  delivery != null &&
+                                  delivery!.status !=
+                                      ClientDeliveryStatus.delivered)
+                          ? onDelete
+                          : null,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: Text(l.deleteTicket),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
                     ),
-                  ),
                 ],
               );
               if (constraints.maxWidth >= 680) {

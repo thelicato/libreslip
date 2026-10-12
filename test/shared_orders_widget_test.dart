@@ -239,31 +239,33 @@ void main() {
             .removeCurrentSnackBar();
         await tester.pumpAndSettle();
 
-        final add = find.byKey(const ValueKey('add-in-phase-first'));
-        await tester.ensureVisible(add);
-        await tester.pumpAndSettle();
-        await tester.tap(add);
-        await tester.pumpAndSettle();
-        final increment = find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byKey(ValueKey('compose-item-${juice.id}')),
-        );
+        expect(find.byKey(const ValueKey('add-in-phase-first')), findsNothing);
+        final increment = find.byKey(ValueKey('compose-item-${juice.id}'));
         await tester.ensureVisible(increment);
         await tester.pumpAndSettle();
         if (capture) {
           await _capture(
             tester,
             boundary,
-            'phase-catalogue-$language-${size.width.toInt()}',
+            'main-catalogue-$language-${size.width.toInt()}',
           );
         }
         await tester.tap(increment);
         await tester.pumpAndSettle();
-        expect(f.a.workspace.activeDraft!.lines.single.courseId, isNull);
-        final l = AppLocalizations.of(tester.element(find.byType(AlertDialog)));
-        await tester.tap(find.widgetWithText(TextButton, l.close).last);
-        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(f.a.workspace.activeDraft!.lines.single.courseId, remotePhase);
         final added = f.a.workspace.activeDraft!.lines.single;
+        final up = find.byKey(ValueKey('line-above-divider-${added.id}'));
+        await tester.ensureVisible(up);
+        await tester.pumpAndSettle();
+        await tester.tap(up);
+        await tester.pumpAndSettle();
+        expect(f.a.workspace.activeDraft!.lines.single.courseId, divider.id);
+        await tester.ensureVisible(up);
+        await tester.pumpAndSettle();
+        await tester.tap(up);
+        await tester.pumpAndSettle();
+        expect(f.a.workspace.activeDraft!.lines.single.courseId, isNull);
         final move = find.byKey(ValueKey('line-below-divider-${added.id}'));
         await tester.ensureVisible(move);
         await tester.pumpAndSettle();
