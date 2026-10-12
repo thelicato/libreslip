@@ -1,5 +1,20 @@
 # Validation evidence
 
+## Orders workspace and full-width composition controls, 12 October 2026
+
+Validated step 14 with `VERSION` unchanged at 1.11.0. Database, settings, archives and network formats are unchanged. Optional printed prices and totals remain a separate delivery step.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 111 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 246 active tests passed; normal execution skipped only opt-in workspace capture. Existing printing, persistence, migration, backup, restore and Client/Server tests passed. |
+| Orders navigation and editing | The history workspace exposes current open orders and immutable saved revisions. Tests verify Orders navigation and view labels, View order, automatic return to Compose for additions, preserved earlier snapshots and successful local closure returning to history. Disabling Keep orders open restores Tickets labels while retained orders remain accessible. |
+| Shared orders and progress | A Client without local ticket history can search and open its shared mirror. Existing shared conflict, explicit progress conflict, per-item delivery and whole-step workflows now open orders from the history workspace and pass on tablet, Italian doubled-text phone and landscape layouts. |
+| Composition and history layout | Both Compact Compose title and notes controls occupy the full available width on separate rows. Their actual dialogs remain reachable in Italian phone, Italian doubled text and English landscape tests. History metadata stacks on narrow or enlarged-text layouts to prevent overflow. |
+| Render inspection | One hundred captures passed framework and missed-tap checks. Inspected full Italian button labels at standard and doubled text, English Orders with current orders and saved revisions, Italian enlarged-text Orders and dark landscape. Review images: [Italian controls](previews/compose-controls-full-width-it.png), [Orders workspace](previews/orders-workspace-en.png) and [Italian enlarged text](previews/orders-workspace-it-large-text.png). |
+| Android preview APK | Fresh 1.11.0 debug APK, build 1, uses `io.thelicato.libreslip`, minimum API 34 and target API 36. APK Signature Scheme v2 verified with the Android Debug development certificate. Flutter and Gradle outputs matched. This is an installable development-key preview. |
+| Platform and hardware checks | No new physical-device installation, multi-phone LAN or physical printer verification was performed. Automated checks do not establish physical-device behaviour or paper output. |
+
 ## Whole-step completion in Server mode, 8 October 2026
 
 Validated step 13 with `VERSION` unchanged at 1.9.0. Settings format 9, database schema 17 and network formats are unchanged.

@@ -90,7 +90,13 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final labels = [l.overview, l.items, l.compose, l.tickets, l.settings];
+    final labels = [
+      l.overview,
+      l.items,
+      l.compose,
+      widget.orders.featureSettings.managedOrdersEnabled ? l.orders : l.tickets,
+      l.settings,
+    ];
     const icons = [
       Icons.space_dashboard_outlined,
       Icons.grid_view_rounded,
@@ -119,6 +125,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
         sharedOrders: widget.sharedOrders,
       ),
       3 => TicketsPage(
+        sharedOrders: widget.sharedOrders,
         controller: widget.orders,
         settings: widget.settings.settings,
         output: widget.ticketOutput,

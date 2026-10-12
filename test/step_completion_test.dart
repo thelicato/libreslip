@@ -426,8 +426,12 @@ void main() {
         );
         await tap(toggle);
         expect(store.stored!.completeWholeSteps, isTrue);
-        await tap(find.byKey(const ValueKey('nav-2')));
-        await tap(find.byKey(const ValueKey('active-orders')));
+        await tap(find.byKey(const ValueKey('nav-3')));
+        await tap(
+          find.byKey(
+            ValueKey('view-order-${env.controller.managedOrders.single.id}'),
+          ),
+        );
         final expansion = find.byType(ExpansionTile).last;
         await tap(expansion);
         expect(find.byKey(const ValueKey('deliver-one-soup')), findsNothing);
@@ -464,8 +468,12 @@ void main() {
         );
         await tap(toggle);
         expect(store.stored!.completeWholeSteps, isFalse);
-        await tap(find.byKey(const ValueKey('nav-2')));
-        await tap(find.byKey(const ValueKey('active-orders')));
+        await tap(find.byKey(const ValueKey('nav-3')));
+        await tap(
+          find.byKey(
+            ValueKey('view-order-${env.controller.managedOrders.single.id}'),
+          ),
+        );
         await tap(find.byType(ExpansionTile).last);
         expect(find.byKey(const ValueKey('deliver-one-soup')), findsOneWidget);
         expect(find.byKey(const ValueKey('complete-step-first')), findsNothing);

@@ -54,9 +54,9 @@ void main() {
                     padding: const EdgeInsets.all(20),
                     child: ListenableBuilder(
                       listenable: workspace,
-                      builder: (context, _) => ManagedOrderComposer(
+                      builder: (context, _) => OpenOrdersPanel(
+                        onOpenCompose: () {},
                         controller: workspace,
-                        busy: workspace.saving,
                         delivery: delivery,
                       ),
                     ),
@@ -67,7 +67,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final active = find.byKey(const ValueKey('active-orders'));
+        final active = find.byKey(ValueKey('view-order-$orderId'));
         await tester.ensureVisible(active);
         await tester.tap(active);
         await tester.pumpAndSettle();

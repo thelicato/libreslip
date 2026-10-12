@@ -130,6 +130,24 @@ abstract class AppLocalizations {
   /// **'Items'**
   String get items;
 
+  /// No description provided for @orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get orders;
+
+  /// No description provided for @viewOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'View order'**
+  String get viewOrder;
+
+  /// No description provided for @searchOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Search orders'**
+  String get searchOrders;
+
   /// No description provided for @tickets.
   ///
   /// In en, this message translates to:

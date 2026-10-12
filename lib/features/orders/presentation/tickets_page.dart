@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../networking/application/client_delivery_controller.dart';
+import '../../networking/application/shared_orders_controller.dart';
 import '../../networking/domain/client_delivery_models.dart';
 import '../../networking/presentation/client_delivery_status.dart';
 import '../../printing/application/ticket_output_controller.dart';
@@ -10,6 +11,7 @@ import '../../settings/domain/app_settings.dart';
 import '../application/order_workspace_controller.dart';
 import '../domain/order_models.dart';
 import 'order_identity.dart';
+import 'managed_order_composer.dart';
 
 class TicketsPage extends StatefulWidget {
   const TicketsPage({
@@ -19,6 +21,7 @@ class TicketsPage extends StatefulWidget {
     required this.onOpenCompose,
     this.output,
     this.delivery,
+    this.sharedOrders,
   });
 
   final OrderWorkspaceController controller;
@@ -26,6 +29,7 @@ class TicketsPage extends StatefulWidget {
   final VoidCallback onOpenCompose;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
 
   @override
   State<TicketsPage> createState() => _TicketsPageState();
@@ -39,10 +43,13 @@ class _TicketsPageState extends State<TicketsPage> {
     listenable: Listenable.merge([
       widget.controller,
       if (widget.delivery != null) widget.delivery!,
+      ?widget.sharedOrders,
     ]),
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       final query = _query.trim().toLowerCase();
+      final managed = widget.controller.featureSettings.managedOrdersEnabled;
+      final showOpen = managed || widget.controller.managedOrders.isNotEmpty;
       final tickets = widget.controller.tickets
           .where(
             (ticket) =>
@@ -67,36 +74,55 @@ class _TicketsPageState extends State<TicketsPage> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.controller.tickets.isNotEmpty) ...[
+          if (widget.controller.tickets.isNotEmpty || showOpen) ...[
             TextField(
               key: const ValueKey('ticket-search'),
               decoration: InputDecoration(
-                labelText: l.searchTickets,
+                labelText: managed ? l.searchOrders : l.searchTickets,
                 prefixIcon: const Icon(Icons.search_rounded),
               ),
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                key: const ValueKey('delete-all-tickets'),
-                onPressed: widget.controller.saving || pendingManaged
-                    ? null
-                    : _deleteAllTickets,
-                icon: const Icon(Icons.delete_sweep_outlined),
-                label: Text(l.deleteAllTickets),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
+            if (showOpen) ...[
+              OpenOrdersPanel(
+                controller: widget.controller,
+                delivery: widget.delivery,
+                sharedOrders: widget.sharedOrders,
+                completeWholeSteps: widget.settings.completeWholeSteps,
+                onOpenCompose: widget.onOpenCompose,
+                query: query,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                l.savedTicketsStat,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.controller.tickets.isNotEmpty)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton.icon(
+                  key: const ValueKey('delete-all-tickets'),
+                  onPressed: widget.controller.saving || pendingManaged
+                      ? null
+                      : _deleteAllTickets,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  label: Text(l.deleteAllTickets),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ),
-            ),
             if (pendingManaged) Text(l.managedHistoryPending),
             const SizedBox(height: 18),
           ],
-          if (widget.controller.tickets.isEmpty)
+          if (widget.controller.tickets.isEmpty && showOpen)
+            Text(l.emptyTicketsTitle)
+          else if (widget.controller.tickets.isEmpty)
             _EmptyTickets(onCompose: widget.onOpenCompose)
-          else if (tickets.isEmpty)
+          else if (widget.controller.tickets.isNotEmpty && tickets.isEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(28),
@@ -109,6 +135,7 @@ class _TicketsPageState extends State<TicketsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TicketCard(
                   ticket: ticket,
+                  viewLabel: managed ? l.viewOrder : l.viewTicket,
                   delivery: widget.delivery?.deliveryForTicket(ticket.id),
                   enabled: !widget.controller.saving,
                   onView: () => _showTicket(ticket),
@@ -207,6 +234,7 @@ class _TicketsPageState extends State<TicketsPage> {
 class _TicketCard extends StatelessWidget {
   const _TicketCard({
     required this.ticket,
+    required this.viewLabel,
     required this.delivery,
     required this.enabled,
     required this.onView,
@@ -214,6 +242,7 @@ class _TicketCard extends StatelessWidget {
   });
 
   final SavedTicket ticket;
+  final String viewLabel;
   final ClientDelivery? delivery;
   final bool enabled;
   final VoidCallback onView;
@@ -234,41 +263,50 @@ class _TicketCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final identity = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OrderIdentity(
+                    reference: ticket.reference,
+                    numberLabel: l.ticketNumber(ticket.number),
+                  ),
+                  Text(
+                    '$date · $time',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              );
+              final status = delivery == null
+                  ? Chip(label: Text(l.saved))
+                  : ClientDeliveryStatusChip(delivery: delivery!);
+              final stackedHeader =
+                  constraints.maxWidth < 420 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 20;
               final details = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(14),
+                  if (stackedHeader) ...[
+                    identity,
+                    const SizedBox(height: 8),
+                    status,
+                  ] else
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primaryContainer,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(Icons.receipt_long_outlined),
                         ),
-                        child: const Icon(Icons.receipt_long_outlined),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            OrderIdentity(
-                              reference: ticket.reference,
-                              numberLabel: l.ticketNumber(ticket.number),
-                            ),
-                            Text(
-                              '$date · $time',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (delivery == null)
-                        Chip(label: Text(l.saved))
-                      else
-                        ClientDeliveryStatusChip(delivery: delivery!),
-                    ],
-                  ),
+                        const SizedBox(width: 14),
+                        Expanded(child: identity),
+                        status,
+                      ],
+                    ),
                   const SizedBox(height: 6),
                   if (ticket.managedOrderId != null &&
                       delivery != null &&
@@ -298,9 +336,10 @@ class _TicketCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
+                    key: ValueKey('view-ticket-${ticket.id}'),
                     onPressed: enabled ? onView : null,
                     icon: const Icon(Icons.visibility_outlined),
-                    label: Text(l.viewTicket),
+                    label: Text(viewLabel),
                   ),
                   TextButton.icon(
                     key: ValueKey('delete-ticket-${ticket.id}'),

@@ -90,3 +90,11 @@ A transaction completes or resets every item in the chosen section, records the 
 Server Settings exposes the same Complete whole steps preference, off by default. Each device retains its own choice; switching between Client and Server uses that device's saved setting. Compact Server cards and details use one section list, and details offer Complete step or Reopen step instead of item controls. Ordinary immutable orders retain their receive-and-Done workflow.
 
 Server section updates run in one transaction and reject outdated order or progress revisions. The last completed section moves the order to Completed; reopening returns it to Received while preserving other completed sections. Existing Client sync exchanges the resulting quantities, and preparation totals continue to count only current sections. SQLite rollback prevents partially completed steps on failure. No settings, database, archive or network format migration is needed; app version is unchanged.
+
+## 14. Order management in the history workspace: implemented
+
+Open orders move from Compose to the Tickets workspace, above immutable saved ticket history. View order opens the selected current order with delivery controls, additions and local closure. Add items opens its persistent additions composition in Compose; successful closure returns to the list. Shared mirrors remain accessible without local ticket history, and search includes order titles, numbers and item names.
+
+Keep orders open renames the navigation, workspace heading, Overview shortcut, search and saved-row view action to Orders, Search orders and View order. Disabling it restores Tickets labels while retaining access to existing open orders. Stored snapshots and explicit print actions remain unchanged. Compact Compose stacks title and notes controls at full width in both languages. History metadata stacks on narrow or enlarged-text displays. No database, settings or protocol migration is needed; the app version is unchanged.
+
+Optional printed prices and totals requested on 12 October 2026 remain a separate delivery step.

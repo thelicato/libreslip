@@ -39,6 +39,8 @@ There is no account, subscription or required cloud service. The catalogue, curr
 
 Client mode is the everyday workspace. Add catalogue items, compose an order, connect the printer and print. **Require printer connection** in Client Settings is on by default, keeping this workflow. Turn it off to use **Save order** or **Save additions** when disconnected, retaining immutable history and sending eligible items to a paired Server without a print attempt. With a connected printer, the normal print action remains available. Printing and reprinting still require a connection.
 
+With **Keep orders open** enabled, the **Tickets** tab becomes **Orders**. Manage open orders there, view delivery progress, add items and close orders above saved ticket history. Disabling the option restores the Tickets labels while existing open orders remain accessible. Compact Compose gives the title and notes controls a full row each.
+
 A paired LibreSlip Server is optional. If it becomes unavailable, local composition, printing, history, PDF sharing and backups continue normally. Items marked Local only remain on the printed ticket but are not included in the Server copy.
 
 Pair with several Servers in Client Settings to keep them available together. The most recently paired Server becomes the destination for new orders; select another with **Use for new orders** or the **Order destination** selector in Compose. Each order goes to its selected Server, and additions and delivery progress keep that original destination. All connected Servers continue to deliver and, with Keep orders open enabled, sync their shared orders independently. Unpairing one Server retains its queued work and leaves the others connected.

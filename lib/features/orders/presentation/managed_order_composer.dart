@@ -36,30 +36,7 @@ class ManagedOrderComposer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (order == null) ...[
-              if (controller.featureSettings.managedOrdersEnabled)
-                Text(l.newOrderKeptOpen),
-              const SizedBox(height: 8),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: OutlinedButton.icon(
-                  key: const ValueKey('active-orders'),
-                  onPressed: busy
-                      ? null
-                      : () => showDialog<void>(
-                          context: context,
-                          builder: (_) => _ActiveOrdersDialog(
-                            controller: controller,
-                            delivery: delivery,
-                            sharedOrders: sharedOrders,
-                            completeWholeSteps: completeWholeSteps,
-                          ),
-                        ),
-                  icon: const Icon(Icons.playlist_add_rounded),
-                  label: Text(l.activeOrders),
-                ),
-              ),
-            ] else ...[
+            if (order != null) ...[
               Text(
                 l.additionEditing,
                 style: Theme.of(context).textTheme.titleMedium,
@@ -67,7 +44,7 @@ class ManagedOrderComposer extends StatelessWidget {
               const SizedBox(height: 8),
               OrderIdentity(
                 reference: order.reference,
-                numberLabel: l.ticketNumber(order.number),
+                numberLabel: l.orderNumber(order.number),
               ),
               Text(l.orderRevision(order.revision + 1)),
               if (order.destinationId == null) Text(l.activeOrderLocal),
@@ -120,14 +97,129 @@ class ManagedOrderComposer extends StatelessWidget {
   }
 }
 
+Future<void> showManagedOrder(
+  BuildContext context, {
+  required OrderWorkspaceController controller,
+  required String orderId,
+  required VoidCallback onOpenCompose,
+  ClientDeliveryController? delivery,
+  SharedOrdersController? sharedOrders,
+  bool completeWholeSteps = false,
+}) => showDialog<void>(
+  context: context,
+  builder: (_) => _ActiveOrdersDialog(
+    controller: controller,
+    orderId: orderId,
+    onOpenCompose: onOpenCompose,
+    delivery: delivery,
+    sharedOrders: sharedOrders,
+    completeWholeSteps: completeWholeSteps,
+  ),
+);
+
+class OpenOrdersPanel extends StatelessWidget {
+  const OpenOrdersPanel({
+    super.key,
+    required this.controller,
+    required this.onOpenCompose,
+    this.delivery,
+    this.sharedOrders,
+    this.completeWholeSteps = false,
+    this.query = '',
+  });
+  final OrderWorkspaceController controller;
+  final VoidCallback onOpenCompose;
+  final ClientDeliveryController? delivery;
+  final SharedOrdersController? sharedOrders;
+  final bool completeWholeSteps;
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final orders = controller.managedOrders.where(
+      (order) =>
+          query.isEmpty ||
+          order.reference.toLowerCase().contains(query) ||
+          order.number.toString().contains(query) ||
+          order.lines.any((line) => line.name.toLowerCase().contains(query)),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l.activeOrders, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 12),
+        if (sharedOrders != null)
+          SharedOrderControls(controller: sharedOrders!),
+        if (controller.managedOrders.isEmpty)
+          Text(l.activeOrdersEmpty)
+        else if (orders.isEmpty)
+          Text(l.noItemsFound),
+        for (final order in orders)
+          Card(
+            key: ValueKey('open-order-${order.id}'),
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OrderIdentity(
+                    reference: order.reference,
+                    numberLabel: l.orderNumber(order.number),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      Text(l.orderRevision(order.revision)),
+                      Text(l.itemCount(order.itemCount)),
+                    ],
+                  ),
+                  if (order.destinationId != null && delivery != null)
+                    Text(
+                      delivery!.serverFor(order.destinationId)?.displayName ??
+                          l.serverDisconnected,
+                    ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    key: ValueKey('view-order-${order.id}'),
+                    onPressed: controller.saving
+                        ? null
+                        : () => showManagedOrder(
+                            context,
+                            controller: controller,
+                            orderId: order.id,
+                            onOpenCompose: onOpenCompose,
+                            delivery: delivery,
+                            sharedOrders: sharedOrders,
+                            completeWholeSteps: completeWholeSteps,
+                          ),
+                    icon: const Icon(Icons.visibility_outlined),
+                    label: Text(l.viewOrder),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ActiveOrdersDialog extends StatelessWidget {
   const _ActiveOrdersDialog({
     required this.controller,
+    required this.orderId,
+    required this.onOpenCompose,
     this.delivery,
     this.sharedOrders,
     this.completeWholeSteps = false,
   });
   final OrderWorkspaceController controller;
+  final String orderId;
+  final VoidCallback onOpenCompose;
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
   final bool completeWholeSteps;
@@ -153,7 +245,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
             horizontalInset,
             16,
           ),
-          child: Text(l.activeOrders),
+          child: Text(l.viewOrder),
         ),
         content: Padding(
           padding: EdgeInsets.fromLTRB(horizontalInset, 0, horizontalInset, 16),
@@ -164,15 +256,15 @@ class _ActiveOrdersDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (sharedOrders != null)
-                    SharedOrderControls(controller: sharedOrders!),
                   if (controller.managedOrders.isEmpty)
                     Text(l.activeOrdersEmpty),
                   if (!controller.canBeginAddition) ...[
                     Text(l.finishCompositionFirst),
                     const SizedBox(height: 12),
                   ],
-                  for (final order in controller.managedOrders)
+                  for (final order in controller.managedOrders.where(
+                    (order) => order.id == orderId,
+                  ))
                     Card(
                       key: ValueKey('active-order-card-${order.id}'),
                       margin: const EdgeInsets.only(bottom: 12),
@@ -183,7 +275,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                           children: [
                             OrderIdentity(
                               reference: order.reference,
-                              numberLabel: l.ticketNumber(order.number),
+                              numberLabel: l.orderNumber(order.number),
                             ),
                             const SizedBox(height: 6),
                             if (order.destinationId != null &&
@@ -249,6 +341,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                               .beginAddition(order.id);
                                           if (opened && context.mounted) {
                                             Navigator.pop(context);
+                                            onOpenCompose();
                                           }
                                         },
                                   icon: const Icon(Icons.add_rounded),
@@ -276,9 +369,11 @@ class _ActiveOrdersDialog extends StatelessWidget {
                                                     : l.closeActiveOrderBody,
                                               ) ==
                                               true) {
-                                            await controller.closeOrder(
-                                              order.id,
-                                            );
+                                            final closed = await controller
+                                                .closeOrder(order.id);
+                                            if (closed && context.mounted) {
+                                              Navigator.pop(context);
+                                            }
                                           }
                                         },
                                   child: Text(l.closeActiveOrder),

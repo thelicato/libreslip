@@ -77,9 +77,7 @@ class ComposePageState extends State<ComposePage> {
               widget.controller.saving ||
               widget.printing.value)
             const SizedBox(height: 18),
-          if (widget.controller.featureSettings.managedOrdersEnabled ||
-              widget.controller.managedOrders.isNotEmpty ||
-              draft.managedOrderId != null) ...[
+          if (draft.managedOrderId != null) ...[
             ManagedOrderComposer(
               completeWholeSteps: widget.settings.completeWholeSteps,
               controller: widget.controller,
@@ -564,9 +562,8 @@ class _CompactComposePanel extends StatelessWidget {
             if (features.orderReferenceEnabled ||
                 features.orderNotesEnabled) ...[
               const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (features.orderReferenceEnabled)
                     OutlinedButton.icon(
@@ -579,10 +576,13 @@ class _CompactComposePanel extends StatelessWidget {
                         draft.reference.isEmpty
                             ? l.orderReference
                             : draft.reference,
-                        maxLines: 1,
+                        maxLines: draft.reference.isEmpty ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                  if (features.orderReferenceEnabled &&
+                      features.orderNotesEnabled)
+                    const SizedBox(height: 8),
                   if (features.orderNotesEnabled)
                     OutlinedButton.icon(
                       key: const ValueKey('compact-edit-order-note'),
@@ -594,7 +594,7 @@ class _CompactComposePanel extends StatelessWidget {
                         draft.orderNote.isEmpty
                             ? l.orderNotes
                             : draft.orderNote,
-                        maxLines: 1,
+                        maxLines: draft.orderNote.isEmpty ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

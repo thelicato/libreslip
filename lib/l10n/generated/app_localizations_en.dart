@@ -25,6 +25,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get items => 'Items';
 
   @override
+  String get orders => 'Orders';
+
+  @override
+  String get viewOrder => 'View order';
+
+  @override
+  String get searchOrders => 'Search orders';
+
+  @override
   String get tickets => 'Tickets';
 
   @override

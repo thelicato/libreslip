@@ -538,9 +538,15 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('nav-2')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.byKey(const ValueKey('active-orders')));
+        expect(find.byKey(const ValueKey('active-orders')), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('nav-3')));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const ValueKey('active-orders')));
+        final viewOrder = find.byKey(
+          ValueKey('view-order-${controller.managedOrders.single.id}'),
+        );
+        await tester.ensureVisible(viewOrder);
+        await tester.pumpAndSettle();
+        await tester.tap(viewOrder);
         await tester.pumpAndSettle();
         final order = controller.managedOrders.single;
         final expand = find.byType(ExpansionTile).last;

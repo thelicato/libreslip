@@ -57,7 +57,8 @@ void main() {
                       padding: const EdgeInsets.all(20),
                       child: ListenableBuilder(
                         listenable: f.b.workspace,
-                        builder: (context, _) => ManagedOrderComposer(
+                        builder: (context, _) => OpenOrdersPanel(
+                          onOpenCompose: () {},
                           controller: f.b.workspace,
                           delivery: f.b.delivery,
                           sharedOrders: f.b.sync,
@@ -71,11 +72,11 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final active = find.byKey(const ValueKey('active-orders'));
+        final active = find.byKey(ValueKey('view-order-${f.b.order.id}'));
         await tester.ensureVisible(active);
         await tester.tap(active);
         await tester.pumpAndSettle();
-        expect(find.textContaining('Kitchen Server'), findsOneWidget);
+        expect(find.text('Kitchen Server'), findsOneWidget);
         if (capture) {
           await _capture(
             tester,

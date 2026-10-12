@@ -84,6 +84,41 @@ void main() {
     tester.view.devicePixelRatio = 1;
     for (final (name, size, language, mode, page) in [
       (
+        'managed-orders-workspace-tablet-en',
+        const Size(1100, 1000),
+        'en',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'managed-orders-workspace-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        3,
+      ),
+      (
+        'managed-orders-workspace-landscape-en',
+        const Size(915, 412),
+        'en',
+        ThemeMode.dark,
+        3,
+      ),
+      (
+        'compose-full-width-controls-phone-it',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
+        'compose-full-width-controls-phone-it-large-text',
+        const Size(320, 740),
+        'it',
+        ThemeMode.light,
+        2,
+      ),
+      (
         'managed-whole-step-delivery-server-dialog-tablet-en',
         const Size(1100, 1000),
         'en',
@@ -658,6 +693,7 @@ void main() {
           compactCompose:
               name == 'prices-compact-phone-it' ||
               name == 'compose-compact-phone-it' ||
+              name.contains('full-width-controls') ||
               name == 'courses-compact-phone-it' ||
               name == 'managed-compact-phone-it' ||
               name == 'dividers-compact-phone-it' ||
@@ -1071,6 +1107,23 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
+      if (name.contains('full-width-controls')) {
+        orders.setReference('');
+        orders.setOrderNote('');
+        await orders.flushWrites();
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('compact-edit-reference')),
+        );
+        await tester.pumpAndSettle();
+      }
+      if (name.contains('orders-workspace')) {
+        expect(
+          find.byKey(ValueKey('view-order-${orders.managedOrders.single.id}')),
+          findsOneWidget,
+        );
+      }
       if (pricePreview && page == 3) {
         await tester.tap(find.text('View ticket'));
         await tester.pumpAndSettle();
@@ -1101,11 +1154,17 @@ void main() {
             name.contains('spaced-active') ||
             name.contains('delivery-active') ||
             name.contains('progress-sync')) {
-          final active = find.byKey(const ValueKey('active-orders'));
-          await tester.ensureVisible(active);
+          await tester.tap(find.byKey(const ValueKey('nav-3')));
           await tester.pumpAndSettle();
-          await tester.tap(active);
-          await tester.pumpAndSettle();
+          if (!name.contains('spaced-active')) {
+            final active = find.byKey(
+              ValueKey('view-order-${orders.managedOrders.first.id}'),
+            );
+            await tester.ensureVisible(active);
+            await tester.pumpAndSettle();
+            await tester.tap(active);
+            await tester.pumpAndSettle();
+          }
           if (name.contains('delivery-active') ||
               name.contains('progress-sync')) {
             final expansion = find.byType(ExpansionTile).last;
