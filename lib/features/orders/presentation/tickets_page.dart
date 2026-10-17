@@ -48,8 +48,9 @@ class _TicketsPageState extends State<TicketsPage> {
     builder: (context, _) {
       final l = AppLocalizations.of(context);
       final query = _query.trim().toLowerCase();
-      final managed = widget.controller.featureSettings.managedOrdersEnabled;
-      final showOpen = managed || widget.controller.managedOrders.isNotEmpty;
+      final showOpen =
+          widget.controller.featureSettings.managedOrdersEnabled ||
+          widget.controller.managedOrders.isNotEmpty;
       final openIds = widget.controller.managedOrders.map((o) => o.id).toSet();
       final latest = <String, SavedTicket>{};
       for (final ticket in widget.controller.tickets) {
@@ -95,7 +96,7 @@ class _TicketsPageState extends State<TicketsPage> {
             TextField(
               key: const ValueKey('ticket-search'),
               decoration: InputDecoration(
-                labelText: managed ? l.searchOrders : l.searchTickets,
+                labelText: l.searchOrders,
                 prefixIcon: const Icon(Icons.search_rounded),
               ),
               onChanged: (value) => setState(() => _query = value),
@@ -108,19 +109,24 @@ class _TicketsPageState extends State<TicketsPage> {
                 sharedOrders: widget.sharedOrders,
                 completeWholeSteps: widget.settings.completeWholeSteps,
                 onOpenCompose: widget.onOpenCompose,
-                onViewPrintHistory: _showPrintHistory,
+                onPreview: (id) {
+                  final ticket = widget.controller.tickets
+                      .where((t) => t.managedOrderId == id)
+                      .firstOrNull;
+                  if (ticket != null) _showTicket(ticket);
+                },
                 query: query,
               ),
               if (history.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
-                  managed ? l.pastOrders : l.savedTicketsStat,
+                  l.pastOrders,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 12),
               ],
             ],
-            if (widget.controller.tickets.isNotEmpty)
+            if (history.isNotEmpty)
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton.icon(
@@ -155,15 +161,11 @@ class _TicketsPageState extends State<TicketsPage> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _TicketCard(
                   ticket: ticket,
-                  viewLabel: managed || ticket.managedOrderId != null
-                      ? l.viewOrder
-                      : l.viewTicket,
+                  viewLabel: l.viewOrder,
                   delivery: widget.delivery?.deliveryForTicket(ticket.id),
                   enabled: !widget.controller.saving,
                   onView: () => _showTicket(ticket),
-                  onDelete: ticket.managedOrderId == null
-                      ? () => _deleteTicket(ticket)
-                      : null,
+                  onDelete: () => _deleteTicket(ticket),
                 ),
               ),
           if (widget.controller.saveFailed) ...[
@@ -235,7 +237,17 @@ class _TicketsPageState extends State<TicketsPage> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final deleted = await widget.controller.deleteAllTickets();
+    final openIds = widget.controller.managedOrders.map((o) => o.id).toSet();
+    final previous = widget.controller.tickets
+        .where((t) => !openIds.contains(t.managedOrderId))
+        .toList();
+    var deleted = true;
+    for (final ticket in previous) {
+      if (!await widget.controller.deleteTicket(ticket.id)) {
+        deleted = false;
+        break;
+      }
+    }
     if (deleted && mounted) {
       setState(() => _query = '');
       ScaffoldMessenger.of(context)
@@ -243,73 +255,27 @@ class _TicketsPageState extends State<TicketsPage> {
     }
   }
 
-  Future<void> _showTicket(SavedTicket ticket, {bool fromHistory = false}) =>
-      showDialog<void>(
-        context: context,
-        builder: (context) => TicketDetailDialog(
-          ticket: ticket,
+  Future<void> _showTicket(SavedTicket ticket) async {
+    await widget.output?.load();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => ListenableBuilder(
+        listenable: widget.controller,
+        builder: (context, _) => TicketDetailDialog(
+          ticket:
+              widget.controller.tickets
+                  .where((t) => t.id == ticket.id)
+                  .firstOrNull ??
+              ticket,
           pricesEnabled: widget.controller.featureSettings.pricesEnabled,
           settings: widget.settings,
           output: widget.output,
           delivery: widget.delivery,
-          onViewHistory: fromHistory || ticket.managedOrderId == null
-              ? null
-              : () => _showPrintHistory(ticket.managedOrderId!),
         ),
-      );
-
-  Future<void> _showPrintHistory(String orderId) => showDialog<void>(
-    context: context,
-    builder: (context) => ListenableBuilder(
-      listenable: widget.controller,
-      builder: (context, _) {
-        final l = AppLocalizations.of(context);
-        final snapshots = widget.controller.tickets
-            .where((ticket) => ticket.managedOrderId == orderId)
-            .toList();
-        return AlertDialog(
-          key: const ValueKey('order-print-history'),
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 24,
-          ),
-          title: Text(l.orderPrintHistory),
-          content: SizedBox(
-            width: 560,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(l.orderPrintHistoryBody),
-                  const SizedBox(height: 12),
-                  if (snapshots.isEmpty) Text(l.emptyTicketsTitle),
-                  for (final ticket in snapshots)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _TicketCard(
-                        ticket: ticket,
-                        viewLabel: l.viewTicket,
-                        delivery: widget.delivery?.deliveryForTicket(ticket.id),
-                        enabled: !widget.controller.saving,
-                        onView: () => _showTicket(ticket, fromHistory: true),
-                        onDelete: () => _deleteTicket(ticket),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.close),
-            ),
-          ],
-        );
-      },
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _TicketCard extends StatelessWidget {
@@ -396,8 +362,6 @@ class _TicketCard extends StatelessWidget {
                       l.managedHistoryPending,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  if (ticket.revision > 0)
-                    Text(l.orderRevision(ticket.revision)),
                   Text(l.itemCount(ticket.itemCount)),
                   const SizedBox(height: 4),
                   Text(

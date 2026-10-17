@@ -267,7 +267,7 @@ void main() {
       );
 
       await repository.deleteTicket(ticket.id);
-      expect(await repository.loadTickets(), hasLength(1));
+      expect(await repository.loadTickets(), isEmpty);
       expect(
         (await repository.loadClientDeliveries()).first.status,
         ClientDeliveryStatus.delivered,
@@ -371,12 +371,12 @@ void main() {
     expect(received.revision, 2);
     expect(received.lines.map((line) => line.name), ['Soup', 'Water']);
     expect(await repository.loadPrintJobs(), isEmpty);
-    expect(await repository.loadTickets(), hasLength(2));
+    expect(await repository.loadTickets(), hasLength(1));
   });
 
   for (final optionalAddition in [false, true]) {
     test(
-      'later revisions (optional printer: $optionalAddition) wait for uncertain earlier printing and lost acknowledgements, then drain in order',
+      'latest order (optional printer: $optionalAddition) releases delivery operations after explicit print or save and recovers lost acknowledgements',
       () async {
         final configuration = await repository.loadNetworkConfiguration();
         final secrets = _MemoryServerSecrets();
@@ -450,32 +450,30 @@ void main() {
         if (optionalAddition) {
           await controller.ticketReady(second.id);
           expect(await repository.loadPrintJobs(), isEmpty);
-          expect(
-            controller.deliveryForTicket(second.id)!.status,
-            ClientDeliveryStatus.pending,
-          );
         } else {
-          await finishPrint(second, 'print-second', PrintJobStatus.transmitted);
+          await finishPrint(
+            second,
+            'latest-uncertain',
+            PrintJobStatus.uncertain,
+          );
+          expect(transport.attemptedRevisions, isEmpty);
+          await finishPrint(
+            second,
+            'latest-complete-print',
+            PrintJobStatus.transmitted,
+          );
         }
-        expect(transport.attemptedRevisions, isEmpty);
-        await finishPrint(
-          first,
-          'print-first-uncertain',
-          PrintJobStatus.uncertain,
-        );
-        expect(transport.attemptedRevisions, isEmpty);
-        await finishPrint(
-          first,
-          'explicit-reprint-first',
-          PrintJobStatus.transmitted,
-        );
         expect(transport.attemptedRevisions, [1]);
         expect(
           controller.deliveryForTicket(first.id)!.errorCode,
           'unreachable',
         );
         expect(
-          await controller.retry(controller.deliveryForTicket(second.id)!.id),
+          await controller.retry(
+            controller.deliveries
+                .singleWhere((d) => d.envelope.revision == 2)
+                .id,
+          ),
           isFalse,
         );
         expect(transport.attemptedRevisions, [1]);

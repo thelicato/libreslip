@@ -136,7 +136,7 @@ void main() {
       (await repository.loadTickets())
           .firstWhere((saved) => saved.id == ticket.id)
           .courses
-          .single
+          .first
           .toJson(),
       divider.toJson(),
     );

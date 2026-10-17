@@ -81,7 +81,7 @@ Future<void> showManagedOrder(
   ClientDeliveryController? delivery,
   SharedOrdersController? sharedOrders,
   bool completeWholeSteps = false,
-  VoidCallback? onViewPrintHistory,
+  VoidCallback? onPreview,
 }) => showDialog<void>(
   context: context,
   builder: (_) => _ActiveOrdersDialog(
@@ -91,7 +91,7 @@ Future<void> showManagedOrder(
     delivery: delivery,
     sharedOrders: sharedOrders,
     completeWholeSteps: completeWholeSteps,
-    onViewPrintHistory: onViewPrintHistory,
+    onPreview: onPreview,
   ),
 );
 
@@ -104,7 +104,7 @@ class OpenOrdersPanel extends StatelessWidget {
     this.sharedOrders,
     this.completeWholeSteps = false,
     this.query = '',
-    this.onViewPrintHistory,
+    this.onPreview,
   });
   final OrderWorkspaceController controller;
   final VoidCallback onOpenCompose;
@@ -112,7 +112,7 @@ class OpenOrdersPanel extends StatelessWidget {
   final SharedOrdersController? sharedOrders;
   final bool completeWholeSteps;
   final String query;
-  final ValueChanged<String>? onViewPrintHistory;
+  final ValueChanged<String>? onPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -152,10 +152,7 @@ class OpenOrdersPanel extends StatelessWidget {
                   Wrap(
                     spacing: 12,
                     runSpacing: 4,
-                    children: [
-                      Text(l.orderRevision(order.revision)),
-                      Text(l.itemCount(order.itemCount)),
-                    ],
+                    children: [Text(l.itemCount(order.itemCount))],
                   ),
                   if (order.destinationId != null && delivery != null)
                     Text(
@@ -199,12 +196,12 @@ class OpenOrdersPanel extends StatelessWidget {
                                 delivery: delivery,
                                 sharedOrders: sharedOrders,
                                 completeWholeSteps: completeWholeSteps,
-                                onViewPrintHistory:
-                                    onViewPrintHistory != null &&
+                                onPreview:
+                                    onPreview != null &&
                                         controller.tickets.any(
                                           (t) => t.managedOrderId == order.id,
                                         )
-                                    ? () => onViewPrintHistory!(order.id)
+                                    ? () => onPreview!(order.id)
                                     : null,
                               ),
                         icon: const Icon(Icons.visibility_outlined),
@@ -229,7 +226,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
     this.delivery,
     this.sharedOrders,
     this.completeWholeSteps = false,
-    this.onViewPrintHistory,
+    this.onPreview,
   });
   final OrderWorkspaceController controller;
   final String orderId;
@@ -237,7 +234,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
   final ClientDeliveryController? delivery;
   final SharedOrdersController? sharedOrders;
   final bool completeWholeSteps;
-  final VoidCallback? onViewPrintHistory;
+  final VoidCallback? onPreview;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -308,10 +305,7 @@ class _ActiveOrdersDialog extends StatelessWidget {
                             Wrap(
                               spacing: 12,
                               runSpacing: 4,
-                              children: [
-                                Text(l.orderRevision(order.revision)),
-                                Text(l.itemCount(order.itemCount)),
-                              ],
+                              children: [Text(l.itemCount(order.itemCount))],
                             ),
                             if (controller.featureSettings.pricesEnabled)
                               Padding(
@@ -343,14 +337,14 @@ class _ActiveOrdersDialog extends StatelessWidget {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                if (onViewPrintHistory != null)
+                                if (onPreview != null)
                                   TextButton.icon(
-                                    key: const ValueKey('view-print-history'),
+                                    key: const ValueKey('preview-order'),
                                     onPressed: controller.saving
                                         ? null
-                                        : onViewPrintHistory,
-                                    icon: const Icon(Icons.history_rounded),
-                                    label: Text(l.orderPrintHistory),
+                                        : onPreview,
+                                    icon: const Icon(Icons.print_outlined),
+                                    label: Text(l.printPreview),
                                   ),
                                 FilledButton.icon(
                                   key: ValueKey('add-to-order-${order.id}'),

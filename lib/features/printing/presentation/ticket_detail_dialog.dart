@@ -5,7 +5,6 @@ import '../../networking/application/client_delivery_controller.dart';
 import '../../networking/presentation/client_delivery_status.dart';
 import '../../orders/domain/order_models.dart';
 import '../../orders/presentation/order_identity.dart';
-import '../../orders/presentation/course_composer.dart';
 import '../../orders/presentation/order_estimate.dart';
 import '../../settings/domain/app_settings.dart';
 import '../application/ticket_output_controller.dart';
@@ -22,7 +21,6 @@ class TicketDetailDialog extends StatelessWidget {
     this.output,
     this.delivery,
     this.pricesEnabled = false,
-    this.onViewHistory,
   });
 
   final SavedTicket ticket;
@@ -30,7 +28,6 @@ class TicketDetailDialog extends StatelessWidget {
   final AppSettings settings;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
-  final VoidCallback? onViewHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -68,30 +65,6 @@ class TicketDetailDialog extends StatelessWidget {
             children: [
               Center(child: TicketPreview(document: document)),
               if (pricesEnabled) OrderEstimate(lines: ticket.lines),
-              if (ticket.revision > 1)
-                ExpansionTile(
-                  title: Text(l.fullOrderSnapshot),
-                  children: [
-                    for (final section in courseSections(
-                      ticket.courses,
-                      ticket.lines,
-                      (line) => line.courseId,
-                    )) ...[
-                      if (ticket.courses.isNotEmpty)
-                        CourseHeading(
-                          course: section.course,
-                          courses: ticket.courses,
-                        ),
-                      for (final line in section.lines)
-                        ListTile(
-                          title: Text('${line.quantity} × ${line.name}'),
-                          subtitle: line.preparationNote.isEmpty
-                              ? null
-                              : Text(line.preparationNote),
-                        ),
-                    ],
-                  ],
-                ),
               if (delivery != null)
                 ClientDeliveryStatusPanel(
                   controller: delivery!,
@@ -145,15 +118,6 @@ class TicketDetailDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (onViewHistory != null) ...[
-                TextButton.icon(
-                  key: const ValueKey('view-print-history'),
-                  onPressed: working ? null : onViewHistory,
-                  icon: const Icon(Icons.history_rounded),
-                  label: Text(l.orderPrintHistory),
-                ),
-                const SizedBox(height: 10),
-              ],
               if (controller != null)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -176,7 +140,10 @@ class TicketDetailDialog extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                   ),
-                  onPressed: working || !controller.printer.connected
+                  onPressed:
+                      working ||
+                          ticket.lines.isEmpty ||
+                          !controller.printer.connected
                       ? null
                       : () async {
                           final result = queued != null
@@ -262,7 +229,11 @@ class _PrintJobRow extends StatelessWidget {
       dense: true,
       contentPadding: EdgeInsets.zero,
       leading: Icon(_icon(job.status)),
-      title: Text(_label(context, job.status)),
+      title: Text(
+        job.errorCode == 'superseded'
+            ? AppLocalizations.of(context).printSuperseded
+            : _label(context, job.status),
+      ),
       subtitle: Text(
         '${material.formatShortDate(local)} · '
         '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}',
@@ -298,16 +269,24 @@ class _PrintOutcomeNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final (title, body) = switch (job.status) {
-      PrintJobStatus.queued => (l.printQueued, l.printQueuedBody),
-      PrintJobStatus.transmitted => (
-        l.printTransmitted,
-        l.printTransmittedBody,
-      ),
-      PrintJobStatus.failed => (l.printFailed, l.printFailedBody),
-      PrintJobStatus.uncertain => (l.printUncertain, l.printUncertainBody),
-      PrintJobStatus.sending => (l.printStatusSending, l.printTransmittedBody),
-    };
+    final (title, body) = job.errorCode == 'superseded'
+        ? (l.printSuperseded, l.printSupersededBody)
+        : switch (job.status) {
+            PrintJobStatus.queued => (l.printQueued, l.printQueuedBody),
+            PrintJobStatus.transmitted => (
+              l.printTransmitted,
+              l.printTransmittedBody,
+            ),
+            PrintJobStatus.failed => (l.printFailed, l.printFailedBody),
+            PrintJobStatus.uncertain => (
+              l.printUncertain,
+              l.printUncertainBody,
+            ),
+            PrintJobStatus.sending => (
+              l.printStatusSending,
+              l.printTransmittedBody,
+            ),
+          };
     return Material(
       color: Theme.of(context).colorScheme.secondaryContainer,
       borderRadius: BorderRadius.circular(16),

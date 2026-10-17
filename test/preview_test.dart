@@ -1399,19 +1399,13 @@ void main() {
           await tester.pumpAndSettle();
           await tester.tap(view);
           await tester.pumpAndSettle();
-          final history = find.byKey(const ValueKey('view-print-history'));
+          final history = find.byKey(const ValueKey('preview-order'));
           await tester.ensureVisible(history);
           await tester.pumpAndSettle();
           await tester.tap(history);
           await tester.pumpAndSettle();
-          final snapshot = find.byKey(
-            ValueKey('view-ticket-${orders.tickets.first.id}'),
-          );
-          await tester.ensureVisible(snapshot);
-          await tester.pumpAndSettle();
-          await tester.tap(snapshot);
         } else {
-          await tester.tap(find.text('Comanda 1').first);
+          await tester.tap(find.text('Ordine 1').first);
         }
         await tester.pumpAndSettle();
       }

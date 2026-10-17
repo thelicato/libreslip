@@ -730,8 +730,7 @@ class _OrderCard extends StatelessWidget {
                   const Icon(Icons.chevron_right_rounded),
                 ],
               ),
-              if (order.revision > 0) Text(l.orderRevision(order.revision)),
-              const SizedBox(height: 16),
+              if (order.revision > 0) const SizedBox(height: 16),
               if (order.managedOrderId != null)
                 DeliveryProgress(
                   courses: order.courses,
@@ -889,7 +888,6 @@ class _OrderDialogContents extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (!hideServerOrderDetails) ...[
-                if (order.revision > 0) Text(l.orderRevision(order.revision)),
                 _DetailRow(
                   label: l.receivedAt,
                   value: DateFormat.yMMMd(locale)

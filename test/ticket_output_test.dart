@@ -111,7 +111,7 @@ void main() {
           child: TicketPreview(
             document: TicketDocument(
               heading: 'Bottega',
-              ticketLabel: 'ORDER TICKET',
+              ticketLabel: 'ORDER',
               ticketNumber: '7',
               createdAt: '23 September 2026 12:00',
               referenceLabel: 'Reference',
@@ -136,7 +136,7 @@ void main() {
     double sizeOf(String text) =>
         tester.widget<Text>(find.text(text)).style!.fontSize!;
     expect(sizeOf('Bottega'), 20 * TicketTypography.previewScale);
-    expect(sizeOf('ORDER TICKET #7'), 10 * TicketTypography.previewScale);
+    expect(sizeOf('ORDER #7'), 10 * TicketTypography.previewScale);
     expect(sizeOf('Toastie'), 12 * TicketTypography.previewScale);
     expect(sizeOf('Note: No onion'), 9 * TicketTypography.previewScale);
     expect(sizeOf('Prepared with care'), 11 * TicketTypography.previewScale);
@@ -176,8 +176,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('ORDER TICKET #7'), findsOneWidget);
-      expect(find.text('Print ticket'), findsOneWidget);
+      expect(find.text('ORDER #7'), findsOneWidget);
+      expect(find.text('Print order'), findsOneWidget);
       final shareButton = find.widgetWithText(OutlinedButton, 'Share PDF');
       final printButton = find.byKey(const ValueKey('print-ticket-ticket-7'));
       final closeButton = find.widgetWithText(TextButton, 'Close');
@@ -198,7 +198,7 @@ void main() {
       await tester.tap(printButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('Ticket bytes sent'), findsOneWidget);
+      expect(find.text('Order bytes sent'), findsOneWidget);
       expect(find.text('Print again'), findsOneWidget);
       expect(output.jobs, hasLength(1));
       expect(output.jobs.single.status, PrintJobStatus.transmitted);
@@ -361,7 +361,7 @@ TicketDocument _document({
   TicketTypography typography = const TicketTypography(),
 }) => TicketDocument(
   heading: 'Bottega',
-  ticketLabel: 'ORDER TICKET',
+  ticketLabel: 'ORDER',
   ticketNumber: '7',
   createdAt: '23 September 2026 12:00',
   referenceLabel: 'Reference',
@@ -449,6 +449,7 @@ class MemoryPrintJobStore implements PrintJobStore {
     required String requestId,
     required String ticketId,
     required Uint8List payload,
+    int? expectedRevision,
   }) async {
     for (final job in jobs) {
       if (job.requestId == requestId) return job;

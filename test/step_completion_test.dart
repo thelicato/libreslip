@@ -101,11 +101,11 @@ void main() {
     final saved = (await repository.loadTickets()).firstWhere(
       (value) => value.id == ticket.id,
     );
-    expect(saved.lines.map((line) => line.quantity), [3, 2, 2, 1]);
-    expect(
-      saved.lines.map((line) => line.id),
-      ticket.lines.map((line) => line.id),
-    );
+    expect(saved.lines.map((line) => line.quantity), [3, 2, 2, 1, 1]);
+    expect(saved.lines.map((line) => line.id), [
+      ...ticket.lines.map((line) => line.id),
+      'new-bread',
+    ]);
     expect(await repository.loadPrintJobs(), isEmpty);
     await repository.closeManagedOrder(undone.id);
     await expectLater(

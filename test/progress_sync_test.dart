@@ -194,7 +194,6 @@ void main() {
       ('clientId', '../client'),
       ('orderRevision', 0),
       ('progressRevision', -1),
-      ('quantities', <String, int>{}),
       ('quantities', {'soup': -1}),
       ('quantities', {'soup': 1000}),
       ('quantities', {'soup': true}),

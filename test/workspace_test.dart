@@ -69,7 +69,7 @@ void main() {
     for (final (index, title) in [
       (1, 'Your item shelf is ready.'),
       (2, 'Start with an item.'),
-      (3, 'No saved tickets yet.'),
+      (3, 'No saved orders yet.'),
     ]) {
       await tester.tap(find.byKey(ValueKey('nav-$index')));
       await tester.pumpAndSettle();

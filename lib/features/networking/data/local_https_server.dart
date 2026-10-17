@@ -97,6 +97,7 @@ class LocalHttpsServer implements ServerHost {
           ],
           'progressVersions': [if (_store is ServerProgressStore) 1],
           'sharedOrderVersions': [if (_store is SharedServerStore) 1],
+          'itemEditVersions': [if (_store is OrderItemServerStore) 1],
           'phaseMoveVersions': [
             if (_store is OrderPhaseServerStore) ...[1, 2],
           ],
@@ -118,7 +119,8 @@ class LocalHttpsServer implements ServerHost {
       if (request.uri.path == '/v1/shared-orders' ||
           request.uri.path == '/v1/shared-additions' ||
           request.uri.path == '/v1/shared-progress' ||
-          request.uri.path == '/v1/shared-phase') {
+          request.uri.path == '/v1/shared-phase' ||
+          request.uri.path == '/v1/shared-item') {
         await _shared(request, onOrderReceived: onOrderReceived);
         return;
       }
@@ -393,6 +395,24 @@ class LocalHttpsServer implements ServerHost {
     final decoded = jsonDecode(
       await _readBody(request, SharedOrderSnapshot.maxBytes),
     );
+    if (request.uri.path == '/v1/shared-item') {
+      if (store is! OrderItemServerStore) {
+        await _writeError(
+          request.response,
+          HttpStatus.notFound,
+          'unsupported_item_edits',
+        );
+        return;
+      }
+      final change = OrderItemChange.fromJson(decoded);
+      final applied = await (store as OrderItemServerStore).changeSharedItem(
+        actor,
+        change,
+      );
+      onOrderReceived();
+      await _writeJson(request.response, HttpStatus.ok, applied.toJson());
+      return;
+    }
     if (request.uri.path == '/v1/shared-phase') {
       if (store is! OrderPhaseServerStore) {
         await _writeError(

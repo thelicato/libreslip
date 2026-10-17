@@ -41,6 +41,7 @@ abstract interface class PrintJobStore {
     required String requestId,
     required String ticketId,
     required Uint8List payload,
+    int? expectedRevision,
   });
 
   Future<PrintJob> markPrintJobSending(

@@ -68,7 +68,7 @@ void main() {
         (await repository.loadManagedOrders()).single.deliveredQuantities,
         isEmpty,
       );
-      expect((await repository.loadTickets()).length, 2);
+      expect((await repository.loadTickets()).length, 1);
       // Disabling managed mode does not prevent delivery edits on retained orders.
       await repository.saveFeatureSettings(const OrderFeatureSettings());
       await repository.setManagedLineDelivered(

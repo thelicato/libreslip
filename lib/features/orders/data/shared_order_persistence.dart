@@ -139,6 +139,68 @@ class _SharedPersistence {
     return snapshot;
   });
 
+  Future<SharedOrderSnapshot> changeItem(
+    String actor,
+    OrderItemChange change,
+  ) async => (await repository._db).transaction((tx) async {
+    OrderItemChange.fromJson(change.toJson());
+    await _requireActor(tx, actor);
+    final order = await SqliteOrderRepository._loadServerOrder(
+      tx,
+      change.orderId,
+    );
+    if (order.managedOrderId == null ||
+        order.revision != change.expectedRevision) {
+      throw const ServerOrderConflictException();
+    }
+    final line = order.lines.singleWhere((l) => l.id == change.lineId);
+    if (change.quantity == 0) {
+      await tx.delete(
+        'server_order_lines',
+        where: 'order_id = ? AND order_line_id = ?',
+        whereArgs: [order.id, change.lineId],
+      );
+    } else {
+      await tx.update(
+        'server_order_lines',
+        {
+          'quantity': change.quantity,
+          'preparation_note': change.note ?? line.preparationNote,
+          'delivered_quantity': line.deliveredQuantity > change.quantity
+              ? change.quantity
+              : line.deliveredQuantity,
+        },
+        where: 'order_id = ? AND order_line_id = ?',
+        whereArgs: [order.id, change.lineId],
+      );
+    }
+    final changed = await SqliteOrderRepository._loadServerOrder(tx, order.id);
+    final done = changed.lines.every((l) => l.deliveredQuantity == l.quantity);
+    await tx.update(
+      'server_orders',
+      {
+        'revision': order.revision + 1,
+        'progress_revision': order.progressRevision + 1,
+        'status': done ? 'done' : 'received',
+        'completed_at': done
+            ? SqliteOrderRepository._timestamp(DateTime.now().toUtc())
+            : null,
+      },
+      where: 'id = ?',
+      whereArgs: [order.id],
+    );
+    final snapshot = SharedOrderSnapshot.fromOrder(
+      await SqliteOrderRepository._loadServerOrder(tx, order.id),
+    );
+    await tx.update(
+      'server_orders',
+      {'payload_checksum': snapshot.envelope.payloadChecksum},
+      where: 'id = ?',
+      whereArgs: [order.id],
+    );
+    return snapshot;
+  });
+
   static Future<void> _requireActor(DatabaseExecutor tx, String actor) async {
     if ((await tx.query(
           'server_clients',
@@ -200,19 +262,14 @@ class _SharedPersistence {
               NetworkProtocol.maxLines) {
         throw const ServerOrderConflictException();
       }
-      // Requests carry immutable local ticket snapshots. Only their new stable
-      // line identifiers are appended, so concurrent Clients cannot erase items.
+      // Frozen operations append only their new identifiers. Existing content
+      // may have changed or been removed on another Client and is never replayed.
       for (final line in envelope.lines) {
         final previous = current.lines
             .where((old) => old.id == line.id)
             .toList();
         if (additionIds.contains(line.id)) {
           if (previous.isNotEmpty) throw const ServerOrderConflictException();
-        } else if (previous.length != 1 ||
-            previous.single.name != line.name ||
-            previous.single.quantity != line.quantity ||
-            previous.single.preparationNote != line.preparationNote) {
-          throw const ServerOrderConflictException();
         }
       }
       final newLines = envelope.lines
@@ -253,6 +310,14 @@ class _SharedPersistence {
           ...newLines,
         ],
       );
+      final lastPosition =
+          Sqflite.firstIntValue(
+            await tx.rawQuery(
+              'SELECT COALESCE(MAX(position), -1) FROM server_order_lines WHERE order_id = ?',
+              [id],
+            ),
+          ) ??
+          -1;
       for (var i = 0; i < newLines.length; i++) {
         final line = newLines[i];
         await tx.insert('server_order_lines', {
@@ -265,7 +330,7 @@ class _SharedPersistence {
           'quantity': line.quantity,
           'preparation_note': line.preparationNote,
           'course_id': line.courseId,
-          'position': current.lines.length + i,
+          'position': lastPosition + 1 + i,
         });
       }
       await tx.update(
@@ -473,12 +538,28 @@ class _SharedPersistence {
           : SqliteOrderRepository._managedFromRow(rows.single);
       // Frozen print-gated revisions stay intact until delivery is acknowledged.
       final pendingDeliveries = await tx.rawQuery(
-        '''SELECT o.id FROM server_delivery_outbox o
+        '''SELECT o.* FROM server_delivery_outbox o
         JOIN tickets t ON t.id = o.ticket_id
         WHERE t.managed_order_id = ? AND o.destination_id = ? AND o.status != 'delivered' ''',
         [id, destination],
       );
-      if (pendingDeliveries.isNotEmpty) return;
+      if (pendingDeliveries.isNotEmpty && links.isEmpty) return;
+      final pendingIds = <String>{};
+      if (links.isNotEmpty) {
+        final known = _link(links.single).baseline.envelope.lines
+            .map((line) => line.id)
+            .toSet();
+        for (final pending in pendingDeliveries) {
+          final raw = pending['shared_addition_ids'];
+          if (raw is String) {
+            pendingIds.addAll(
+              (jsonDecode(raw) as List).cast<String>().where(
+                (id) => !known.contains(id),
+              ),
+            );
+          }
+        }
+      }
       if (links.isNotEmpty) {
         final before = _link(links.single).baseline;
         if (incoming.revision < before.envelope.revision ||
@@ -487,13 +568,19 @@ class _SharedPersistence {
             before.envelope.clientInstallationId !=
                 incoming.clientInstallationId ||
             before.envelope.managedOrderId != incoming.managedOrderId ||
-            before.envelope.lines.any(
-              (old) => !incoming.lines.any((line) => line.id == old.id),
-            )) {
+            (incoming.revision == before.envelope.revision &&
+                incoming.payloadChecksum != before.envelope.payloadChecksum)) {
           throw const FormatException('Regressive shared order');
         }
       }
-      final lines = [...?previous?.lines];
+      final lines = [
+        ...?previous?.lines.where(
+          (old) =>
+              !old.sendToServer ||
+              pendingIds.contains(old.id) ||
+              incoming.lines.any((line) => line.id == old.id),
+        ),
+      ];
       for (final line in incoming.lines) {
         final old = lines.where((old) => old.id == line.id).toList();
         if (old.isEmpty) {
@@ -506,23 +593,18 @@ class _SharedPersistence {
               courseId: line.courseId,
             ),
           );
-        } else if (!old.single.sendToServer ||
-            old.single.name != line.name ||
-            old.single.quantity != line.quantity ||
-            old.single.preparationNote != line.preparationNote) {
-          throw const FormatException('Changed immutable shared item');
-        } else if (old.single.courseId != line.courseId) {
-          final baseline = links.isEmpty ? null : _link(links.single).baseline;
-          if (baseline != null &&
-              incoming.revision <= baseline.envelope.revision) {
-            throw const FormatException('Unversioned shared phase change');
-          }
+        } else if (!old.single.sendToServer) {
+          throw const FormatException('Changed private item');
+        } else {
           lines[lines.indexOf(old.single)] = old.single.copyWith(
+            quantity: line.quantity,
+            preparationNote: line.preparationNote,
             courseId: line.courseId,
             clearCourse: line.courseId == null,
           );
         }
       }
+
       if (lines.length > NetworkProtocol.maxLines) {
         throw const FormatException('Too many shared lines');
       }
@@ -566,9 +648,13 @@ class _SharedPersistence {
                 ),
       );
       validateCourses(courses, lines.map((line) => line.courseId));
-      final progress = {...?previous?.deliveredQuantities};
+      final progress = {...?previous?.deliveredQuantities}
+        ..removeWhere((id, count) => !lines.any((l) => l.id == id));
       for (final line in incoming.lines) {
-        if (previous?.changedDeliveryIds.contains(line.id) ?? false) continue;
+        if ((previous?.changedDeliveryIds.contains(line.id) ?? false) &&
+            (progress[line.id] ?? 0) <= line.quantity) {
+          continue;
+        }
         final count = remote.progress.quantities[line.id]!;
         if (count == 0) {
           progress.remove(line.id);
@@ -581,9 +667,15 @@ class _SharedPersistence {
           lines.length != previous.lines.length ||
           courses.length != previous.courses.length ||
           lines.any(
-            (line) => previous.lines.any(
-              (old) => old.id == line.id && old.courseId != line.courseId,
-            ),
+            (line) =>
+                !previous.lines.any((old) => old.id == line.id) ||
+                previous.lines.any(
+                  (old) =>
+                      old.id == line.id &&
+                      (old.courseId != line.courseId ||
+                          old.quantity != line.quantity ||
+                          old.preparationNote != line.preparationNote),
+                ),
           );
       final revision = previous == null
           ? incoming.revision
@@ -605,8 +697,16 @@ class _SharedPersistence {
         'lines_json': encodeOrderLines(lines),
         'destination_id': destination,
         'client_installation_id': actor,
-        'server_revision': incoming.revision,
+        'server_revision': (previous?.serverRevision ?? 0) > incoming.revision
+            ? previous!.serverRevision
+            : incoming.revision,
         'delivery_progress_json': jsonEncode(progress),
+        'delivery_changed_ids': jsonEncode(
+          previous?.changedDeliveryIds
+                  .where((id) => lines.any((l) => l.id == id))
+                  .toList() ??
+              [],
+        ),
       };
       if (previous == null) {
         await tx.insert('managed_orders', {'id': id, ...values});
@@ -687,6 +787,16 @@ class _SharedPersistence {
           ),
         );
       }
+      await _LatestOrders.write(
+        tx,
+        SqliteOrderRepository._managedFromRow(
+          (await tx.query(
+            'managed_orders',
+            where: 'id = ?',
+            whereArgs: [id],
+          )).single,
+        ),
+      );
     });
   }
 

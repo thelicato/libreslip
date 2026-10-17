@@ -10,11 +10,13 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 Future<
   ({OrderWorkspaceController controller, SqliteOrderRepository repository})
 >
-createMemoryOrderEnvironment() async {
+createMemoryOrderEnvironment({
+  String databasePath = inMemoryDatabasePath,
+}) async {
   sqfliteFfiInit();
   final repository = SqliteOrderRepository(
     factory: databaseFactoryFfiNoIsolate,
-    databasePath: inMemoryDatabasePath,
+    databasePath: databasePath,
   );
   final controller = OrderWorkspaceController(repository);
   await controller.load();

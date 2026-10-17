@@ -149,17 +149,17 @@ void main() {
       'Extra salt',
     ]);
     expect(second.lines.first.id, first.lines.single.id);
-    expect(second.printLines.single.name, 'Renamed soup');
+    expect(second.printLines.last.name, 'Renamed soup');
     expect(controller.nextOrderNumber, 2);
     final statistics = TicketStatistics.calculate(controller.tickets);
-    expect(statistics.ticketCount, 2);
+    expect(statistics.ticketCount, 1);
     expect(statistics.itemQuantity, 2);
     final doc = _document(second);
     final bytes = await EscPosTicketEncoder().encode(doc);
     final encoded = latin1.decode(bytes);
-    expect(encoded, contains('Additions'));
+    expect(encoded, isNot(contains('Additions')));
     expect(encoded, contains('Renamed soup'));
-    expect(encoded, isNot(contains('No salt')));
+    expect(encoded, contains('No salt'));
     final job = await repository.createPrintJob(
       requestId: 'additions-print',
       ticketId: second.id,
@@ -254,7 +254,7 @@ void main() {
       repository.convertDraftToTicket(stale, heading: 'Kitchen'),
       throwsA(isA<OrderStorageException>()),
     );
-    expect((await repository.loadTickets()).length, 2);
+    expect((await repository.loadTickets()).length, 1);
     expect(first.lines.single.quantity, 1);
     await repository.closeManagedOrder(order.id);
     await expectLater(
@@ -464,10 +464,10 @@ void main() {
     final second = (await controller.saveActiveTicket(heading: 'Kitchen'))!;
     final deliveries = await repository.loadClientDeliveries();
     final initial = deliveries.singleWhere(
-      (delivery) => delivery.ticketId == first.id,
+      (delivery) => delivery.envelope.revision == 1,
     );
     final addition = deliveries.singleWhere(
-      (delivery) => delivery.ticketId == second.id,
+      (delivery) => delivery.envelope.revision == 2,
     );
     expect(addition.envelope.lines.map((line) => line.name), ['Soup', 'Water']);
     expect(addition.envelope.revision, 2);
@@ -623,7 +623,7 @@ Future<void> _transmit(
   String ticketId,
 ) async {
   final job = await repository.createPrintJob(
-    requestId: 'print-$ticketId',
+    requestId: 'print-$ticketId-${createLocalId()}',
     ticketId: ticketId,
     payload: Uint8List.fromList([27, 64]),
   );

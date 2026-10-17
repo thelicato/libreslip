@@ -116,7 +116,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('nav-3')));
     await tester.pumpAndSettle();
     expect(find.text('Needs attention'), findsOneWidget);
-    await tester.tap(find.text('Ticket 1').first);
+    await tester.tap(find.text('Order 1').first);
     await tester.pumpAndSettle();
     final deliveryId = delivery.deliveryForTicket(ticket.id)!.id;
     final retry = find.byKey(ValueKey('retry-delivery-$deliveryId'));

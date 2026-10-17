@@ -281,3 +281,65 @@ abstract interface class OrderPhaseTransport {
     required OrderPhaseChange change,
   });
 }
+
+/// Quantity zero removes an item. Tokens prevent stale clients overwriting edits.
+class OrderItemChange {
+  const OrderItemChange({
+    required this.orderId,
+    required this.lineId,
+    required this.quantity,
+    required this.expectedRevision,
+    this.note,
+  });
+  final String orderId, lineId;
+  final int quantity, expectedRevision;
+  final String? note;
+  Map<String, Object?> toJson() => {
+    'orderId': orderId,
+    'lineId': lineId,
+    'quantity': quantity,
+    'expectedRevision': expectedRevision,
+    'note': note,
+  };
+  factory OrderItemChange.fromJson(Object? value) {
+    if (value is! Map ||
+        value.length != 5 ||
+        value['orderId'] is! String ||
+        !validOrderId(value['orderId']) ||
+        value['lineId'] is! String ||
+        !validOrderId(value['lineId']) ||
+        value['quantity'] is! int ||
+        value['quantity'] < 0 ||
+        value['quantity'] > 999 ||
+        value['expectedRevision'] is! int ||
+        value['expectedRevision'] < 1 ||
+        value['expectedRevision'] > 9007199254740991 ||
+        (value['note'] != null &&
+            (value['note'] is! String || value['note'].length > 300))) {
+      throw const FormatException('Invalid item change');
+    }
+    return OrderItemChange(
+      orderId: value['orderId'],
+      lineId: value['lineId'],
+      quantity: value['quantity'],
+      expectedRevision: value['expectedRevision'],
+      note: value['note'],
+    );
+  }
+}
+
+abstract interface class OrderItemServerStore {
+  Future<SharedOrderSnapshot> changeSharedItem(
+    String actor,
+    OrderItemChange change,
+  );
+}
+
+abstract interface class OrderItemTransport {
+  Future<SharedOrderSnapshot> changeSharedItem({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderItemChange change,
+  });
+}

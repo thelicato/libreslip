@@ -362,7 +362,8 @@ class OrderDeliveryEnvelope {
     }
     if (ticket['number'] is! int ||
         (ticket['number']! as int) < 1 ||
-        lines.isEmpty ||
+        (lines.isEmpty &&
+            content['version'] != NetworkProtocol.managedVersion) ||
         lines.length > NetworkProtocol.maxLines) {
       throw const FormatException('Delivery ticket is invalid');
     }

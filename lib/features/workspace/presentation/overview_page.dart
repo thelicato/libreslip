@@ -141,9 +141,7 @@ class _OverviewPageState extends State<OverviewPage> {
                 _WorkspaceCard(
                   width: width,
                   icon: Icons.receipt_long_outlined,
-                  title: widget.orders.featureSettings.managedOrdersEnabled
-                      ? l.orders
-                      : l.tickets,
+                  title: l.orders,
                   body: l.ticketsCardBody,
                   onTap: () => widget.onSelect(3),
                 ),

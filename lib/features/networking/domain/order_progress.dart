@@ -34,7 +34,7 @@ class OrderProgressSnapshot {
       orderId: _id(row['orderId']),
       orderRevision: _revision(row['orderRevision'], positive: true),
       progressRevision: _revision(row['progressRevision']),
-      quantities: _quantities(row['quantities']),
+      quantities: _quantities(row['quantities'], allowEmpty: true),
     );
   }
 }
@@ -166,8 +166,8 @@ int _revision(Object? value, {bool positive = false}) {
   return value;
 }
 
-Map<String, int> _quantities(Object? value) {
-  if (value is! Map || value.isEmpty || value.length > 200) {
+Map<String, int> _quantities(Object? value, {bool allowEmpty = false}) {
+  if (value is! Map || (!allowEmpty && value.isEmpty) || value.length > 200) {
     throw const FormatException('Invalid progress inventory');
   }
   final result = <String, int>{};

@@ -74,6 +74,7 @@ class OrderWorkspaceController extends ChangeNotifier {
       await merge();
       drafts = await _repository.loadDrafts();
       managedOrders = await _repository.loadManagedOrders();
+      tickets = await _repository.loadTickets();
     } finally {
       saving = false;
       notifyListeners();
@@ -137,6 +138,30 @@ class OrderWorkspaceController extends ChangeNotifier {
     } finally {
       drafts = await _repository.loadDrafts();
       managedOrders = await _repository.loadManagedOrders();
+      tickets = await _repository.loadTickets();
+    }
+  });
+
+  Future<bool> changeSavedItem(
+    ManagedOrder displayed,
+    String lineId,
+    int quantity, {
+    String? note,
+  }) => _perform(() async {
+    await flushWrites();
+    final store = _repository as OrderItemStore;
+    try {
+      await store.changeManagedItem(
+        displayed.id,
+        lineId,
+        quantity,
+        expectedRevision: displayed.revision,
+        note: note,
+      );
+    } finally {
+      drafts = await _repository.loadDrafts();
+      managedOrders = await _repository.loadManagedOrders();
+      tickets = await _repository.loadTickets();
     }
   });
 
@@ -623,7 +648,16 @@ class OrderWorkspaceController extends ChangeNotifier {
     bool requirePrintForDelivery = true,
   }) async {
     final draft = activeDraft;
-    if (saving || draft == null || draft.lines.isEmpty) return null;
+    if (saving || draft == null) return null;
+    if (draft.lines.isEmpty) {
+      final order = editingOrder;
+      if (order == null || order.lines.isEmpty) return null;
+      final saved = tickets
+          .where((t) => t.managedOrderId == order.id)
+          .firstOrNull;
+      if (saved == null || !await cancelAddition()) return null;
+      return saved;
+    }
     SavedTicket? ticket;
     final success = await _perform(() async {
       await flushWrites();

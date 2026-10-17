@@ -90,13 +90,7 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final labels = [
-      l.overview,
-      l.items,
-      l.compose,
-      widget.orders.featureSettings.managedOrdersEnabled ? l.orders : l.tickets,
-      l.settings,
-    ];
+    final labels = [l.overview, l.items, l.compose, l.orders, l.settings];
     const icons = [
       Icons.space_dashboard_outlined,
       Icons.grid_view_rounded,
@@ -333,7 +327,9 @@ class _ComposeActionBar extends StatelessWidget {
       final l = AppLocalizations.of(context);
       final connected = output?.printer.connected ?? false;
       final busy = controller.saving || printing.value;
-      final hasItems = controller.activeDraft?.lines.isNotEmpty ?? false;
+      final hasItems =
+          (controller.activeDraft?.lines.isNotEmpty ?? false) ||
+          (controller.editingOrder?.lines.isNotEmpty ?? false);
       return Material(
         color: Theme.of(context).colorScheme.surface,
         elevation: 3,
@@ -380,11 +376,7 @@ class _ComposeActionBar extends StatelessWidget {
                             ),
                       label: Text(
                         connected || printerRequired
-                            ? controller.activeDraft?.managedOrderId != null
-                                  ? l.printAdditions
-                                  : l.printTicket
-                            : controller.activeDraft?.managedOrderId != null
-                            ? l.saveAdditions
+                            ? l.printTicket
                             : l.saveOrder,
                       ),
                     );

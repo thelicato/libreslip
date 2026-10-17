@@ -34,7 +34,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchOrders => 'Search orders';
 
   @override
-  String get tickets => 'Tickets';
+  String get tickets => 'Orders';
 
   @override
   String get settings => 'Settings';
@@ -62,7 +62,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaliseWorkspace => 'Personalise your workspace';
 
   @override
-  String get workspaceTitle => 'From a thought to a ticket';
+  String get workspaceTitle => 'From a thought to a order';
 
   @override
   String get workspaceSubtitle => 'A place for each step of your order.';
@@ -121,11 +121,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refreshPrinterStatus => 'Refresh status';
 
   @override
-  String get statisticsTitle => 'Ticket activity';
+  String get statisticsTitle => 'Order activity';
 
   @override
   String get statisticsBody =>
-      'Counts saved tickets by creation date. No prices or sales are recorded.';
+      'Counts orders by creation date. No sales are recorded.';
 
   @override
   String get startDate => 'Start date';
@@ -140,13 +140,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearDateFilters => 'Clear dates';
 
   @override
-  String get savedTicketsStat => 'Saved tickets';
+  String get savedTicketsStat => 'Saved orders';
 
   @override
-  String get ticketItemsStat => 'Items on tickets';
+  String get ticketItemsStat => 'Items on orders';
 
   @override
-  String get averageItemsStat => 'Items per ticket';
+  String get averageItemsStat => 'Items per order';
 
   @override
   String get previewLabel => 'Workspace preview';
@@ -159,7 +159,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your preferences stay on this phone. No account. No cloud. No fuss.';
 
   @override
-  String get ticketHeader => 'Ticket heading';
+  String get ticketHeader => 'Order heading';
 
   @override
   String get ticketHeaderBody => 'Choose a name to make your workspace yours.';
@@ -171,7 +171,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get headingHint => 'For example, Corner & Co.';
 
   @override
-  String get editHeading => 'Edit ticket heading';
+  String get editHeading => 'Edit order heading';
 
   @override
   String get nameRequired => 'Enter a heading.';
@@ -256,7 +256,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composeBody =>
-      'Build orders with items, quantities and notes. Ticket creation and printing will be available in a future update.';
+      'Build orders with items, quantities and notes. Order creation and printing will be available in a future update.';
 
   @override
   String get itemsTitle => 'Your reusable items, close to hand.';
@@ -270,7 +270,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketsBody =>
-      'Saved tickets and explicit print attempts stay together in your local history.';
+      'Saved orders and explicit print attempts stay together in your local history.';
 
   @override
   String get backOverview => 'Back to overview';
@@ -371,7 +371,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyItemsBody =>
-      'Add reusable items to find them quickly while composing a ticket.';
+      'Add reusable items to find them quickly while composing a order.';
 
   @override
   String get noItemsFound => 'No items match this search.';
@@ -389,7 +389,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeItemBody =>
-      'Saved tickets keep their original snapshot. This item will disappear from new searches.';
+      'Saved orders keep their original snapshot. This item will disappear from new searches.';
 
   @override
   String get addToDraft => 'Add to draft';
@@ -455,7 +455,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryCoursesUnsupported =>
-      'This Server does not support course groups. Update the Server, then retry. Your ticket and its groups remain saved on this phone.';
+      'This Server does not support course groups. Update the Server, then retry. Your order and its groups remain saved on this phone.';
 
   @override
   String get orderReference => 'Order title / table';
@@ -465,7 +465,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderReferenceBody =>
-      'Give an order a title or table name. Shown on tickets and the Server board. Leave blank for numbered orders.';
+      'Give an order a title or table name. Shown on orders and the Server board. Leave blank for numbered orders.';
 
   @override
   String get orderNotes => 'Order notes';
@@ -475,7 +475,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderFieldsBody =>
-      'Choose which optional fields appear while composing a ticket.';
+      'Choose which optional fields appear while composing a order.';
 
   @override
   String get compactCompose => 'Compact Compose';
@@ -495,7 +495,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get draftEmptyBody =>
-      'Choose a reusable item. Your work is saved on this phone as you compose the ticket.';
+      'Choose a reusable item. Your work is saved on this phone as you compose the order.';
 
   @override
   String get decreaseQuantity => 'Decrease quantity';
@@ -516,10 +516,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeLine => 'Remove line';
 
   @override
-  String get saveTicket => 'Print ticket';
+  String get saveTicket => 'Print order';
 
   @override
-  String get ticketSaved => 'Ticket saved to history.';
+  String get ticketSaved => 'Order saved to history.';
 
   @override
   String get ticketNeedsItem => 'Add at least one item before printing.';
@@ -536,7 +536,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'LibreSlip could not open its local order database. Nothing has been reset or overwritten.';
 
   @override
-  String get emptyTicketsTitle => 'No saved tickets yet.';
+  String get emptyTicketsTitle => 'No saved orders yet.';
 
   @override
   String get emptyTicketsBody =>
@@ -550,7 +550,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetOrderNumberBody =>
-      'The next order will use number 1. Saved tickets and their print attempts will not be changed.';
+      'The next order will use number 1. Saved orders and their print attempts will not be changed.';
 
   @override
   String get orderNumberReset => 'Order numbering restarted at 1.';
@@ -566,7 +566,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ticketNumber(int number) {
-    return 'Ticket $number';
+    return 'Order $number';
   }
 
   @override
@@ -582,7 +582,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get viewTicket => 'View ticket';
+  String get viewTicket => 'View order';
 
   @override
   String get duplicateTicket => 'Duplicate as draft';
@@ -592,7 +592,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A new editable draft was created from this snapshot.';
 
   @override
-  String get ticketDetails => 'Ticket details';
+  String get ticketDetails => 'Order details';
 
   @override
   String get savedHeading => 'Saved heading';
@@ -604,7 +604,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get savedSnapshot => 'Saved snapshot';
 
   @override
-  String get savedSnapshotBody => 'Catalogue edits do not change this ticket.';
+  String get savedSnapshotBody => 'Catalogue edits do not change this order.';
 
   @override
   String get oneOff => 'One-off';
@@ -622,7 +622,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noteTooLong => 'This note is too long.';
 
   @override
-  String get searchTickets => 'Search tickets';
+  String get searchTickets => 'Search orders';
 
   @override
   String get printerSetup => 'Printer connection';
@@ -686,7 +686,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get testTicket => 'Print connection test';
 
   @override
-  String get sendingTestTicket => 'Sending test ticket…';
+  String get sendingTestTicket => 'Sending test order…';
 
   @override
   String get testTicketSent => 'Test bytes sent';
@@ -716,7 +716,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The test uses ESC/POS, feeds paper and never sends a cutter or cash-drawer command.';
 
   @override
-  String get ticketTemplate => 'Printed ticket';
+  String get ticketTemplate => 'Printed order';
 
   @override
   String get ticketTemplateBody =>
@@ -727,7 +727,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ticketTextSizesBody =>
-      'Choose a bounded size for each type of ticket content.';
+      'Choose a bounded size for each type of order content.';
 
   @override
   String get ticketHeadingSize => 'Heading';
@@ -745,19 +745,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get footerSize => 'Footer';
 
   @override
-  String get ticketFooter => 'Ticket footer';
+  String get ticketFooter => 'Order footer';
 
   @override
   String get ticketFooterHint => 'Optional, for example Prepared with care';
 
   @override
-  String get editFooter => 'Edit ticket footer';
+  String get editFooter => 'Edit order footer';
 
   @override
   String get footerTooLong => 'Use 120 characters or fewer.';
 
   @override
-  String get ticketLogo => 'Ticket logo';
+  String get ticketLogo => 'Order logo';
 
   @override
   String get ticketLogoBody =>
@@ -784,39 +784,39 @@ class AppLocalizationsEn extends AppLocalizations {
       'The logo could not be saved. Try another image.';
 
   @override
-  String get ticketLabel => 'ORDER TICKET';
+  String get ticketLabel => 'ORDER';
 
   @override
   String get lineNoteLabel => 'Note';
 
   @override
-  String get printTicket => 'Print ticket';
+  String get printTicket => 'Print order';
 
   @override
   String get reprintTicket => 'Print again';
 
   @override
-  String get sendQueuedTicket => 'Send queued ticket';
+  String get sendQueuedTicket => 'Send queued order';
 
   @override
   String get shareTicketPdf => 'Share PDF';
 
   @override
-  String get preparingTicket => 'Preparing ticket…';
+  String get preparingTicket => 'Preparing order…';
 
   @override
   String get connectBeforePrinting =>
       'Connect a printer in Settings before printing.';
 
   @override
-  String get printQueued => 'Ticket queued';
+  String get printQueued => 'Order queued';
 
   @override
   String get printQueuedBody =>
-      'Nothing has been sent. Connect the printer, then use Send queued ticket.';
+      'Nothing has been sent. Connect the printer, then use Send queued order.';
 
   @override
-  String get printTransmitted => 'Ticket bytes sent';
+  String get printTransmitted => 'Order bytes sent';
 
   @override
   String get printTransmittedBody =>
@@ -841,7 +841,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPrintAttempts =>
-      'This saved ticket has not been sent to a printer.';
+      'This saved order has not been sent to a printer.';
 
   @override
   String get printStatusQueued => 'Queued';
@@ -864,7 +864,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String ticketPdfSubject(int number) {
-    return 'LibreSlip ticket $number';
+    return 'LibreSlip order $number';
   }
 
   @override
@@ -876,32 +876,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'The print attempt could not be saved safely, so LibreSlip did not continue automatically.';
 
   @override
-  String get deleteTicket => 'Delete ticket';
+  String get deleteTicket => 'Delete order';
 
   @override
   String deleteTicketQuestion(int number) {
-    return 'Delete ticket $number?';
+    return 'Delete order $number?';
   }
 
   @override
   String get deleteTicketBody =>
-      'This saved ticket and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.';
+      'This saved order and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.';
 
   @override
-  String get deleteAllTickets => 'Delete all previous tickets';
+  String get deleteAllTickets => 'Delete all previous orders';
 
   @override
-  String get deleteAllTicketsQuestion => 'Delete all previous tickets?';
+  String get deleteAllTicketsQuestion => 'Delete all previous orders?';
 
   @override
   String get deleteAllTicketsBody =>
-      'All saved tickets and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.';
+      'All saved orders and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.';
 
   @override
-  String get ticketDeleted => 'Ticket deleted';
+  String get ticketDeleted => 'Order deleted';
 
   @override
-  String get allTicketsDeleted => 'Previous tickets deleted';
+  String get allTicketsDeleted => 'Previous orders deleted';
 
   @override
   String get portability => 'Import and export';
@@ -915,21 +915,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportConfigurationBody =>
-      'Includes language, appearance, printed ticket settings, order fields and logo.';
+      'Includes language, appearance, printed order settings, order fields and logo.';
 
   @override
   String get exportFullBackup => 'Export full backup';
 
   @override
   String get exportFullBackupBody =>
-      'Also includes reusable items, drafts, saved tickets, print attempts and referenced images.';
+      'Also includes reusable items, drafts, saved orders, print attempts and referenced images.';
 
   @override
   String get importArchive => 'Import ZIP';
 
   @override
   String get archivePrivacyWarning =>
-      'Exported ZIP files can contain private ticket notes and history. Store and share them carefully.';
+      'Exported ZIP files can contain private order notes and history. Store and share them carefully.';
 
   @override
   String get archivePairingWarning =>
@@ -957,16 +957,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String archiveContents(int items, int drafts, int tickets, int attempts) {
-    return '$items items, $drafts drafts, $tickets tickets and $attempts print attempts';
+    return '$items items, $drafts drafts, $tickets orders and $attempts print attempts';
   }
 
   @override
   String get configurationReplaceWarning =>
-      'This replaces the current settings and order-field options. Items and ticket history stay unchanged.';
+      'This replaces the current settings and order-field options. Items and order history stay unchanged.';
 
   @override
   String get backupReplaceWarning =>
-      'This replaces all settings, reusable items, drafts, ticket history and print attempts with the archive contents.';
+      'This replaces all settings, reusable items, drafts, order history and print attempts with the archive contents.';
 
   @override
   String get restoreArchive => 'Replace and restore';
@@ -994,11 +994,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get itemBreakdownBody =>
-      'Total quantities from saved ticket snapshots for the selected dates.';
+      'Total quantities from saved order snapshots for the selected dates.';
 
   @override
   String get noItemsInPeriod =>
-      'No items were added to saved tickets in this period.';
+      'No items were added to saved orders in this period.';
 
   @override
   String itemQuantitySummary(String name, int quantity) {
@@ -1025,7 +1025,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientModeBody =>
-      'Create, print and keep tickets locally. Pairing with a local Server is always optional.';
+      'Create, print and keep orders locally. Pairing with a local Server is always optional.';
 
   @override
   String get serverMode => 'Server';
@@ -1039,7 +1039,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get switchToServerBody =>
-      'Your Client items, composition and ticket history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.';
+      'Your Client items, composition and order history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.';
 
   @override
   String get switchToClientTitle => 'Switch to Client mode?';
@@ -1295,7 +1295,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryPendingBody =>
-      'This ticket is saved locally and will be sent automatically when the paired Server is reachable.';
+      'This order is saved locally and will be sent automatically when the paired Server is reachable.';
 
   @override
   String get deliveryDeliveredBody =>
@@ -1322,7 +1322,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get includeInServerOrdersBody =>
-      'When off, this item stays on the printed local ticket but is omitted from the optional Server order.';
+      'When off, this item stays on the printed local order but is omitted from the optional Server order.';
 
   @override
   String get localOnlyItem => 'Local only';
@@ -1356,7 +1356,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedOrdersBody =>
-      'Keep new orders available for later additions. Existing orders remain available when this option is disabled.';
+      'Keep orders available for editing. Each order stores only its current contents.';
 
   @override
   String get activeOrders => 'Active orders';
@@ -1366,17 +1366,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Save an order with Keep orders open enabled to start.';
 
   @override
-  String get newOrderKeptOpen =>
-      'This order will stay open for later additions.';
+  String get newOrderKeptOpen => 'This order stays open for editing.';
 
   @override
   String get addToOrder => 'Add items';
-
-  @override
-  String get fullOrderSnapshot => 'Full order at this revision';
-
-  @override
-  String get printAdditions => 'Print additions';
 
   @override
   String get finishCompositionFirst =>
@@ -1387,30 +1380,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeActiveOrderBody =>
-      'Stop adding to this order? Its saved tickets stay in history. This does not mark the Server order Done.';
+      'Stop adding to this order? Its saved orders stay in history. This does not mark the Server order Done.';
 
   @override
-  String get cancelAddition => 'Cancel additions';
+  String get cancelAddition => 'Cancel new items';
 
   @override
   String get cancelAdditionBody =>
-      'Discard the current additions? Previously saved items remain in the active order.';
+      'Discard the new items? Changes to saved items have already been applied.';
 
   @override
   String get deliveryUpdatesUnsupported =>
       'Update the Server to receive active orders and their additions, then retry this delivery.';
 
   @override
-  String get latestAdditions => 'Added in this revision';
-
-  @override
-  String orderRevision(int revision) {
-    return 'Revision $revision';
-  }
+  String get latestAdditions => 'New items';
 
   @override
   String get managedHistoryPending =>
-      'Deliver pending revisions before deleting their saved tickets.';
+      'Send this order to the Server before deleting it.';
 
   @override
   String get activeOrderLocal => 'This order stays on this phone.';
@@ -1420,7 +1408,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deliveryWaitingForRevision =>
-      'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.';
+      'Waiting for this order to be printed and sent. Open the order to print or retry delivery.';
 
   @override
   String get completeWholeSteps => 'Complete whole steps';
@@ -1434,7 +1422,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hideServerOrderDetailsBody =>
-      'Hide the revision, received and created times, heading and delivery guidance in order details.';
+      'Hide timestamps, heading and delivery guidance in order details.';
 
   @override
   String get completeStep => 'Complete step';
@@ -1545,7 +1533,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The Server has a newer version of this order. Your progress stays local. Restore a current backup to synchronise this order.';
 
   @override
-  String get printTicketPrices => 'Prices on tickets';
+  String get printTicketPrices => 'Prices on orders';
 
   @override
   String get printTicketPricesBody =>
@@ -1573,7 +1561,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productPricesBody =>
-      'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on tickets separately controls printed amounts.';
+      'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on orders separately controls printed amounts.';
 
   @override
   String get unitPrice => 'Unit price (optional)';
@@ -1636,9 +1624,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveOrder => 'Save order';
 
   @override
-  String get saveAdditions => 'Save additions';
-
-  @override
   String get orderSavedWithoutPrinting => 'Order saved without printing.';
 
   @override
@@ -1690,7 +1675,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedOrdersLocalCloseBody =>
-      'Hide this order from this Client’s active orders? Its saved tickets stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.';
+      'Hide this order from this Client’s active orders? Its saved orders stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.';
 
   @override
   String get sharedOrdersPaused =>
@@ -1747,7 +1732,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get orderEditHelp =>
-      'Moves apply immediately. Print or save to add new items.';
+      'Saved items update immediately. Save or print to add new items.';
 
   @override
   String get catalogueLastPhaseBody =>
@@ -1760,11 +1745,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pastOrders => 'Past orders';
 
   @override
-  String get orderPrintHistory => 'Print history';
+  String get printPreview => 'Print preview';
 
   @override
-  String get orderPrintHistoryBody =>
-      'Saved print snapshots for this order. Open one to reprint or recover a print attempt.';
+  String get itemEditFailed =>
+      'Change not confirmed. Refresh the order and check the Server connection.';
+
+  @override
+  String get itemEditUnsupported =>
+      'Update the Server to edit or remove saved items.';
+
+  @override
+  String get printSuperseded => 'Order updated';
+
+  @override
+  String get printSupersededBody =>
+      'The order has changed. Print the complete current order.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

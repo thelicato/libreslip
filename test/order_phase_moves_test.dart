@@ -127,7 +127,7 @@ void main() {
       workspace.activeDraft!.baseRevision,
       workspace.editingOrder!.revision,
     );
-    expect(workspace.tickets.single.lines.single.courseId, isNull);
+    expect(workspace.tickets.single.lines.single.courseId, phase);
     workspace.addCatalogueItemInCourse(workspace.items.single, null);
     expect(workspace.activeDraft!.lines.single.courseId, isNull);
     final snapshot = await repository.createPortableSnapshot();
@@ -166,7 +166,7 @@ void main() {
     expect(f.b.order.lines.any((line) => line.name == 'Coffee'), isFalse);
     expect(f.a.workspace.activeDraft!.lines.single.courseId, firstNew);
     expect(f.a.workspace.activeDraft!.baseRevision, f.a.order.revision);
-    expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    expect(f.a.workspace.tickets.single.lines.first.courseId, secondNew);
     final ticket = (await f.a.workspace.saveActiveTicket(
       heading: 'Kitchen',
       requirePrintForDelivery: false,
@@ -279,7 +279,7 @@ void main() {
     expect((await repository.loadPrintJobs()).single.payload, job.payload);
     expect(
       (await repository.loadTickets()).single.lines.first.courseId,
-      isNull,
+      phases.last.id,
     );
     workspace.dispose();
     await repository.close();
@@ -294,19 +294,19 @@ void main() {
     expect(workspace.managedOrders.single.lines.first.courseId, phases.last.id);
     expect(workspace.activeDraft!.activeCourseId, phases.first.id);
     final addition = await workspace.saveActiveTicket(heading: 'Kitchen');
-    expect(addition!.printLines.single.id, unsaved.id);
-    expect(addition.printLines.single.courseId, phases.first.id);
+    expect(addition!.printLines.last.id, unsaved.id);
+    expect(addition.printLines.last.courseId, phases.first.id);
     expect(
       workspace.tickets
           .firstWhere((t) => t.id == ticket.id)
           .lines
           .first
           .courseId,
-      isNull,
+      phases.last.id,
     );
 
     final snapshot = await repository.createPortableSnapshot();
-    expect(snapshot['schemaVersion'], 18);
+    expect(snapshot['schemaVersion'], SqliteOrderRepository.databaseVersion);
     final fresh = SqliteOrderRepository(
       factory: databaseFactoryFfiNoIsolate,
       databasePath: '${dir.path}/fresh.db',
@@ -345,7 +345,7 @@ void main() {
           .lines
           .first
           .courseId,
-      isNull,
+      phases.last.id,
     );
     expect((await fresh.loadPrintJobs()).single.payload, job.payload);
     final tampered = jsonDecode(jsonEncode(snapshot)) as Map<String, dynamic>;
@@ -358,6 +358,8 @@ void main() {
     expect((await fresh.loadManagedOrders()).single.lines.first.quantity, 3);
     final downgraded = jsonDecode(jsonEncode(snapshot)) as Map<String, dynamic>;
     downgraded['schemaVersion'] = 17;
+    ((downgraded['tables'] as Map)['ticket_lines'] as List).first['course_id'] =
+        null;
     await expectLater(
       fresh.replaceWithPortableSnapshot(downgraded),
       throwsA(isA<OrderStorageException>()),
@@ -385,8 +387,8 @@ void main() {
     expect(f.b.order.deliveredQuantity('soup'), 1);
     expect(f.a.order.lines.first.price, history.lines.first.price);
     expect(f.b.order.lines.first.price, isNull);
-    expect(f.b.workspace.tickets, isEmpty);
-    expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    expect(f.b.workspace.tickets, hasLength(1));
+    expect(f.a.workspace.tickets.single.lines.first.courseId, phases.last.id);
     expect(f.b.workspace.activeDraft!.activeCourseId, phases.first.id);
     expect(f.b.workspace.activeDraft!.lines.single.id, draftLine.id);
     expect(f.b.workspace.activeDraft!.baseRevision, f.b.order.revision);
@@ -394,7 +396,7 @@ void main() {
       heading: 'Kitchen',
       requirePrintForDelivery: false,
     );
-    expect(added!.printLines.single.courseId, phases.first.id);
+    expect(added!.printLines.last.courseId, phases.first.id);
     await f.b.delivery.ticketReady(added.id);
     await f.syncBoth();
     expect(f.a.order.lines.first.courseId, phases.last.id);
@@ -466,7 +468,7 @@ void main() {
     final server = (await f.server.loadServerOrders()).single;
     expect(server.lines.first.courseId, phases.last.id);
     expect(server.lines.where((l) => l.name == 'Coffee'), hasLength(1));
-    expect(f.b.workspace.tickets.single.lines.first.courseId, isNull);
+    expect(f.b.workspace.tickets.single.lines.first.courseId, phases.last.id);
   });
 
   test('lost move acknowledgement recovers; duplicate retry and stale concurrent edits cannot overwrite newer placements', () async {

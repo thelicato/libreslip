@@ -213,9 +213,7 @@ class SavedTicket {
   final String? managedOrderId;
   final int revision;
   final List<String> additionLineIds;
-  List<TicketLine> get printLines => revision > 1
-      ? lines.where((line) => additionLineIds.contains(line.id)).toList()
-      : lines;
+  List<TicketLine> get printLines => lines;
 
   int get itemCount => lines.fold(0, (total, line) => total + line.quantity);
 }
@@ -310,7 +308,7 @@ class OrderStorageException implements Exception {
   String toString() => message;
 }
 
-/// The current order is independent of immutable ticket history and the editor.
+/// Current order contents and delivery state, independent of unsaved additions.
 class ManagedOrder {
   const ManagedOrder({
     required this.id,
@@ -374,7 +372,7 @@ List<TicketLine> decodeOrderLines(Object? source) {
     throw const FormatException('Invalid managed lines');
   }
   final rows = jsonDecode(source);
-  if (rows is! List || rows.isEmpty || rows.length > 200) {
+  if (rows is! List || rows.length > 200) {
     throw const FormatException('Invalid managed lines');
   }
   final ids = <String>{};
@@ -499,5 +497,16 @@ abstract interface class OrderPhaseStore {
     String lineId,
     String? courseId, {
     required int expectedRevision,
+  });
+}
+
+/// Edits the current order using a concurrency token, without retaining copies.
+abstract interface class OrderItemStore {
+  Future<void> changeManagedItem(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedRevision,
+    String? note,
   });
 }

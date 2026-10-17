@@ -20,7 +20,7 @@ void main() {
     ('en', const Size(915, 412), 1.0),
   ]) {
     testWidgets(
-      'Orders manages additions and restores Tickets labels $language $size text $scale',
+      'Orders manages additions and restores Orders labels $language $size text $scale',
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
@@ -116,8 +116,9 @@ void main() {
           (await env.repository.loadTickets())
               .firstWhere((ticket) => ticket.id == saved.id)
               .lines,
-          hasLength(1),
+          hasLength(2),
         );
+        expect(addition.id, saved.id);
         expect(addition.revision, 2);
         await tap(navigation);
         expect(find.byKey(ValueKey('view-order-$id')), findsOneWidget);
@@ -127,22 +128,10 @@ void main() {
           findsNothing,
         );
         await tap(find.byKey(ValueKey('view-order-$id')));
-        await tap(find.byKey(const ValueKey('view-print-history')));
-        expect(
-          find.byKey(const ValueKey('order-print-history')),
-          findsOneWidget,
-        );
-        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsOneWidget);
-        expect(
-          find.byKey(ValueKey('view-ticket-${addition.id}')),
-          findsOneWidget,
-        );
-        await tap(find.byKey(ValueKey('view-ticket-${saved.id}')));
-        expect(
-          find.byKey(const ValueKey('view-print-history')),
-          findsOneWidget,
-        );
-        for (var i = 0; i < 3; i++) {
+        await tap(find.byKey(const ValueKey('preview-order')));
+        expect(find.byKey(const ValueKey('order-print-history')), findsNothing);
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
+        for (var i = 0; i < 2; i++) {
           await tap(
             find
                 .widgetWithText(
@@ -161,7 +150,7 @@ void main() {
         );
         await tap(find.descendant(of: toggle, matching: find.byType(Switch)));
         expect(env.controller.featureSettings.managedOrdersEnabled, isFalse);
-        expect(navigationLabel(), language == 'it' ? 'Comande' : 'Tickets');
+        expect(navigationLabel(), language == 'it' ? 'Ordini' : 'Orders');
         await tap(navigation);
         expect(find.byKey(ValueKey('view-order-$id')), findsOneWidget);
         expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
@@ -177,15 +166,11 @@ void main() {
         );
         await tap(confirm);
         expect(env.controller.managedOrders, isEmpty);
-        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
-        expect(
-          find.byKey(ValueKey('view-ticket-${addition.id}')),
-          findsOneWidget,
-        );
+        expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsOneWidget);
         expect(find.byType(AlertDialog), findsNothing);
         expect(
           (await env.repository.loadTickets()).map((ticket) => ticket.id),
-          containsAll([saved.id, addition.id]),
+          [saved.id],
         );
         expect(tester.takeException(), isNull);
       },
@@ -214,7 +199,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('nav-3')));
     await tester.pumpAndSettle();
-    expect(f.b.workspace.tickets, isEmpty);
+    expect(f.b.workspace.tickets, hasLength(1));
     final view = find.byKey(ValueKey('view-order-${f.b.order.id}'));
     expect(view, findsOneWidget);
     final search = find.byKey(const ValueKey('ticket-search'));

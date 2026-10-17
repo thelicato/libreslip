@@ -70,11 +70,13 @@ class TicketOutputController extends ChangeNotifier {
         requestId: createLocalId(),
         ticketId: ticket.id,
         payload: payload,
+        expectedRevision: ticket.revision,
       );
       await _refresh();
       return await _send(job);
     } catch (_) {
       lastErrorCode = 'storage';
+      await _refresh();
       return TicketPrintResult.failed;
     } finally {
       busy = false;
@@ -96,6 +98,7 @@ class TicketOutputController extends ChangeNotifier {
       return await _send(job);
     } catch (_) {
       lastErrorCode = 'storage';
+      await _refresh();
       return TicketPrintResult.failed;
     } finally {
       busy = false;

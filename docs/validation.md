@@ -1,5 +1,24 @@
 # Validation evidence
 
+## Current orders, complete printing and saved-item removal, 17 October 2026
+
+Validated step 20 with `VERSION` unchanged at 1.13.0. SQLite schema 19 keeps one current saved copy per order and private save-operation receipts for interruption recovery. Settings format 11 and configuration document version 4 are unchanged. The interface uses Orders throughout; internal counters only protect concurrent edits and delivery retries.
+
+| Area | Evidence |
+| --- | --- |
+| Formatting and analysis | All 116 Dart files passed formatting checks; final `flutter analyze --no-pub` reported no issues and `git diff --check` passed. `VERSION` and `pubspec.lock` are unchanged. |
+| Automated regression | All 276 tests passed with preview capture enabled. The 43 focused current-order, shared-order, phase and printing checks also passed after the concurrency correction. Existing persistence, migrations, interrupted printing, full backups and failed/interrupted restore checks pass. |
+| One saved copy | Repeated saves keep the same saved identifier and original creation time. The current contents replace earlier contents; order counts do not increase on edits. Tests verify save idempotence after replacement, process restart, transactional quantity/note/removal edits and stale-token rejection. Print history and revision labels are removed. |
+| Migration and restore | A schema 18 fixture containing an earlier saved copy and queued print upgrades to one current copy. Print-attempt and private delivery references are retargeted, obsolete queued bytes become unsendable and their outcomes remain available. Older schema migrations pass. Current copies, phases, quantities, captured prices and delivered counts round-trip through portable replacement and full backup restore. Invalid current inventories and legacy phase mismatches fail validation without replacing usable data. |
+| Complete printing | All current items appear in previews, ESC/POS and PDFs, with full enabled prices or clearly labelled incomplete subtotals. Additions headings and revision numbers are absent. SQLite rejects a print request with an obsolete content token and rejects sending superseded queued attempts. Empty orders cannot be printed. Existing uncertain transmission and process-interruption recovery tests pass. |
+| Shared item edits | Both Clients receive quantity changes, note edits, removals and an empty final inventory. Remaining deliveries are preserved and clamped after reductions. A real authenticated pinned HTTPS Server accepts item edits. Offline attempts, unsupported Servers and stale actions preserve confirmed local content; a lost acknowledgement recovers through the shared feed. Multiple Servers retain separate identities and routing. |
+| Concurrent additions | A Client with a frozen print-gated addition receives another Client's confirmed removal, keeps its private pending item and prints the current saved copy. Delivering that frozen addition does not resurrect the removed item or replay older values. Server append positions tolerate deletion gaps. |
+| UI and render review | Actual saved-item plus, minus and remove buttons pass in wide English, Italian at 320 pixels and 2x text, and dark landscape. Inspected one-card Orders without revision metadata, matching controls for saved and new rows, and the full Italian preview with every phase. Extracted a current priced Italian PDF: all four items and three currency subtotals remain present, without additions or revision labels. |
+| Source and Android preview | Source ZIP verified under `LibreSlip/` with exclusions and SHA-256 checksums. Fresh Android Debug APK uses `io.thelicato.libreslip`, version 1.13.0, build 1, minSdk 34 and targetSdk 36. Flutter/Gradle APKs match and APK Signature Scheme v2 verifies. This is a development-key preview. |
+| Limitations | Saved-item edits apply immediately; cancelling new selections does not undo them. Shared saved-item edits need a reachable Server advertising item-edit capability 1, and all Clients must be updated. Local order and private-item edits remain available offline. No new physical phone, multi-device LAN or physical printer verification was performed. |
+
+Reproduce with `flutter test --dart-define=LIBRESLIP_CAPTURE_PREVIEWS=true`. Focused checks use `flutter test test/latest_orders_test.dart test/shared_orders_test.dart test/order_phase_moves_test.dart test/ticket_output_test.dart`.
+
 ## Single order cards and catalogue, 12 October 2026
 
 Validated step 19 with `VERSION` unchanged at 1.13.0. This is a presentation change: storage, settings, archive, print documents and network versions are unchanged. Existing saved revisions and print jobs retain their original identifiers and contents.

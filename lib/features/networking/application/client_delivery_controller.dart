@@ -79,10 +79,14 @@ class ClientDeliveryController extends ChangeNotifier {
       .length;
 
   ClientDelivery? deliveryForTicket(String ticketId) {
-    for (final delivery in deliveries) {
-      if (delivery.ticketId == ticketId) return delivery;
-    }
-    return null;
+    final matches = deliveries.where((d) => d.ticketId == ticketId).toList();
+    if (matches.isEmpty) return null;
+    final pending =
+        matches
+            .where((d) => d.status != ClientDeliveryStatus.delivered)
+            .toList()
+          ..sort((a, b) => a.envelope.revision.compareTo(b.envelope.revision));
+    return pending.firstOrNull ?? matches.first;
   }
 
   bool isSending(String deliveryId) => _sendingIds.contains(deliveryId);

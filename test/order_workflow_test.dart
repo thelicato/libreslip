@@ -107,7 +107,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Reset order number?'), findsOneWidget);
       expect(
-        find.textContaining('Saved tickets and their print attempts'),
+        find.textContaining('Saved orders and their print attempts'),
         findsOneWidget,
       );
       await tester.tap(
@@ -119,11 +119,11 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('nav-3')));
       await tester.pumpAndSettle();
-      expect(find.text('Ticket 1'), findsOneWidget);
+      expect(find.text('Order 1'), findsOneWidget);
       expect(find.text('Table 4'), findsOneWidget);
       expect(find.textContaining('Mushroom toastie'), findsOneWidget);
       expect(find.text('Duplicate as draft'), findsNothing);
-      await tester.tap(find.text('Ticket 1'));
+      await tester.tap(find.text('Order 1'));
       await tester.pumpAndSettle();
       expect(
         find.descendant(
@@ -261,12 +261,12 @@ void main() {
         orders.addCatalogueItem(orders.items.single);
         await tester.pumpAndSettle();
         expect(
-          find.text(language == 'it' ? 'Salva aggiunte' : 'Save additions'),
+          find.text(language == 'it' ? 'Salva ordine' : 'Save order'),
           findsOneWidget,
         );
         await tester.tap(find.byKey(const ValueKey('print-ticket')));
         await tester.pumpAndSettle();
-        expect(orders.tickets, hasLength(2));
+        expect(orders.tickets, hasLength(1));
         expect(orders.managedOrders.single.revision, 2);
         expect(orders.managedOrders.single.lines, hasLength(2));
         expect(output.jobs, isEmpty);
@@ -285,7 +285,7 @@ void main() {
               .onPressed,
           isNull,
         );
-        expect(orders.tickets, hasLength(2));
+        expect(orders.tickets, hasLength(1));
         expect(tester.takeException(), isNull);
       },
     );
@@ -498,7 +498,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(orders.tickets, isEmpty);
       expect(orders.nextOrderNumber, 3);
-      expect(find.text('No saved tickets yet.'), findsOneWidget);
+      expect(find.text('No saved orders yet.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

@@ -115,7 +115,7 @@ void main() {
     );
 
     testWidgets(
-      'additions total only new items and complete prices show Total $language',
+      'updated orders print every item and the complete total $language',
       (tester) async {
         late TicketDocument addition;
         late TicketDocument first;
@@ -156,11 +156,8 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(addition.lines, hasLength(1));
-        expect(
-          addition.additionLabel,
-          language == 'it' ? 'Aggiunte' : 'Additions',
-        );
+        expect(addition.lines, hasLength(_ticket.lines.length));
+        expect(addition.additionLabel, '');
         expect(first.additionLabel, isEmpty);
         expect(
           find.textContaining(
@@ -168,25 +165,30 @@ void main() {
           ),
           findsNothing,
         );
-        expect(addition.priceSummary!.totals, hasLength(1));
+        expect(addition.priceSummary!.totals, hasLength(3));
         expect(
           addition.priceSummary!.label,
-          language == 'it' ? 'Totale aggiunte' : 'Additions total',
+          language == 'it'
+              ? 'Subtotale degli articoli con prezzo'
+              : 'Subtotal of priced items',
         );
-        expect(addition.priceSummary!.notes, isEmpty);
+        expect(addition.priceSummary!.notes, isNotEmpty);
         expect(
           first.priceSummary!.label,
           language == 'it' ? 'Totale' : 'Total',
         );
-        expect(first.priceSummary!.totals, addition.priceSummary!.totals);
+        expect(
+          first.priceSummary!.totals,
+          isNot(addition.priceSummary!.totals),
+        );
         final bytes = (await tester.runAsync(
           () => const EscPosTicketEncoder().encode(addition),
         ))!;
         expect(
           String.fromCharCodes(bytes),
-          contains(language == 'it' ? 'Totale aggiunte' : 'Additions total'),
+          contains(language == 'it' ? 'Totale' : 'Total'),
         );
-        expect(String.fromCharCodes(bytes), isNot(contains('GBP')));
+        expect(String.fromCharCodes(bytes), contains('GBP'));
         expect(tester.takeException(), isNull);
       },
     );

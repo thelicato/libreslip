@@ -217,7 +217,7 @@ void main() {
         expect(f.a.order.lines.first.courseId, divider.id);
         await f.b.sync.synchronise();
         expect(f.b.order.lines.first.courseId, divider.id);
-        expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+        expect(f.a.workspace.tickets.single.lines.first.courseId, divider.id);
         // A button captured before another Client's move must not overwrite it.
         final staleUp = tester
             .widget<IconButton>(
@@ -273,6 +273,31 @@ void main() {
         await tester.pumpAndSettle();
         expect(f.a.workspace.activeDraft!.lines.single.courseId, divider.id);
         expect(find.byKey(ValueKey('order-line-${added.id}')), findsOneWidget);
+        for (final (key, count) in [
+          ('line-plus-water', 3),
+          ('line-minus-water', 2),
+        ]) {
+          final button = find.byKey(ValueKey(key));
+          await tester.ensureVisible(button);
+          await tester.pumpAndSettle();
+          await tester.tap(button);
+          await tester.pumpAndSettle();
+          expect(
+            f.a.order.lines.singleWhere((l) => l.id == 'water').quantity,
+            count,
+          );
+        }
+        final remove = find.byKey(const ValueKey('remove-line-water'));
+        await tester.ensureVisible(remove);
+        await tester.pumpAndSettle();
+        await tester.tap(remove);
+        await tester.pumpAndSettle();
+        expect(f.a.order.lines.any((l) => l.id == 'water'), isFalse);
+        await f.b.sync.synchronise();
+        await tester.pumpAndSettle();
+        expect(f.b.order.lines.any((l) => l.id == 'water'), isFalse);
+        expect(f.a.workspace.activeDraft!.lines.single.id, added.id);
+
         if (capture) {
           await _capture(
             tester,

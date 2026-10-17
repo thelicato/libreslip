@@ -70,9 +70,10 @@ class ComposePageState extends State<ComposePage> {
         grouped: widget.controller.courseControlsAvailable,
         preparationNotesEnabled:
             widget.controller.featureSettings.preparationNotesEnabled,
-        onQuantityChanged: widget.controller.setQuantity,
+        onQuantityChanged: (id, quantity) =>
+            _changeItem(id, quantity, displayedOrder),
         onEditNote: _editPreparationNote,
-        onRemoveLine: widget.controller.removeLine,
+        onRemoveLine: (id) => _changeItem(id, 0, displayedOrder),
         onLineCourseChanged: (id, course) =>
             _moveLine(id, course, displayedOrder),
         onSavedIncrement: _incrementSaved,
@@ -100,10 +101,7 @@ class ComposePageState extends State<ComposePage> {
               widget.printing.value)
             const SizedBox(height: 18),
           if (draft.managedOrderId != null) ...[
-            ManagedOrderComposer(
-              controller: widget.controller,
-              busy: widget.printing.value || widget.controller.saving,
-            ),
+            ManagedOrderComposer(controller: widget.controller, busy: busy),
             const SizedBox(height: 12),
           ],
           if (widget.delivery != null &&
@@ -112,7 +110,7 @@ class ComposePageState extends State<ComposePage> {
             ServerDestinationSelector(
               controller: widget.delivery!,
               order: widget.controller.editingOrder,
-              busy: widget.printing.value || widget.controller.saving,
+              busy: busy,
             ),
             const SizedBox(height: 12),
           ],
@@ -132,6 +130,7 @@ class ComposePageState extends State<ComposePage> {
                   items: widget.controller.items,
                   categories: widget.controller.categories,
                   draft: draft.copyWith(
+                    lines: [...?displayedOrder?.lines, ...draft.lines],
                     activeCourseId: draft.courses.lastOrNull?.id,
                     clearActiveCourse: draft.courses.isEmpty,
                   ),
@@ -146,24 +145,19 @@ class ComposePageState extends State<ComposePage> {
                   dividerControl: widget.controller.courseControlsAvailable
                       ? CourseComposer(
                           controller: widget.controller,
-                          busy:
-                              widget.controller.saving || widget.printing.value,
+                          busy: busy,
                         )
                       : null,
                   grouped: widget.controller.courseControlsAvailable,
-                  busy: widget.controller.saving || widget.printing.value,
+                  busy: busy,
                   query: _query,
                   categoryId: _categoryId,
                   onQueryChanged: (value) => setState(() => _query = value),
                   onCategoryChanged: (value) =>
                       setState(() => _categoryId = value),
                   onIncrement: _addToLastPhase,
-                  onDecrement: (line) => line.quantity > 1
-                      ? widget.controller.setQuantity(
-                          line.id,
-                          line.quantity - 1,
-                        )
-                      : widget.controller.removeLine(line.id),
+                  onDecrement: (line) =>
+                      _changeItem(line.id, line.quantity - 1, displayedOrder),
                   onEditReference: () => _editReference(draft),
                   onEditOrderNote: () => _editOrderNote(draft),
                   onEditNote: _editPreparationNote,
@@ -172,6 +166,7 @@ class ComposePageState extends State<ComposePage> {
               }
               final split = constraints.maxWidth >= 860;
               final catalogue = _CataloguePanel(
+                busy: busy,
                 items: widget.controller.items,
                 categories: widget.controller.categories,
                 query: _query,
@@ -196,13 +191,10 @@ class ComposePageState extends State<ComposePage> {
                         orderNotesEnabled: true,
                       ),
                 dividerControl: widget.controller.courseControlsAvailable
-                    ? CourseComposer(
-                        controller: widget.controller,
-                        busy: widget.controller.saving || widget.printing.value,
-                      )
+                    ? CourseComposer(controller: widget.controller, busy: busy)
                     : null,
                 grouped: widget.controller.courseControlsAvailable,
-                busy: widget.controller.saving || widget.printing.value,
+                busy: busy,
                 standalone: split,
                 onReferenceChanged: widget.controller.setReference,
                 onOrderNoteChanged: widget.controller.setOrderNote,
@@ -230,18 +222,71 @@ class ComposePageState extends State<ComposePage> {
     },
   );
 
-  void _addToLastPhase(CatalogueItem item) =>
-      widget.controller.addCatalogueItemInCourse(
-        item,
-        widget.controller.activeDraft?.courses.lastOrNull?.id,
-      );
-
-  void _incrementSaved(TicketLine line) {
-    final item = widget.controller.items
-        .where((item) => item.id == line.catalogueItemId)
+  void _addToLastPhase(CatalogueItem item) {
+    final course = widget.controller.activeDraft?.courses.lastOrNull?.id;
+    final order = widget.controller.editingOrder;
+    final saved = order?.lines
+        .where((l) => l.catalogueItemId == item.id && l.courseId == course)
         .firstOrNull;
-    if (item != null) {
-      widget.controller.addCatalogueItemInCourse(item, line.courseId);
+    if (saved != null) {
+      _changeItem(saved.id, saved.quantity + 1, order);
+    } else {
+      widget.controller.addCatalogueItemInCourse(item, course);
+    }
+  }
+
+  void _incrementSaved(TicketLine line) =>
+      _changeItem(line.id, line.quantity + 1, widget.controller.editingOrder);
+
+  Future<void> _changeItem(
+    String lineId,
+    int quantity,
+    ManagedOrder? order, {
+    String? note,
+  }) async {
+    final line = order?.lines.where((l) => l.id == lineId).firstOrNull;
+    if (line == null) {
+      if (quantity == 0) {
+        widget.controller.removeLine(lineId);
+      } else {
+        widget.controller.setQuantity(lineId, quantity);
+        if (note != null) widget.controller.setPreparationNote(lineId, note);
+      }
+      return;
+    }
+    final l = AppLocalizations.of(context);
+    String? error;
+    try {
+      if (order!.destinationId != null && line.sendToServer) {
+        if (widget.sharedOrders == null) {
+          throw const ClientTransportException('unsupported_item_edits');
+        }
+        await widget.sharedOrders!.changeItem(
+          order,
+          lineId,
+          quantity,
+          note: note,
+        );
+      } else if (!await widget.controller.changeSavedItem(
+        order,
+        lineId,
+        quantity,
+        note: note,
+      )) {
+        error = l.itemEditFailed;
+      }
+    } on ClientTransportException catch (e) {
+      error = e.code == 'unsupported_item_edits'
+          ? l.itemEditUnsupported
+          : e.code == 'phase_move_pending'
+          ? l.phaseMovePending
+          : l.itemEditFailed;
+    } catch (_) {
+      error = l.itemEditFailed;
+    }
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
     }
   }
 
@@ -289,6 +334,7 @@ class ComposePageState extends State<ComposePage> {
 
   Future<void> _editPreparationNote(TicketLine line) async {
     final l = AppLocalizations.of(context);
+    final displayedOrder = widget.controller.editingOrder;
     final input = TextEditingController(text: line.preparationNote);
     final note = await showDialog<String>(
       context: context,
@@ -319,7 +365,9 @@ class ComposePageState extends State<ComposePage> {
     );
     await Future<void>.delayed(const Duration(milliseconds: 400));
     input.dispose();
-    if (note != null) widget.controller.setPreparationNote(line.id, note);
+    if (note != null) {
+      await _changeItem(line.id, line.quantity, displayedOrder, note: note);
+    }
   }
 
   Future<void> _editReference(OrderDraft draft) async {
@@ -435,7 +483,8 @@ class ComposePageState extends State<ComposePage> {
           .showSnackBar(SnackBar(content: Text(l.connectBeforePrinting)));
       return;
     }
-    if (widget.controller.activeDraft?.lines.isEmpty ?? true) {
+    if ((widget.controller.activeDraft?.lines.isEmpty ?? true) &&
+        (widget.controller.editingOrder?.lines.isEmpty ?? true)) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.ticketNeedsItem)));
       return;
@@ -951,6 +1000,7 @@ class _CompactCatalogueRow extends StatelessWidget {
 
 class _CataloguePanel extends StatelessWidget {
   const _CataloguePanel({
+    required this.busy,
     required this.items,
     required this.categories,
     required this.query,
@@ -971,6 +1021,7 @@ class _CataloguePanel extends StatelessWidget {
   final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<CatalogueItem> onAdd;
   final String? destinationHint;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -1037,7 +1088,7 @@ class _CataloguePanel extends StatelessWidget {
                   child: InkWell(
                     key: ValueKey('compose-item-${item.id}'),
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () => onAdd(item),
+                    onTap: busy ? null : () => onAdd(item),
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Row(
@@ -1223,8 +1274,6 @@ class _OrderLines extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final savedIds =
-        savedOrder?.lines.map((line) => line.id).toSet() ?? <String>{};
     final lines = [...?savedOrder?.lines, ...draft.lines];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1235,8 +1284,8 @@ class _OrderLines extends StatelessWidget {
             _OrderLineCard(
               line: line,
               busy: busy,
-              submitted: savedIds.contains(line.id),
-              isAddition: savedOrder != null && !savedIds.contains(line.id),
+              submitted: false,
+              isAddition: false,
               preparationNotesEnabled: preparationNotesEnabled,
               coursePicker: grouped && draft.courses.isNotEmpty
                   ? _LineDividerMoves(
@@ -1348,6 +1397,7 @@ class _OrderLineCard extends StatelessWidget {
               ),
               if (!submitted)
                 IconButton(
+                  key: ValueKey('remove-line-${line.id}'),
                   onPressed: busy ? null : onRemove,
                   tooltip: l.removeLine,
                   icon: const Icon(Icons.close_rounded),

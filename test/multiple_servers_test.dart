@@ -61,7 +61,7 @@ void main() {
     final old = (await client.repository.loadTickets()).firstWhere(
       (t) => t.id == first.id,
     );
-    expect(old.lines, hasLength(1));
+    expect(old.lines, hasLength(2));
     await client.delivery.unpair(f.firstId);
     expect(client.delivery.servers.single.id, f.secondId);
     expect(client.secrets.tokens.containsKey(f.firstId), isFalse);
@@ -86,7 +86,7 @@ void main() {
     addTearDown(secondClient.dispose);
     await secondClient.sync.synchronise();
     expect(secondClient.workspace.managedOrders, hasLength(2));
-    expect(await secondClient.repository.loadTickets(), isEmpty);
+    expect(await secondClient.repository.loadTickets(), hasLength(2));
     final kitchen = secondClient.workspace.managedOrders.firstWhere(
       (o) => o.destinationId == f.firstId,
     );
@@ -248,7 +248,7 @@ void main() {
     await refresh;
     expect(other.workspace.managedOrders, hasLength(2));
     expect(other.sync.serverErrors, isEmpty);
-    expect(await other.repository.loadTickets(), isEmpty);
+    expect(await other.repository.loadTickets(), hasLength(2));
   });
 
   test('schema 16 migration and restart preserve the selected Server and all subsequent connections; backups exclude pairing', () async {

@@ -151,7 +151,7 @@ abstract class AppLocalizations {
   /// No description provided for @tickets.
   ///
   /// In en, this message translates to:
-  /// **'Tickets'**
+  /// **'Orders'**
   String get tickets;
 
   /// No description provided for @settings.
@@ -205,7 +205,7 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceTitle.
   ///
   /// In en, this message translates to:
-  /// **'From a thought to a ticket'**
+  /// **'From a thought to a order'**
   String get workspaceTitle;
 
   /// No description provided for @workspaceSubtitle.
@@ -313,13 +313,13 @@ abstract class AppLocalizations {
   /// No description provided for @statisticsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Ticket activity'**
+  /// **'Order activity'**
   String get statisticsTitle;
 
   /// No description provided for @statisticsBody.
   ///
   /// In en, this message translates to:
-  /// **'Counts saved tickets by creation date. No prices or sales are recorded.'**
+  /// **'Counts orders by creation date. No sales are recorded.'**
   String get statisticsBody;
 
   /// No description provided for @startDate.
@@ -349,19 +349,19 @@ abstract class AppLocalizations {
   /// No description provided for @savedTicketsStat.
   ///
   /// In en, this message translates to:
-  /// **'Saved tickets'**
+  /// **'Saved orders'**
   String get savedTicketsStat;
 
   /// No description provided for @ticketItemsStat.
   ///
   /// In en, this message translates to:
-  /// **'Items on tickets'**
+  /// **'Items on orders'**
   String get ticketItemsStat;
 
   /// No description provided for @averageItemsStat.
   ///
   /// In en, this message translates to:
-  /// **'Items per ticket'**
+  /// **'Items per order'**
   String get averageItemsStat;
 
   /// No description provided for @previewLabel.
@@ -385,7 +385,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketHeader.
   ///
   /// In en, this message translates to:
-  /// **'Ticket heading'**
+  /// **'Order heading'**
   String get ticketHeader;
 
   /// No description provided for @ticketHeaderBody.
@@ -409,7 +409,7 @@ abstract class AppLocalizations {
   /// No description provided for @editHeading.
   ///
   /// In en, this message translates to:
-  /// **'Edit ticket heading'**
+  /// **'Edit order heading'**
   String get editHeading;
 
   /// No description provided for @nameRequired.
@@ -571,7 +571,7 @@ abstract class AppLocalizations {
   /// No description provided for @composeBody.
   ///
   /// In en, this message translates to:
-  /// **'Build orders with items, quantities and notes. Ticket creation and printing will be available in a future update.'**
+  /// **'Build orders with items, quantities and notes. Order creation and printing will be available in a future update.'**
   String get composeBody;
 
   /// No description provided for @itemsTitle.
@@ -595,7 +595,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketsBody.
   ///
   /// In en, this message translates to:
-  /// **'Saved tickets and explicit print attempts stay together in your local history.'**
+  /// **'Saved orders and explicit print attempts stay together in your local history.'**
   String get ticketsBody;
 
   /// No description provided for @backOverview.
@@ -787,7 +787,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyItemsBody.
   ///
   /// In en, this message translates to:
-  /// **'Add reusable items to find them quickly while composing a ticket.'**
+  /// **'Add reusable items to find them quickly while composing a order.'**
   String get emptyItemsBody;
 
   /// No description provided for @noItemsFound.
@@ -817,7 +817,7 @@ abstract class AppLocalizations {
   /// No description provided for @removeItemBody.
   ///
   /// In en, this message translates to:
-  /// **'Saved tickets keep their original snapshot. This item will disappear from new searches.'**
+  /// **'Saved orders keep their original snapshot. This item will disappear from new searches.'**
   String get removeItemBody;
 
   /// No description provided for @addToDraft.
@@ -937,7 +937,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryCoursesUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'This Server does not support course groups. Update the Server, then retry. Your ticket and its groups remain saved on this phone.'**
+  /// **'This Server does not support course groups. Update the Server, then retry. Your order and its groups remain saved on this phone.'**
   String get deliveryCoursesUnsupported;
 
   /// No description provided for @orderReference.
@@ -955,7 +955,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderReferenceBody.
   ///
   /// In en, this message translates to:
-  /// **'Give an order a title or table name. Shown on tickets and the Server board. Leave blank for numbered orders.'**
+  /// **'Give an order a title or table name. Shown on orders and the Server board. Leave blank for numbered orders.'**
   String get orderReferenceBody;
 
   /// No description provided for @orderNotes.
@@ -973,7 +973,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderFieldsBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose which optional fields appear while composing a ticket.'**
+  /// **'Choose which optional fields appear while composing a order.'**
   String get orderFieldsBody;
 
   /// No description provided for @compactCompose.
@@ -1009,7 +1009,7 @@ abstract class AppLocalizations {
   /// No description provided for @draftEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a reusable item. Your work is saved on this phone as you compose the ticket.'**
+  /// **'Choose a reusable item. Your work is saved on this phone as you compose the order.'**
   String get draftEmptyBody;
 
   /// No description provided for @decreaseQuantity.
@@ -1051,13 +1051,13 @@ abstract class AppLocalizations {
   /// No description provided for @saveTicket.
   ///
   /// In en, this message translates to:
-  /// **'Print ticket'**
+  /// **'Print order'**
   String get saveTicket;
 
   /// No description provided for @ticketSaved.
   ///
   /// In en, this message translates to:
-  /// **'Ticket saved to history.'**
+  /// **'Order saved to history.'**
   String get ticketSaved;
 
   /// No description provided for @ticketNeedsItem.
@@ -1087,7 +1087,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyTicketsTitle.
   ///
   /// In en, this message translates to:
-  /// **'No saved tickets yet.'**
+  /// **'No saved orders yet.'**
   String get emptyTicketsTitle;
 
   /// No description provided for @emptyTicketsBody.
@@ -1111,7 +1111,7 @@ abstract class AppLocalizations {
   /// No description provided for @resetOrderNumberBody.
   ///
   /// In en, this message translates to:
-  /// **'The next order will use number 1. Saved tickets and their print attempts will not be changed.'**
+  /// **'The next order will use number 1. Saved orders and their print attempts will not be changed.'**
   String get resetOrderNumberBody;
 
   /// No description provided for @orderNumberReset.
@@ -1135,7 +1135,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketNumber.
   ///
   /// In en, this message translates to:
-  /// **'Ticket {number}'**
+  /// **'Order {number}'**
   String ticketNumber(int number);
 
   /// No description provided for @itemCount.
@@ -1147,7 +1147,7 @@ abstract class AppLocalizations {
   /// No description provided for @viewTicket.
   ///
   /// In en, this message translates to:
-  /// **'View ticket'**
+  /// **'View order'**
   String get viewTicket;
 
   /// No description provided for @duplicateTicket.
@@ -1165,7 +1165,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketDetails.
   ///
   /// In en, this message translates to:
-  /// **'Ticket details'**
+  /// **'Order details'**
   String get ticketDetails;
 
   /// No description provided for @savedHeading.
@@ -1189,7 +1189,7 @@ abstract class AppLocalizations {
   /// No description provided for @savedSnapshotBody.
   ///
   /// In en, this message translates to:
-  /// **'Catalogue edits do not change this ticket.'**
+  /// **'Catalogue edits do not change this order.'**
   String get savedSnapshotBody;
 
   /// No description provided for @oneOff.
@@ -1225,7 +1225,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchTickets.
   ///
   /// In en, this message translates to:
-  /// **'Search tickets'**
+  /// **'Search orders'**
   String get searchTickets;
 
   /// No description provided for @printerSetup.
@@ -1339,7 +1339,7 @@ abstract class AppLocalizations {
   /// No description provided for @sendingTestTicket.
   ///
   /// In en, this message translates to:
-  /// **'Sending test ticket…'**
+  /// **'Sending test order…'**
   String get sendingTestTicket;
 
   /// No description provided for @testTicketSent.
@@ -1387,7 +1387,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketTemplate.
   ///
   /// In en, this message translates to:
-  /// **'Printed ticket'**
+  /// **'Printed order'**
   String get ticketTemplate;
 
   /// No description provided for @ticketTemplateBody.
@@ -1405,7 +1405,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketTextSizesBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a bounded size for each type of ticket content.'**
+  /// **'Choose a bounded size for each type of order content.'**
   String get ticketTextSizesBody;
 
   /// No description provided for @ticketHeadingSize.
@@ -1441,7 +1441,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketFooter.
   ///
   /// In en, this message translates to:
-  /// **'Ticket footer'**
+  /// **'Order footer'**
   String get ticketFooter;
 
   /// No description provided for @ticketFooterHint.
@@ -1453,7 +1453,7 @@ abstract class AppLocalizations {
   /// No description provided for @editFooter.
   ///
   /// In en, this message translates to:
-  /// **'Edit ticket footer'**
+  /// **'Edit order footer'**
   String get editFooter;
 
   /// No description provided for @footerTooLong.
@@ -1465,7 +1465,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketLogo.
   ///
   /// In en, this message translates to:
-  /// **'Ticket logo'**
+  /// **'Order logo'**
   String get ticketLogo;
 
   /// No description provided for @ticketLogoBody.
@@ -1513,7 +1513,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketLabel.
   ///
   /// In en, this message translates to:
-  /// **'ORDER TICKET'**
+  /// **'ORDER'**
   String get ticketLabel;
 
   /// No description provided for @lineNoteLabel.
@@ -1525,7 +1525,7 @@ abstract class AppLocalizations {
   /// No description provided for @printTicket.
   ///
   /// In en, this message translates to:
-  /// **'Print ticket'**
+  /// **'Print order'**
   String get printTicket;
 
   /// No description provided for @reprintTicket.
@@ -1537,7 +1537,7 @@ abstract class AppLocalizations {
   /// No description provided for @sendQueuedTicket.
   ///
   /// In en, this message translates to:
-  /// **'Send queued ticket'**
+  /// **'Send queued order'**
   String get sendQueuedTicket;
 
   /// No description provided for @shareTicketPdf.
@@ -1549,7 +1549,7 @@ abstract class AppLocalizations {
   /// No description provided for @preparingTicket.
   ///
   /// In en, this message translates to:
-  /// **'Preparing ticket…'**
+  /// **'Preparing order…'**
   String get preparingTicket;
 
   /// No description provided for @connectBeforePrinting.
@@ -1561,19 +1561,19 @@ abstract class AppLocalizations {
   /// No description provided for @printQueued.
   ///
   /// In en, this message translates to:
-  /// **'Ticket queued'**
+  /// **'Order queued'**
   String get printQueued;
 
   /// No description provided for @printQueuedBody.
   ///
   /// In en, this message translates to:
-  /// **'Nothing has been sent. Connect the printer, then use Send queued ticket.'**
+  /// **'Nothing has been sent. Connect the printer, then use Send queued order.'**
   String get printQueuedBody;
 
   /// No description provided for @printTransmitted.
   ///
   /// In en, this message translates to:
-  /// **'Ticket bytes sent'**
+  /// **'Order bytes sent'**
   String get printTransmitted;
 
   /// No description provided for @printTransmittedBody.
@@ -1615,7 +1615,7 @@ abstract class AppLocalizations {
   /// No description provided for @noPrintAttempts.
   ///
   /// In en, this message translates to:
-  /// **'This saved ticket has not been sent to a printer.'**
+  /// **'This saved order has not been sent to a printer.'**
   String get noPrintAttempts;
 
   /// No description provided for @printStatusQueued.
@@ -1657,7 +1657,7 @@ abstract class AppLocalizations {
   /// No description provided for @ticketPdfSubject.
   ///
   /// In en, this message translates to:
-  /// **'LibreSlip ticket {number}'**
+  /// **'LibreSlip order {number}'**
   String ticketPdfSubject(int number);
 
   /// No description provided for @hardwareTested.
@@ -1675,49 +1675,49 @@ abstract class AppLocalizations {
   /// No description provided for @deleteTicket.
   ///
   /// In en, this message translates to:
-  /// **'Delete ticket'**
+  /// **'Delete order'**
   String get deleteTicket;
 
   /// No description provided for @deleteTicketQuestion.
   ///
   /// In en, this message translates to:
-  /// **'Delete ticket {number}?'**
+  /// **'Delete order {number}?'**
   String deleteTicketQuestion(int number);
 
   /// No description provided for @deleteTicketBody.
   ///
   /// In en, this message translates to:
-  /// **'This saved ticket and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.'**
+  /// **'This saved order and its print-attempt history will be removed. The current order number will not change. Server deliveries and received Server orders are not deleted.'**
   String get deleteTicketBody;
 
   /// No description provided for @deleteAllTickets.
   ///
   /// In en, this message translates to:
-  /// **'Delete all previous tickets'**
+  /// **'Delete all previous orders'**
   String get deleteAllTickets;
 
   /// No description provided for @deleteAllTicketsQuestion.
   ///
   /// In en, this message translates to:
-  /// **'Delete all previous tickets?'**
+  /// **'Delete all previous orders?'**
   String get deleteAllTicketsQuestion;
 
   /// No description provided for @deleteAllTicketsBody.
   ///
   /// In en, this message translates to:
-  /// **'All saved tickets and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.'**
+  /// **'All saved orders and print-attempt history will be removed. The current draft and order number will not change. Server deliveries and received Server orders are not deleted.'**
   String get deleteAllTicketsBody;
 
   /// No description provided for @ticketDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Ticket deleted'**
+  /// **'Order deleted'**
   String get ticketDeleted;
 
   /// No description provided for @allTicketsDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Previous tickets deleted'**
+  /// **'Previous orders deleted'**
   String get allTicketsDeleted;
 
   /// No description provided for @portability.
@@ -1741,7 +1741,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportConfigurationBody.
   ///
   /// In en, this message translates to:
-  /// **'Includes language, appearance, printed ticket settings, order fields and logo.'**
+  /// **'Includes language, appearance, printed order settings, order fields and logo.'**
   String get exportConfigurationBody;
 
   /// No description provided for @exportFullBackup.
@@ -1753,7 +1753,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportFullBackupBody.
   ///
   /// In en, this message translates to:
-  /// **'Also includes reusable items, drafts, saved tickets, print attempts and referenced images.'**
+  /// **'Also includes reusable items, drafts, saved orders, print attempts and referenced images.'**
   String get exportFullBackupBody;
 
   /// No description provided for @importArchive.
@@ -1765,7 +1765,7 @@ abstract class AppLocalizations {
   /// No description provided for @archivePrivacyWarning.
   ///
   /// In en, this message translates to:
-  /// **'Exported ZIP files can contain private ticket notes and history. Store and share them carefully.'**
+  /// **'Exported ZIP files can contain private order notes and history. Store and share them carefully.'**
   String get archivePrivacyWarning;
 
   /// No description provided for @archivePairingWarning.
@@ -1813,19 +1813,19 @@ abstract class AppLocalizations {
   /// No description provided for @archiveContents.
   ///
   /// In en, this message translates to:
-  /// **'{items} items, {drafts} drafts, {tickets} tickets and {attempts} print attempts'**
+  /// **'{items} items, {drafts} drafts, {tickets} orders and {attempts} print attempts'**
   String archiveContents(int items, int drafts, int tickets, int attempts);
 
   /// No description provided for @configurationReplaceWarning.
   ///
   /// In en, this message translates to:
-  /// **'This replaces the current settings and order-field options. Items and ticket history stay unchanged.'**
+  /// **'This replaces the current settings and order-field options. Items and order history stay unchanged.'**
   String get configurationReplaceWarning;
 
   /// No description provided for @backupReplaceWarning.
   ///
   /// In en, this message translates to:
-  /// **'This replaces all settings, reusable items, drafts, ticket history and print attempts with the archive contents.'**
+  /// **'This replaces all settings, reusable items, drafts, order history and print attempts with the archive contents.'**
   String get backupReplaceWarning;
 
   /// No description provided for @restoreArchive.
@@ -1873,13 +1873,13 @@ abstract class AppLocalizations {
   /// No description provided for @itemBreakdownBody.
   ///
   /// In en, this message translates to:
-  /// **'Total quantities from saved ticket snapshots for the selected dates.'**
+  /// **'Total quantities from saved order snapshots for the selected dates.'**
   String get itemBreakdownBody;
 
   /// No description provided for @noItemsInPeriod.
   ///
   /// In en, this message translates to:
-  /// **'No items were added to saved tickets in this period.'**
+  /// **'No items were added to saved orders in this period.'**
   String get noItemsInPeriod;
 
   /// No description provided for @itemQuantitySummary.
@@ -1921,7 +1921,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientModeBody.
   ///
   /// In en, this message translates to:
-  /// **'Create, print and keep tickets locally. Pairing with a local Server is always optional.'**
+  /// **'Create, print and keep orders locally. Pairing with a local Server is always optional.'**
   String get clientModeBody;
 
   /// No description provided for @serverMode.
@@ -1945,7 +1945,7 @@ abstract class AppLocalizations {
   /// No description provided for @switchToServerBody.
   ///
   /// In en, this message translates to:
-  /// **'Your Client items, composition and ticket history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.'**
+  /// **'Your Client items, composition and order history stay on this phone. Server mode receives immutable orders on your local network, including while the screen is locked.'**
   String get switchToServerBody;
 
   /// No description provided for @switchToClientTitle.
@@ -2389,7 +2389,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryPendingBody.
   ///
   /// In en, this message translates to:
-  /// **'This ticket is saved locally and will be sent automatically when the paired Server is reachable.'**
+  /// **'This order is saved locally and will be sent automatically when the paired Server is reachable.'**
   String get deliveryPendingBody;
 
   /// No description provided for @deliveryDeliveredBody.
@@ -2437,7 +2437,7 @@ abstract class AppLocalizations {
   /// No description provided for @includeInServerOrdersBody.
   ///
   /// In en, this message translates to:
-  /// **'When off, this item stays on the printed local ticket but is omitted from the optional Server order.'**
+  /// **'When off, this item stays on the printed local order but is omitted from the optional Server order.'**
   String get includeInServerOrdersBody;
 
   /// No description provided for @localOnlyItem.
@@ -2497,7 +2497,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedOrdersBody.
   ///
   /// In en, this message translates to:
-  /// **'Keep new orders available for later additions. Existing orders remain available when this option is disabled.'**
+  /// **'Keep orders available for editing. Each order stores only its current contents.'**
   String get managedOrdersBody;
 
   /// No description provided for @activeOrders.
@@ -2515,7 +2515,7 @@ abstract class AppLocalizations {
   /// No description provided for @newOrderKeptOpen.
   ///
   /// In en, this message translates to:
-  /// **'This order will stay open for later additions.'**
+  /// **'This order stays open for editing.'**
   String get newOrderKeptOpen;
 
   /// No description provided for @addToOrder.
@@ -2523,18 +2523,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add items'**
   String get addToOrder;
-
-  /// No description provided for @fullOrderSnapshot.
-  ///
-  /// In en, this message translates to:
-  /// **'Full order at this revision'**
-  String get fullOrderSnapshot;
-
-  /// No description provided for @printAdditions.
-  ///
-  /// In en, this message translates to:
-  /// **'Print additions'**
-  String get printAdditions;
 
   /// No description provided for @finishCompositionFirst.
   ///
@@ -2551,19 +2539,19 @@ abstract class AppLocalizations {
   /// No description provided for @closeActiveOrderBody.
   ///
   /// In en, this message translates to:
-  /// **'Stop adding to this order? Its saved tickets stay in history. This does not mark the Server order Done.'**
+  /// **'Stop adding to this order? Its saved orders stay in history. This does not mark the Server order Done.'**
   String get closeActiveOrderBody;
 
   /// No description provided for @cancelAddition.
   ///
   /// In en, this message translates to:
-  /// **'Cancel additions'**
+  /// **'Cancel new items'**
   String get cancelAddition;
 
   /// No description provided for @cancelAdditionBody.
   ///
   /// In en, this message translates to:
-  /// **'Discard the current additions? Previously saved items remain in the active order.'**
+  /// **'Discard the new items? Changes to saved items have already been applied.'**
   String get cancelAdditionBody;
 
   /// No description provided for @deliveryUpdatesUnsupported.
@@ -2575,19 +2563,13 @@ abstract class AppLocalizations {
   /// No description provided for @latestAdditions.
   ///
   /// In en, this message translates to:
-  /// **'Added in this revision'**
+  /// **'New items'**
   String get latestAdditions;
-
-  /// No description provided for @orderRevision.
-  ///
-  /// In en, this message translates to:
-  /// **'Revision {revision}'**
-  String orderRevision(int revision);
 
   /// No description provided for @managedHistoryPending.
   ///
   /// In en, this message translates to:
-  /// **'Deliver pending revisions before deleting their saved tickets.'**
+  /// **'Send this order to the Server before deleting it.'**
   String get managedHistoryPending;
 
   /// No description provided for @activeOrderLocal.
@@ -2605,7 +2587,7 @@ abstract class AppLocalizations {
   /// No description provided for @deliveryWaitingForRevision.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for an earlier revision to be printed and delivered. Open its saved ticket to recover printing or retry delivery.'**
+  /// **'Waiting for this order to be printed and sent. Open the order to print or retry delivery.'**
   String get deliveryWaitingForRevision;
 
   /// No description provided for @completeWholeSteps.
@@ -2629,7 +2611,7 @@ abstract class AppLocalizations {
   /// No description provided for @hideServerOrderDetailsBody.
   ///
   /// In en, this message translates to:
-  /// **'Hide the revision, received and created times, heading and delivery guidance in order details.'**
+  /// **'Hide timestamps, heading and delivery guidance in order details.'**
   String get hideServerOrderDetailsBody;
 
   /// No description provided for @completeStep.
@@ -2809,7 +2791,7 @@ abstract class AppLocalizations {
   /// No description provided for @printTicketPrices.
   ///
   /// In en, this message translates to:
-  /// **'Prices on tickets'**
+  /// **'Prices on orders'**
   String get printTicketPrices;
 
   /// No description provided for @printTicketPricesBody.
@@ -2845,7 +2827,7 @@ abstract class AppLocalizations {
   /// No description provided for @productPricesBody.
   ///
   /// In en, this message translates to:
-  /// **'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on tickets separately controls printed amounts.'**
+  /// **'Optional and off by default. Prices are captured when items are added. Prices stay on this device. Prices on orders separately controls printed amounts.'**
   String get productPricesBody;
 
   /// No description provided for @unitPrice.
@@ -2938,12 +2920,6 @@ abstract class AppLocalizations {
   /// **'Save order'**
   String get saveOrder;
 
-  /// No description provided for @saveAdditions.
-  ///
-  /// In en, this message translates to:
-  /// **'Save additions'**
-  String get saveAdditions;
-
   /// No description provided for @orderSavedWithoutPrinting.
   ///
   /// In en, this message translates to:
@@ -3031,7 +3007,7 @@ abstract class AppLocalizations {
   /// No description provided for @sharedOrdersLocalCloseBody.
   ///
   /// In en, this message translates to:
-  /// **'Hide this order from this Client’s active orders? Its saved tickets stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.'**
+  /// **'Hide this order from this Client’s active orders? Its saved orders stay in history. Other Clients can still update the shared order, and the Server order is not marked Done.'**
   String get sharedOrdersLocalCloseBody;
 
   /// No description provided for @sharedOrdersPaused.
@@ -3127,7 +3103,7 @@ abstract class AppLocalizations {
   /// No description provided for @orderEditHelp.
   ///
   /// In en, this message translates to:
-  /// **'Moves apply immediately. Print or save to add new items.'**
+  /// **'Saved items update immediately. Save or print to add new items.'**
   String get orderEditHelp;
 
   /// No description provided for @catalogueLastPhaseBody.
@@ -3148,17 +3124,35 @@ abstract class AppLocalizations {
   /// **'Past orders'**
   String get pastOrders;
 
-  /// No description provided for @orderPrintHistory.
+  /// No description provided for @printPreview.
   ///
   /// In en, this message translates to:
-  /// **'Print history'**
-  String get orderPrintHistory;
+  /// **'Print preview'**
+  String get printPreview;
 
-  /// No description provided for @orderPrintHistoryBody.
+  /// No description provided for @itemEditFailed.
   ///
   /// In en, this message translates to:
-  /// **'Saved print snapshots for this order. Open one to reprint or recover a print attempt.'**
-  String get orderPrintHistoryBody;
+  /// **'Change not confirmed. Refresh the order and check the Server connection.'**
+  String get itemEditFailed;
+
+  /// No description provided for @itemEditUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the Server to edit or remove saved items.'**
+  String get itemEditUnsupported;
+
+  /// No description provided for @printSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'Order updated'**
+  String get printSuperseded;
+
+  /// No description provided for @printSupersededBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The order has changed. Print the complete current order.'**
+  String get printSupersededBody;
 }
 
 class _AppLocalizationsDelegate

@@ -134,7 +134,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('No items were added to saved tickets in this period.'),
+      find.text('No items were added to saved orders in this period.'),
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('item-totals-list')), findsNothing);

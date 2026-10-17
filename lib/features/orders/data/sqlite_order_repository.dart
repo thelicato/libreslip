@@ -15,6 +15,7 @@ import '../../printing/domain/print_job.dart';
 import '../domain/order_models.dart';
 
 part 'shared_order_persistence.dart';
+part 'latest_order_persistence.dart';
 
 class SqliteOrderRepository
     implements
@@ -29,13 +30,15 @@ class SqliteOrderRepository
         SharedClientStore,
         SharedServerStore,
         OrderPhaseStore,
-        OrderPhaseServerStore {
+        OrderPhaseServerStore,
+        OrderItemStore,
+        OrderItemServerStore {
   SqliteOrderRepository({DatabaseFactory? factory, this._databasePath})
     : _factory = factory ?? databaseFactory;
 
   // Schema 18 permits live managed-line placement to differ from immutable
   // ticket snapshots. Existing rows need no rewrite during this migration.
-  static const databaseVersion = 18;
+  static const databaseVersion = 19;
   static const portableSchemaVersions = {
     5,
     6,
@@ -50,6 +53,7 @@ class SqliteOrderRepository
     15,
     16,
     17,
+    18,
     databaseVersion,
   };
   static const databaseFileName = 'libreslip.sqlite3';
@@ -708,7 +712,57 @@ class SqliteOrderRepository
         'CREATE UNIQUE INDEX network_destinations_one_default ON network_destinations(is_default) WHERE is_default = 1',
       );
     }
+    if (oldVersion < 19 && newVersion >= 19) {
+      final outboxSql =
+          (await database.rawQuery(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'server_delivery_outbox'",
+              )).single['sql']
+              as String;
+      await database.execute('DROP INDEX server_delivery_outbox_status_index');
+      await database.execute(
+        'ALTER TABLE server_delivery_outbox RENAME TO outbox_before_latest_orders',
+      );
+      await database.execute(
+        outboxSql.replaceFirst('UNIQUE(destination_id, ticket_id),', ''),
+      );
+      await database.execute(
+        'INSERT INTO server_delivery_outbox SELECT * FROM outbox_before_latest_orders',
+      );
+      await database.execute('DROP TABLE outbox_before_latest_orders');
+      await database.execute(
+        'CREATE INDEX server_delivery_outbox_status_index ON server_delivery_outbox(status, created_at)',
+      );
+      await database.execute(
+        'CREATE TABLE IF NOT EXISTS order_save_receipts (draft_id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL REFERENCES tickets(id) ON DELETE CASCADE)',
+      );
+      await database.execute(
+        'INSERT OR IGNORE INTO order_save_receipts SELECT origin_draft_id, id FROM tickets',
+      );
+      await _LatestOrders.consolidate(database, legacy: true);
+    }
   }
+
+  @override
+  Future<void> changeManagedItem(
+    String orderId,
+    String lineId,
+    int quantity, {
+    required int expectedRevision,
+    String? note,
+  }) => _LatestOrders.changeItem(
+    this,
+    orderId,
+    lineId,
+    quantity,
+    expectedRevision,
+    note,
+  );
+
+  @override
+  Future<SharedOrderSnapshot> changeSharedItem(
+    String actor,
+    OrderItemChange change,
+  ) => _SharedPersistence(this).changeItem(actor, change);
 
   @override
   Future<NetworkConfiguration> loadNetworkConfiguration() async {
@@ -2265,9 +2319,9 @@ class SqliteOrderRepository
     try {
       final ticketId = await database.transaction<String>((transaction) async {
         final existing = await transaction.query(
-          'tickets',
-          columns: ['id'],
-          where: 'origin_draft_id = ?',
+          'order_save_receipts',
+          columns: ['ticket_id AS id'],
+          where: 'draft_id = ?',
           whereArgs: [draft.id],
           limit: 1,
         );
@@ -2364,9 +2418,27 @@ class SqliteOrderRepository
             whereArgs: ['order'],
           );
         }
-        final id = createLocalId();
+        final previousTickets = managedId == null
+            ? <Map<String, Object?>>[]
+            : await transaction.query(
+                'tickets',
+                where: 'managed_order_id = ?',
+                whereArgs: [managedId],
+                orderBy: 'revision DESC',
+              );
+        final id = previousTickets.isEmpty
+            ? createLocalId()
+            : previousTickets.first['id'] as String;
         final createdAt = DateTime.now().toUtc();
-        await transaction.insert('tickets', {
+        if (previousTickets.isNotEmpty) {
+          await transaction.delete(
+            'ticket_lines',
+            where: 'ticket_id = ?',
+            whereArgs: [id],
+          );
+          await _LatestOrders.supersedeQueued(transaction, id);
+        }
+        final ticketValues = <String, Object?>{
           'id': id,
           'ticket_number': ticketNumber,
           'display_number': orderNumber,
@@ -2377,16 +2449,26 @@ class SqliteOrderRepository
           'courses_json': jsonEncode([
             for (final course in draft.courses) course.toJson(),
           ]),
-          'created_at': _timestamp(createdAt),
+          'created_at': _timestamp(previous?.createdAt ?? createdAt),
           'source_ticket_id': null,
           'managed_order_id': managedId,
           'revision': revision,
           'addition_line_ids': jsonEncode(
             managedId == null
                 ? <String>[]
-                : additionLines.map((line) => line.id).toList(),
+                : allLines.map((line) => line.id).toList(),
           ),
-        });
+        };
+        if (previousTickets.isEmpty) {
+          await transaction.insert('tickets', ticketValues);
+        } else {
+          await transaction.update(
+            'tickets',
+            ticketValues,
+            where: 'id = ?',
+            whereArgs: [id],
+          );
+        }
         for (var index = 0; index < allLines.length; index++) {
           final line = allLines[index];
           await transaction.insert('ticket_lines', {
@@ -2424,6 +2506,15 @@ class SqliteOrderRepository
                   : null);
         final eligible = allLines.where((line) => line.sendToServer).toList();
         final hasNewEligible = additionLines.any((line) => line.sendToServer);
+        if (previous != null && !requirePrintForDelivery) {
+          await transaction.update(
+            'server_delivery_outbox',
+            {'status': 'pending'},
+            where: "ticket_id = ? AND status = 'awaiting_print'",
+            whereArgs: [id],
+          );
+        }
+
         var serverRevision = previous?.serverRevision ?? 0;
         if (destinationId != null && eligible.isNotEmpty && hasNewEligible) {
           if (managedId != null) serverRevision++;
@@ -2524,6 +2615,10 @@ class SqliteOrderRepository
             );
           }
         }
+        await transaction.insert('order_save_receipts', {
+          'draft_id': draft.id,
+          'ticket_id': id,
+        });
         await transaction.delete(
           'drafts',
           where: 'id = ?',
@@ -2534,7 +2629,7 @@ class SqliteOrderRepository
       return await _loadTicket(database, ticketId);
     } catch (error) {
       if (error is OrderStorageException) rethrow;
-      throw OrderStorageException('Could not save the ticket.', error);
+      throw OrderStorageException('Could not save the order.', error);
     }
   }
 
@@ -2765,6 +2860,16 @@ class SqliteOrderRepository
         {'base_revision': order.revision + 1},
         where: 'managed_order_id = ?',
         whereArgs: [orderId],
+      );
+      await _LatestOrders.write(
+        tx,
+        _managedFromRow(
+          (await tx.query(
+            'managed_orders',
+            where: 'id = ?',
+            whereArgs: [orderId],
+          )).single,
+        ),
       );
     });
   }
@@ -3008,6 +3113,7 @@ class SqliteOrderRepository
     for (final line in (tables['ticket_lines'] as List).cast<Map>()) {
       ticketLines.putIfAbsent(line['ticket_id'], () => []).add(line);
     }
+    final savedOrders = <Object?>{};
     for (final row in (tables['tickets'] as List).cast<Map>()) {
       final id = row['managed_order_id'];
       final revision = row['revision'] ?? (modern ? null : 0);
@@ -3030,6 +3136,14 @@ class SqliteOrderRepository
       final order = orders[id];
       final lines = ticketLines[row['id']] ?? <Map>[];
       final stableIds = lines.map((line) => line['order_line_id']).toSet();
+      if ((snapshot['schemaVersion'] as int) >= 19 &&
+          (!savedOrders.add(id) ||
+              order == null ||
+              revision != order.revision ||
+              lines.length != order.lines.length)) {
+        throw const FormatException('Invalid current order copy');
+      }
+
       if (!modern ||
           order == null ||
           revision < 1 ||
@@ -3038,7 +3152,7 @@ class SqliteOrderRepository
           row['heading_snapshot'] != order.heading ||
           row['reference_snapshot'] != order.reference ||
           row['order_note_snapshot'] != order.orderNote ||
-          additions.isEmpty ||
+          (additions.isEmpty && lines.isNotEmpty) ||
           additions.any((id) => !stableIds.contains(id)) ||
           stableIds.contains(null) ||
           stableIds.length != lines.length ||
@@ -3053,7 +3167,8 @@ class SqliteOrderRepository
             matching.single.name != line['name_snapshot'] ||
             matching.single.quantity != line['quantity'] ||
             matching.single.preparationNote != line['preparation_note'] ||
-            ((snapshot['schemaVersion'] as int) < 18 &&
+            (((snapshot['schemaVersion'] as int) < 18 ||
+                    (snapshot['schemaVersion'] as int) >= 19) &&
                 matching.single.courseId != line['course_id']) ||
             matching.single.price !=
                 ProductPrice.fromColumns(
@@ -3383,6 +3498,10 @@ class SqliteOrderRepository
             await transaction.insert(table, row);
           }
         }
+        await _LatestOrders.consolidate(
+          transaction,
+          legacy: (snapshot['schemaVersion'] as int) < 19,
+        );
         if (sharedRecovery != null) {
           await _SharedPersistence.restoreLinks(transaction, sharedRecovery);
         }
@@ -3490,6 +3609,7 @@ class SqliteOrderRepository
     required String requestId,
     required String ticketId,
     required Uint8List payload,
+    int? expectedRevision,
   }) async {
     if (requestId.isEmpty || payload.isEmpty || payload.length > 2097152) {
       throw const OrderStorageException('The print job is invalid.');
@@ -3505,6 +3625,12 @@ class SqliteOrderRepository
           limit: 1,
         );
         if (existing.isNotEmpty) return existing.single['id']! as String;
+        final current = await _loadTicket(transaction, ticketId);
+        if (expectedRevision != null && current.revision != expectedRevision) {
+          throw const OrderStorageException(
+            'The order changed before printing.',
+          );
+        }
         final now = _timestamp(DateTime.now());
         final jobId = createLocalId();
         await transaction.insert('print_jobs', {

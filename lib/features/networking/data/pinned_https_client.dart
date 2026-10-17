@@ -15,7 +15,8 @@ class PinnedHttpsClient
         ClientServerTransport,
         OrderProgressTransport,
         SharedOrdersTransport,
-        OrderPhaseTransport {
+        OrderPhaseTransport,
+        OrderItemTransport {
   const PinnedHttpsClient();
 
   static const _responseLimit = 65536;
@@ -318,6 +319,53 @@ class PinnedHttpsClient
                 line.id == change.lineId && line.courseId == change.courseId,
           )) {
         throw const FormatException('Wrong phase response');
+      }
+      return snapshot;
+    } on FormatException {
+      throw const ClientTransportException('invalid_response');
+    }
+  }
+
+  @override
+  Future<SharedOrderSnapshot> changeSharedItem({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderItemChange change,
+  }) async {
+    final status = await _request(
+      server.baseUrl.resolve('/v1/status'),
+      fingerprint: server.certificateFingerprint,
+    );
+    if (status.statusCode != HttpStatus.ok ||
+        status.body['protocol'] != NetworkProtocol.name ||
+        status.body['serverInstallationId'] != server.id) {
+      throw const ClientTransportException('server_identity');
+    }
+    final versions = status.body['itemEditVersions'];
+    if (versions is! List || !versions.contains(1)) {
+      throw const ClientTransportException('unsupported_item_edits');
+    }
+    final body = await _sharedRequest(
+      server,
+      accessToken,
+      clientId,
+      '/v1/shared-item',
+      body: change.toJson(),
+    );
+    try {
+      final snapshot = SharedOrderSnapshot.fromJson(body);
+      final matching = snapshot.envelope.lines
+          .where((l) => l.id == change.lineId)
+          .toList();
+      if (snapshot.serverOrderId != change.orderId ||
+          (change.quantity == 0
+              ? matching.isNotEmpty
+              : matching.length != 1 ||
+                    matching.single.quantity != change.quantity ||
+                    (change.note != null &&
+                        matching.single.preparationNote != change.note))) {
+        throw const FormatException('Wrong item response');
       }
       return snapshot;
     } on FormatException {

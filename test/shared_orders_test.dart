@@ -50,11 +50,11 @@ void main() {
       ),
       isTrue,
     );
-    expect(f.b.workspace.tickets, isEmpty);
+    expect(f.b.workspace.tickets, hasLength(1));
     expect(await f.b.repository.loadPrintJobs(), isEmpty);
     expect(f.b.workspace.items, isEmpty);
     final after = await f.a.repository.createPortableSnapshot();
-    for (final table in ['tickets', 'ticket_lines', 'print_jobs']) {
+    for (final table in ['tickets', 'print_jobs']) {
       expect((after['tables'] as Map)[table], (before['tables'] as Map)[table]);
     }
     expect(f.a.workspace.managedOrders.single.lines.first.price, isNotNull);
@@ -115,7 +115,7 @@ void main() {
       await client.repository.replaceWithPortableSnapshot(snapshot);
       expect(
         (await client.repository.loadTickets()).last.lines.map((l) => l.name),
-        isNot(contains(client == f.a ? 'Dessert' : 'Coffee')),
+        contains(client == f.a ? 'Dessert' : 'Coffee'),
       );
     }
     expect((await f.server.loadServerOrders()), hasLength(1));
@@ -458,7 +458,7 @@ void main() {
     await f.syncBoth();
     expect(f.b.order.lines.first.courseId, destination);
     expect(f.b.order.deliveredQuantity('soup'), 1);
-    expect(f.a.workspace.tickets.single.lines.first.courseId, isNull);
+    expect(f.a.workspace.tickets.single.lines.first.courseId, destination);
     expect(await f.a.workspace.beginAddition(f.a.order.id), isTrue);
     expect(f.a.workspace.addDivider(), isTrue);
     final addedPhase = f.a.workspace.activeDraft!.courses.last.id;
@@ -473,6 +473,18 @@ void main() {
       f.a.workspace.activeDraft!.courses.map((c) => c.id),
     );
     await f.a.workspace.cancelAddition();
+    await f.a.sync.changeItem(f.a.order, 'soup', 2, note: 'No salt');
+    while (f.a.sync.busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    await f.syncBoth();
+    expect(f.b.order.lines.first.quantity, 2);
+    await f.b.sync.changeItem(f.b.order, 'water', 0);
+    while (f.b.sync.busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    await f.syncBoth();
+    expect(f.a.order.lines.any((l) => l.id == 'water'), isFalse);
 
     final moved = (await f.server.loadServerOrders()).single;
     await expectLater(
@@ -540,7 +552,7 @@ void main() {
       completedAt: DateTime.now(),
     );
     await f.syncBoth();
-    expect(f.b.order.deliveredQuantity('soup'), 3);
+    expect(f.b.order.deliveredQuantity('soup'), 2);
     await f.server.markServerOrderReceived(
       (await f.server.loadServerOrders()).single.id,
     );
@@ -1019,7 +1031,7 @@ void main() {
     final delivery = f.b.delivery.deliveryForTicket(ticket.id)!;
     final original = (await f.b.repository.sharedDeliveryTarget(delivery))!;
     await f.b.repository.replaceWithPortableSnapshot(before);
-    expect(await f.b.repository.loadTickets(), isEmpty);
+    expect(await f.b.repository.loadTickets(), hasLength(1));
     expect(await f.b.repository.loadSharedLinks(), isEmpty);
     final recovered = (await f.b.repository.sharedDeliveryTarget(delivery))!;
     expect(recovered.serverOrderId, original.serverOrderId);
@@ -1258,18 +1270,40 @@ class SharedTestTransport
     implements
         ClientServerTransport,
         SharedOrdersTransport,
-        OrderPhaseTransport {
+        OrderPhaseTransport,
+        OrderItemTransport {
   SharedTestTransport(this.repository);
   final SqliteOrderRepository repository;
   bool offline = false, loseProgressAck = false, loseAppendAck = false;
   bool supportsShared = true;
   bool supportsPhaseMoves = true, losePhaseAck = false;
+  bool supportsItemEdits = true, loseItemAck = false;
   int phaseWrites = 0;
   final List<String> progressOperations = [];
   int snapshotReads = 0;
   Future<void> Function()? afterProgressWrite;
   void check() {
     if (offline) throw const ClientTransportException('unreachable');
+  }
+
+  @override
+  Future<SharedOrderSnapshot> changeSharedItem({
+    required PairedServer server,
+    required String accessToken,
+    required String clientId,
+    required OrderItemChange change,
+  }) async {
+    check();
+    if (!supportsItemEdits) {
+      throw const ClientTransportException('unsupported_item_edits');
+    }
+    final snapshot = await repository.changeSharedItem(clientId, change);
+    if (loseItemAck) {
+      loseItemAck = false;
+      offline = true;
+      throw const ClientTransportException('unreachable');
+    }
+    return snapshot;
   }
 
   @override

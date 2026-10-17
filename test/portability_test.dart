@@ -378,7 +378,7 @@ void main() {
     );
     expect(revised.revision, 2);
     expect(revised.number, ticket.number);
-    expect(revised.printLines.single.name, 'Water');
+    expect(revised.printLines.last.name, 'Water');
     expect(await destination.loadClientDeliveries(), isEmpty);
   });
 

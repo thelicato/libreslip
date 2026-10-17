@@ -88,7 +88,7 @@ class TicketDocument {
     typography: typography,
     courses: ticket.courses,
     ungroupedLabel: ungroupedLabel,
-    additionLabel: ticket.revision > 1 ? additionLabel : '',
+    additionLabel: '',
     priceSummary: priceLabels?.summary(ticket),
     lines: [
       for (final line in ticket.printLines)
@@ -147,11 +147,7 @@ class TicketPriceLabels {
     final estimate = OrderPriceEstimate.fromLines(ticket.printLines);
     final currencies = estimate.totals.keys.toList()..sort();
     return TicketDocumentPriceSummary(
-      label: estimate.unpricedQuantity > 0
-          ? subtotal
-          : ticket.revision > 1
-          ? additionsTotal
-          : total,
+      label: estimate.unpricedQuantity > 0 ? subtotal : total,
       totals: [
         for (final currency in currencies)
           formatAmount(estimate.totals[currency]!, currency),

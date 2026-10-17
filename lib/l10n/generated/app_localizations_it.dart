@@ -34,7 +34,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get searchOrders => 'Cerca ordini';
 
   @override
-  String get tickets => 'Comande';
+  String get tickets => 'Ordini';
 
   @override
   String get settings => 'Impostazioni';
@@ -62,7 +62,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get personaliseWorkspace => 'Personalizza il tuo spazio';
 
   @override
-  String get workspaceTitle => 'Dall’idea alla comanda';
+  String get workspaceTitle => 'Dall’idea alla ordine';
 
   @override
   String get workspaceSubtitle => 'Uno spazio per ogni fase del tuo ordine.';
@@ -122,11 +122,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get refreshPrinterStatus => 'Aggiorna stato';
 
   @override
-  String get statisticsTitle => 'Attività delle comande';
+  String get statisticsTitle => 'Attività delle ordini';
 
   @override
   String get statisticsBody =>
-      'Conta le comande salvate in base alla data di creazione. Non registra prezzi o vendite.';
+      'Conta gli ordini per data di creazione. Non registra vendite.';
 
   @override
   String get startDate => 'Data iniziale';
@@ -141,13 +141,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get clearDateFilters => 'Azzera date';
 
   @override
-  String get savedTicketsStat => 'Comande salvate';
+  String get savedTicketsStat => 'Ordini salvate';
 
   @override
-  String get ticketItemsStat => 'Articoli nelle comande';
+  String get ticketItemsStat => 'Articoli nelle ordini';
 
   @override
-  String get averageItemsStat => 'Articoli per comanda';
+  String get averageItemsStat => 'Articoli per ordine';
 
   @override
   String get previewLabel => 'Anteprima dello spazio';
@@ -160,7 +160,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Le tue preferenze restano su questo telefono. Nessun account. Nessun cloud. Nessuna complicazione.';
 
   @override
-  String get ticketHeader => 'Intestazione delle comande';
+  String get ticketHeader => 'Intestazione delle ordini';
 
   @override
   String get ticketHeaderBody =>
@@ -258,7 +258,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get composeBody =>
-      'Crea ordini con articoli, quantità e note. Creazione e stampa delle comande saranno disponibili in un prossimo aggiornamento.';
+      'Crea ordini con articoli, quantità e note. Creazione e stampa delle ordini saranno disponibili in un prossimo aggiornamento.';
 
   @override
   String get itemsTitle => 'I tuoi articoli riutilizzabili, a portata di mano.';
@@ -272,7 +272,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ticketsBody =>
-      'Le comande salvate e i tentativi di stampa espliciti restano insieme nello storico locale.';
+      'Le ordini salvate e i tentativi di stampa espliciti restano insieme nello storico locale.';
 
   @override
   String get backOverview => 'Torna alla panoramica';
@@ -373,7 +373,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get emptyItemsBody =>
-      'Aggiungi articoli riutilizzabili per trovarli subito mentre componi una comanda.';
+      'Aggiungi articoli riutilizzabili per trovarli subito mentre componi una ordine.';
 
   @override
   String get noItemsFound => 'Nessun articolo corrisponde alla ricerca.';
@@ -391,7 +391,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get removeItemBody =>
-      'Le comande salvate conservano l’istantanea originale. L’articolo non comparirà più nelle nuove ricerche.';
+      'Le ordini salvate conservano l’istantanea originale. L’articolo non comparirà più nelle nuove ricerche.';
 
   @override
   String get addToDraft => 'Aggiungi alla bozza';
@@ -456,7 +456,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryCoursesUnsupported =>
-      'Questo Server non supporta i gruppi di portata. Aggiorna il Server e riprova. La comanda e i suoi gruppi restano salvati su questo telefono.';
+      'Questo Server non supporta i gruppi di portata. Aggiorna il Server e riprova. La ordine e i suoi gruppi restano salvati su questo telefono.';
 
   @override
   String get orderReference => 'Titolo ordine / tavolo';
@@ -467,7 +467,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get orderReferenceBody =>
-      'Assegna un titolo o un nome tavolo all’ordine. Compare sulle comande e sul pannello Server. Lascia vuoto per usare solo il numero.';
+      'Assegna un titolo o un nome tavolo all’ordine. Compare sulle ordini e sul pannello Server. Lascia vuoto per usare solo il numero.';
 
   @override
   String get orderNotes => 'Note dell’ordine';
@@ -497,7 +497,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get draftEmptyBody =>
-      'Scegli un articolo riutilizzabile. Il lavoro viene salvato sul telefono mentre componi la comanda.';
+      'Scegli un articolo riutilizzabile. Il lavoro viene salvato sul telefono mentre componi la ordine.';
 
   @override
   String get decreaseQuantity => 'Riduci quantità';
@@ -518,10 +518,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get removeLine => 'Rimuovi riga';
 
   @override
-  String get saveTicket => 'Stampa comanda';
+  String get saveTicket => 'Stampa ordine';
 
   @override
-  String get ticketSaved => 'Comanda salvata nello storico.';
+  String get ticketSaved => 'Ordine salvata nello storico.';
 
   @override
   String get ticketNeedsItem =>
@@ -539,11 +539,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'LibreSlip non è riuscito ad aprire il database locale degli ordini. Nulla è stato reimpostato o sovrascritto.';
 
   @override
-  String get emptyTicketsTitle => 'Nessuna comanda salvata.';
+  String get emptyTicketsTitle => 'Nessuna ordine salvata.';
 
   @override
   String get emptyTicketsBody =>
-      'Quando stampi un ordine composto, la comanda viene salvata qui prima del tentativo di stampa.';
+      'Quando stampi un ordine composto, la ordine viene salvata qui prima del tentativo di stampa.';
 
   @override
   String get reset => 'Ricomincia';
@@ -554,7 +554,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get resetOrderNumberBody =>
-      'Il prossimo ordine userà il numero 1. Le comande salvate e i relativi tentativi di stampa non verranno modificati.';
+      'Il prossimo ordine userà il numero 1. Le ordini salvate e i relativi tentativi di stampa non verranno modificati.';
 
   @override
   String get orderNumberReset => 'La numerazione degli ordini riparte da 1.';
@@ -570,7 +570,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String ticketNumber(int number) {
-    return 'Comanda $number';
+    return 'Ordine $number';
   }
 
   @override
@@ -586,7 +586,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get viewTicket => 'Vedi comanda';
+  String get viewTicket => 'Vedi ordine';
 
   @override
   String get duplicateTicket => 'Duplica come bozza';
@@ -596,7 +596,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'È stata creata una nuova bozza modificabile da questa istantanea.';
 
   @override
-  String get ticketDetails => 'Dettagli comanda';
+  String get ticketDetails => 'Dettagli ordine';
 
   @override
   String get savedHeading => 'Intestazione salvata';
@@ -609,7 +609,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get savedSnapshotBody =>
-      'Le modifiche al catalogo non cambiano questa comanda.';
+      'Le modifiche al catalogo non cambiano questa ordine.';
 
   @override
   String get oneOff => 'Occasionale';
@@ -627,7 +627,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get noteTooLong => 'Questa nota è troppo lunga.';
 
   @override
-  String get searchTickets => 'Cerca comande';
+  String get searchTickets => 'Cerca ordini';
 
   @override
   String get printerSetup => 'Connessione stampante';
@@ -693,7 +693,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get testTicket => 'Stampa test di connessione';
 
   @override
-  String get sendingTestTicket => 'Invio comanda di prova…';
+  String get sendingTestTicket => 'Invio ordine di prova…';
 
   @override
   String get testTicketSent => 'Byte di prova inviati';
@@ -723,7 +723,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il test usa ESC/POS, fa avanzare la carta e non invia comandi di taglio o apertura cassetto.';
 
   @override
-  String get ticketTemplate => 'Comanda stampata';
+  String get ticketTemplate => 'Ordine stampata';
 
   @override
   String get ticketTemplateBody =>
@@ -734,7 +734,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ticketTextSizesBody =>
-      'Scegli una dimensione limitata per ogni tipo di contenuto della comanda.';
+      'Scegli una dimensione limitata per ogni tipo di contenuto della ordine.';
 
   @override
   String get ticketHeadingSize => 'Intestazione';
@@ -764,7 +764,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get footerTooLong => 'Usa al massimo 120 caratteri.';
 
   @override
-  String get ticketLogo => 'Logo della comanda';
+  String get ticketLogo => 'Logo della ordine';
 
   @override
   String get ticketLogoBody =>
@@ -791,39 +791,39 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare il logo. Prova un’altra immagine.';
 
   @override
-  String get ticketLabel => 'COMANDA';
+  String get ticketLabel => 'ORDINE';
 
   @override
   String get lineNoteLabel => 'Nota';
 
   @override
-  String get printTicket => 'Stampa comanda';
+  String get printTicket => 'Stampa ordine';
 
   @override
   String get reprintTicket => 'Stampa di nuovo';
 
   @override
-  String get sendQueuedTicket => 'Invia comanda in coda';
+  String get sendQueuedTicket => 'Invia ordine in coda';
 
   @override
   String get shareTicketPdf => 'Condividi PDF';
 
   @override
-  String get preparingTicket => 'Preparazione comanda…';
+  String get preparingTicket => 'Preparazione ordine…';
 
   @override
   String get connectBeforePrinting =>
       'Connetti una stampante nelle Impostazioni prima di stampare.';
 
   @override
-  String get printQueued => 'Comanda in coda';
+  String get printQueued => 'Ordine in coda';
 
   @override
   String get printQueuedBody =>
-      'Nessun dato è stato inviato. Connetti la stampante, poi usa Invia comanda in coda.';
+      'Nessun dato è stato inviato. Connetti la stampante, poi usa Invia ordine in coda.';
 
   @override
-  String get printTransmitted => 'Byte della comanda inviati';
+  String get printTransmitted => 'Byte della ordine inviati';
 
   @override
   String get printTransmittedBody =>
@@ -848,7 +848,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get noPrintAttempts =>
-      'Questa comanda salvata non è mai stata inviata a una stampante.';
+      'Questa ordine salvata non è mai stata inviata a una stampante.';
 
   @override
   String get printStatusQueued => 'In coda';
@@ -871,7 +871,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String ticketPdfSubject(int number) {
-    return 'Comanda LibreSlip $number';
+    return 'Ordine LibreSlip $number';
   }
 
   @override
@@ -883,33 +883,33 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare il tentativo di stampa in modo sicuro, quindi LibreSlip non ha continuato automaticamente.';
 
   @override
-  String get deleteTicket => 'Elimina comanda';
+  String get deleteTicket => 'Elimina ordine';
 
   @override
   String deleteTicketQuestion(int number) {
-    return 'Eliminare la comanda $number?';
+    return 'Eliminare la ordine $number?';
   }
 
   @override
   String get deleteTicketBody =>
-      'La comanda salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
+      'La ordine salvata e la cronologia dei tentativi di stampa verranno eliminate. Il numero d’ordine corrente non cambierà. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
 
   @override
-  String get deleteAllTickets => 'Elimina tutte le comande precedenti';
+  String get deleteAllTickets => 'Elimina tutte le ordini precedenti';
 
   @override
   String get deleteAllTicketsQuestion =>
-      'Eliminare tutte le comande precedenti?';
+      'Eliminare tutte le ordini precedenti?';
 
   @override
   String get deleteAllTicketsBody =>
-      'Tutte le comande salvate e la cronologia dei tentativi di stampa verranno eliminate. La bozza e il numero d’ordine correnti non cambieranno. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
+      'Tutte le ordini salvate e la cronologia dei tentativi di stampa verranno eliminate. La bozza e il numero d’ordine correnti non cambieranno. Le consegne e gli ordini ricevuti dal Server non vengono eliminati.';
 
   @override
-  String get ticketDeleted => 'Comanda eliminata';
+  String get ticketDeleted => 'Ordine eliminata';
 
   @override
-  String get allTicketsDeleted => 'Comande precedenti eliminate';
+  String get allTicketsDeleted => 'Ordini precedenti eliminate';
 
   @override
   String get portability => 'Importazione ed esportazione';
@@ -923,14 +923,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get exportConfigurationBody =>
-      'Include lingua, aspetto, impostazioni della comanda stampata, campi dell’ordine e logo.';
+      'Include lingua, aspetto, impostazioni della ordine stampata, campi dell’ordine e logo.';
 
   @override
   String get exportFullBackup => 'Esporta backup completo';
 
   @override
   String get exportFullBackupBody =>
-      'Include anche articoli riutilizzabili, bozze, comande salvate, tentativi di stampa e immagini collegate.';
+      'Include anche articoli riutilizzabili, bozze, ordini salvate, tentativi di stampa e immagini collegate.';
 
   @override
   String get importArchive => 'Importa ZIP';
@@ -966,7 +966,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String archiveContents(int items, int drafts, int tickets, int attempts) {
-    return '$items articoli, $drafts bozze, $tickets comande e $attempts tentativi di stampa';
+    return '$items articoli, $drafts bozze, $tickets ordini e $attempts tentativi di stampa';
   }
 
   @override
@@ -1003,11 +1003,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get itemBreakdownBody =>
-      'Quantità totali ricavate dalle comande salvate per le date selezionate.';
+      'Quantità totali ricavate dalle ordini salvate per le date selezionate.';
 
   @override
   String get noItemsInPeriod =>
-      'Nessun articolo è stato aggiunto alle comande salvate in questo periodo.';
+      'Nessun articolo è stato aggiunto alle ordini salvate in questo periodo.';
 
   @override
   String itemQuantitySummary(String name, int quantity) {
@@ -1034,7 +1034,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get clientModeBody =>
-      'Crea, stampa e conserva le comande in locale. L’associazione a un Server locale è sempre facoltativa.';
+      'Crea, stampa e conserva le ordini in locale. L’associazione a un Server locale è sempre facoltativa.';
 
   @override
   String get serverMode => 'Server';
@@ -1307,7 +1307,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryPendingBody =>
-      'Questa comanda è salvata in locale e verrà inviata automaticamente quando il Server associato sarà raggiungibile.';
+      'Questa ordine è salvata in locale e verrà inviata automaticamente quando il Server associato sarà raggiungibile.';
 
   @override
   String get deliveryDeliveredBody =>
@@ -1334,7 +1334,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get includeInServerOrdersBody =>
-      'Se disattivato, l’articolo resta sulla comanda locale stampata ma viene omesso dall’ordine facoltativo al Server.';
+      'Se disattivato, l’articolo resta sulla ordine locale stampata ma viene omesso dall’ordine facoltativo al Server.';
 
   @override
   String get localOnlyItem => 'Solo locale';
@@ -1369,7 +1369,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get managedOrdersBody =>
-      'Mantieni disponibili i nuovi ordini per aggiunte successive. Gli ordini esistenti restano disponibili quando disattivi questa opzione.';
+      'Mantieni gli ordini modificabili. Ogni ordine conserva solo il contenuto attuale.';
 
   @override
   String get activeOrders => 'Ordini aperti';
@@ -1379,17 +1379,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Per iniziare, salva un ordine con Mantieni ordini aperti attivo.';
 
   @override
-  String get newOrderKeptOpen =>
-      'Questo ordine resterà aperto per aggiunte successive.';
+  String get newOrderKeptOpen => 'Questo ordine resta aperto alle modifiche.';
 
   @override
   String get addToOrder => 'Aggiungi articoli';
-
-  @override
-  String get fullOrderSnapshot => 'Ordine completo a questa revisione';
-
-  @override
-  String get printAdditions => 'Stampa aggiunte';
 
   @override
   String get finishCompositionFirst =>
@@ -1400,30 +1393,25 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get closeActiveOrderBody =>
-      'Vuoi terminare le aggiunte a questo ordine? Le comande salvate restano nello storico. L’ordine sul Server non viene segnato come completato.';
+      'Vuoi terminare le aggiunte a questo ordine? Le ordini salvate restano nello storico. L’ordine sul Server non viene segnato come completato.';
 
   @override
-  String get cancelAddition => 'Annulla aggiunte';
+  String get cancelAddition => 'Annulla nuovi articoli';
 
   @override
   String get cancelAdditionBody =>
-      'Vuoi scartare le aggiunte attuali? Gli articoli già salvati restano nell’ordine aperto.';
+      'Scartare i nuovi articoli? Le modifiche agli articoli salvati sono già state applicate.';
 
   @override
   String get deliveryUpdatesUnsupported =>
       'Aggiorna il Server per ricevere ordini aperti e aggiunte, poi riprova questo invio.';
 
   @override
-  String get latestAdditions => 'Aggiunto in questa revisione';
-
-  @override
-  String orderRevision(int revision) {
-    return 'Revisione $revision';
-  }
+  String get latestAdditions => 'Nuovi articoli';
 
   @override
   String get managedHistoryPending =>
-      'Invia le revisioni in attesa prima di eliminare le comande salvate.';
+      'Invia questo ordine al Server prima di eliminarlo.';
 
   @override
   String get activeOrderLocal => 'Questo ordine resta su questo telefono.';
@@ -1433,7 +1421,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get deliveryWaitingForRevision =>
-      'In attesa della stampa e dell’invio di una revisione precedente. Apri la sua comanda salvata per recuperare la stampa o riprovare l’invio.';
+      'In attesa di stampare e inviare questo ordine. Aprilo per stampare o riprovare l’invio.';
 
   @override
   String get completeWholeSteps => 'Completa intere fasi';
@@ -1447,7 +1435,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get hideServerOrderDetailsBody =>
-      'Nasconde revisione, orari di ricezione e creazione, intestazione e indicazioni sulla consegna nei dettagli dell’ordine.';
+      'Nascondi gli orari, l’intestazione e le indicazioni di consegna nei dettagli dell’ordine.';
 
   @override
   String get completeStep => 'Completa fase';
@@ -1559,7 +1547,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il Server ha una versione più recente di questo ordine. L’avanzamento resta locale. Ripristina un backup aggiornato per sincronizzare questo ordine.';
 
   @override
-  String get printTicketPrices => 'Prezzi sulle comande';
+  String get printTicketPrices => 'Prezzi sulle ordini';
 
   @override
   String get printTicketPricesBody =>
@@ -1587,7 +1575,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get productPricesBody =>
-      'Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. I prezzi restano su questo dispositivo. Prezzi sulle comande controlla separatamente gli importi stampati.';
+      'Facoltativi e disattivati all’inizio. I prezzi vengono salvati quando aggiungi gli articoli. I prezzi restano su questo dispositivo. Prezzi sulle ordini controlla separatamente gli importi stampati.';
 
   @override
   String get unitPrice => 'Prezzo unitario (facoltativo)';
@@ -1650,9 +1638,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get saveOrder => 'Salva ordine';
 
   @override
-  String get saveAdditions => 'Salva aggiunte';
-
-  @override
   String get orderSavedWithoutPrinting => 'Ordine salvato senza stampa.';
 
   @override
@@ -1705,7 +1690,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sharedOrdersLocalCloseBody =>
-      'Nascondere questo ordine dagli ordini attivi di questo Client? Le comande salvate restano nello storico. Gli altri Client possono ancora aggiornare l’ordine condiviso e l’ordine sul Server non viene segnato come completato.';
+      'Nascondere questo ordine dagli ordini attivi di questo Client? Le ordini salvate restano nello storico. Gli altri Client possono ancora aggiornare l’ordine condiviso e l’ordine sul Server non viene segnato come completato.';
 
   @override
   String get sharedOrdersPaused =>
@@ -1762,7 +1747,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get orderEditHelp =>
-      'Gli spostamenti sono immediati. Stampa o salva per aggiungere nuovi articoli.';
+      'Gli articoli salvati si aggiornano subito. Salva o stampa per aggiungere nuovi articoli.';
 
   @override
   String get catalogueLastPhaseBody =>
@@ -1775,11 +1760,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get pastOrders => 'Ordini precedenti';
 
   @override
-  String get orderPrintHistory => 'Cronologia stampe';
+  String get printPreview => 'Anteprima di stampa';
 
   @override
-  String get orderPrintHistoryBody =>
-      'Copie salvate per questo ordine. Aprine una per ristampare o recuperare un tentativo di stampa.';
+  String get itemEditFailed =>
+      'Modifica non confermata. Aggiorna l’ordine e verifica la connessione al Server.';
+
+  @override
+  String get itemEditUnsupported =>
+      'Aggiorna il Server per modificare o rimuovere gli articoli salvati.';
+
+  @override
+  String get printSuperseded => 'Ordine aggiornato';
+
+  @override
+  String get printSupersededBody =>
+      'L’ordine è cambiato. Stampa l’ordine attuale completo.';
 }
 
 /// The translations for Italian, as used in Italy (`it_IT`).

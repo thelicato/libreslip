@@ -124,7 +124,7 @@ void main() {
     workspace.addCatalogueItem(workspace.items.single);
     final second = (await workspace.saveActiveTicket(heading: 'Ignored'))!;
     expect(second.lines.map((line) => line.price), [original, revised]);
-    expect(second.printLines.single.price, revised);
+    expect(second.printLines.last.price, revised);
     expect(OrderPriceEstimate.fromLines(second.lines).totals, {
       'EUR': 250,
       'GBP': 250,
@@ -141,7 +141,7 @@ void main() {
       (await repo.loadTickets())
           .firstWhere((t) => t.id == first.id)
           .lines
-          .single
+          .first
           .price,
       original,
     );
