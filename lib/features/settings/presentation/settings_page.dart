@@ -516,6 +516,11 @@ class _LogoEditorState extends State<_LogoEditor> {
                           onPressed: controller.saving
                               ? null
                               : controller.removeLogo,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context)
+                                .colorScheme
+                                .error,
+                          ),
                           icon: const Icon(Icons.delete_outline_rounded),
                           label: Text(l.removeLogo),
                         ),

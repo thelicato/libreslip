@@ -47,6 +47,9 @@ class CourseComposer extends StatelessWidget {
                   onPressed: busy || controller.saving
                       ? null
                       : () => controller.removeDivider(last!.id),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
                   icon: const Icon(Icons.undo_rounded),
                   label: Text(l.removeDivider),
                 ),

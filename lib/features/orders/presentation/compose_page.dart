@@ -1411,6 +1411,7 @@ class _OrderLineCard extends StatelessWidget {
                   key: ValueKey('remove-line-${line.id}'),
                   onPressed: busy ? null : onRemove,
                   tooltip: l.removeLine,
+                  color: theme.colorScheme.error,
                   icon: const Icon(Icons.close_rounded),
                 ),
             ],

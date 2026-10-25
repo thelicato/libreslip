@@ -65,6 +65,11 @@ class ManagedOrderComposer extends StatelessWidget {
                             await controller.cancelAddition();
                           }
                         },
+                  style: (controller.activeDraft?.lines.isEmpty ?? true)
+                      ? null
+                      : TextButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
                   icon: const Icon(Icons.close_rounded),
                   label: Text(
                     (controller.activeDraft?.lines.isEmpty ?? true)

@@ -377,6 +377,10 @@ class _ItemsPageState extends State<ItemsPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: Text(l.removeItem),
           ),
         ],
@@ -452,7 +456,15 @@ class _ItemCard extends StatelessWidget {
                 onSelected: (value) => value == 'edit' ? onEdit() : onRemove(),
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 'edit', child: Text(l.edit)),
-                  PopupMenuItem(value: 'remove', child: Text(l.removeItem)),
+                  PopupMenuItem(
+                    value: 'remove',
+                    child: Text(
+                      l.removeItem,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
