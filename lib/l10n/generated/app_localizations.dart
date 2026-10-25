@@ -2488,6 +2488,42 @@ abstract class AppLocalizations {
   /// **'Version {version}'**
   String appVersion(String version);
 
+  /// No description provided for @workingMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Working mode'**
+  String get workingMode;
+
+  /// No description provided for @ticketMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket mode'**
+  String get ticketMode;
+
+  /// No description provided for @ticketModeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders are finished tickets. Editing is off; print when you finish composing.'**
+  String get ticketModeBody;
+
+  /// No description provided for @restaurantMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Restaurant mode'**
+  String get restaurantMode;
+
+  /// No description provided for @restaurantModeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders stay open for updates. Save without printing, or print when you choose.'**
+  String get restaurantModeBody;
+
+  /// No description provided for @closeOrdersBeforeTicketMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Close active orders before switching to Ticket mode.'**
+  String get closeOrdersBeforeTicketMode;
+
   /// No description provided for @managedOrders.
   ///
   /// In en, this message translates to:

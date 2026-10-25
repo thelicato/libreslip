@@ -532,6 +532,12 @@
       }
     }
   },
+  "workingMode": "Modalità di lavoro",
+  "ticketMode": "Modalità ticket",
+  "ticketModeBody": "Gli ordini sono ticket conclusi. Le modifiche sono disattivate; stampa al termine della composizione.",
+  "restaurantMode": "Modalità ristorante",
+  "restaurantModeBody": "Gli ordini restano aperti alle modifiche. Salva senza stampare oppure stampa quando vuoi.",
+  "closeOrdersBeforeTicketMode": "Chiudi gli ordini attivi prima di passare alla modalità ticket.",
   "managedOrders": "Mantieni aperti gli ordini",
   "managedOrdersBody": "Mantieni gli ordini modificabili. Ogni ordine conserva solo il contenuto attuale.",
   "activeOrders": "Ordini aperti",

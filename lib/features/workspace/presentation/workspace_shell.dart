@@ -284,6 +284,8 @@ class _WorkspaceShellState extends State<WorkspaceShell> {
                             horizontalPadding: wide ? 36 : 22,
                             onPrint: () =>
                                 _composeKey.currentState?.printTicket(),
+                            onSave: () => _composeKey.currentState
+                                ?.saveOrderWithoutPrinting(),
                           ),
                       ],
                     ),
@@ -305,6 +307,7 @@ class _ComposeActionBar extends StatelessWidget {
     required this.printing,
     required this.horizontalPadding,
     required this.onPrint,
+    required this.onSave,
     required this.printerRequired,
   });
 
@@ -313,6 +316,7 @@ class _ComposeActionBar extends StatelessWidget {
   final ValueNotifier<bool> printing;
   final double horizontalPadding;
   final VoidCallback onPrint;
+  final VoidCallback onSave;
   final bool printerRequired;
 
   @override
@@ -330,6 +334,7 @@ class _ComposeActionBar extends StatelessWidget {
       final hasItems =
           (controller.activeDraft?.lines.isNotEmpty ?? false) ||
           (controller.editingOrder?.lines.isNotEmpty ?? false);
+      final restaurantMode = controller.featureSettings.managedOrdersEnabled;
       return Material(
         color: Theme.of(context).colorScheme.surface,
         elevation: 3,
@@ -380,6 +385,12 @@ class _ComposeActionBar extends StatelessWidget {
                             : l.saveOrder,
                       ),
                     );
+                    final saveButton = OutlinedButton.icon(
+                      key: const ValueKey('save-order-without-printing'),
+                      onPressed: !hasItems || busy ? null : onSave,
+                      icon: const Icon(Icons.save_outlined),
+                      label: Text(l.saveOrder),
+                    );
                     if (constraints.maxWidth < 520) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -387,6 +398,10 @@ class _ComposeActionBar extends StatelessWidget {
                           if (!connected) ...[
                             status,
                             const SizedBox(height: 6),
+                          ],
+                          if (restaurantMode) ...[
+                            saveButton,
+                            const SizedBox(height: 8),
                           ],
                           button,
                         ],
@@ -399,6 +414,13 @@ class _ComposeActionBar extends StatelessWidget {
                           const SizedBox(width: 12),
                         ] else
                           const Spacer(),
+                        if (restaurantMode) ...[
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 160),
+                            child: saveButton,
+                          ),
+                          const SizedBox(width: 10),
+                        ],
                         ConstrainedBox(
                           constraints: const BoxConstraints(minWidth: 190),
                           child: button,

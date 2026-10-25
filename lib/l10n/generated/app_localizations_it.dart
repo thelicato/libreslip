@@ -1365,6 +1365,27 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get workingMode => 'Modalità di lavoro';
+
+  @override
+  String get ticketMode => 'Modalità ticket';
+
+  @override
+  String get ticketModeBody =>
+      'Gli ordini sono ticket conclusi. Le modifiche sono disattivate; stampa al termine della composizione.';
+
+  @override
+  String get restaurantMode => 'Modalità ristorante';
+
+  @override
+  String get restaurantModeBody =>
+      'Gli ordini restano aperti alle modifiche. Salva senza stampare oppure stampa quando vuoi.';
+
+  @override
+  String get closeOrdersBeforeTicketMode =>
+      'Chiudi gli ordini attivi prima di passare alla modalità ticket.';
+
+  @override
   String get managedOrders => 'Mantieni aperti gli ordini';
 
   @override

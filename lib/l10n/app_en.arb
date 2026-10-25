@@ -532,6 +532,12 @@
       }
     }
   },
+  "workingMode": "Working mode",
+  "ticketMode": "Ticket mode",
+  "ticketModeBody": "Orders are finished tickets. Editing is off; print when you finish composing.",
+  "restaurantMode": "Restaurant mode",
+  "restaurantModeBody": "Orders stay open for updates. Save without printing, or print when you choose.",
+  "closeOrdersBeforeTicketMode": "Close active orders before switching to Ticket mode.",
   "managedOrders": "Keep orders open",
   "managedOrdersBody": "Keep orders available for editing. Each order stores only its current contents.",
   "activeOrders": "Active orders",

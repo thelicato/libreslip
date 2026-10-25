@@ -1352,6 +1352,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get workingMode => 'Working mode';
+
+  @override
+  String get ticketMode => 'Ticket mode';
+
+  @override
+  String get ticketModeBody =>
+      'Orders are finished tickets. Editing is off; print when you finish composing.';
+
+  @override
+  String get restaurantMode => 'Restaurant mode';
+
+  @override
+  String get restaurantModeBody =>
+      'Orders stay open for updates. Save without printing, or print when you choose.';
+
+  @override
+  String get closeOrdersBeforeTicketMode =>
+      'Close active orders before switching to Ticket mode.';
+
+  @override
   String get managedOrders => 'Keep orders open';
 
   @override

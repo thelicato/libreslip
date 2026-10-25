@@ -251,19 +251,43 @@ class SettingsPage extends StatelessWidget {
                         controller.settings.copyWith(printTicketPrices: value),
                       ),
               ),
-              SwitchListTile(
-                key: const ValueKey('toggle-managed-orders'),
-                contentPadding: EdgeInsets.zero,
-                value: orders.featureSettings.managedOrdersEnabled,
-                title: Text(l.managedOrders),
-                subtitle: Text(l.managedOrdersBody),
-                onChanged: orders.saving
+              Text(
+                l.workingMode,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              SegmentedButton<bool>(
+                key: const ValueKey('working-mode-selector'),
+                segments: [
+                  ButtonSegment(value: false, label: Text(l.ticketMode)),
+                  ButtonSegment(value: true, label: Text(l.restaurantMode)),
+                ],
+                selected: {orders.featureSettings.managedOrdersEnabled},
+                onSelectionChanged: orders.saving
                     ? null
-                    : (value) => orders.updateFeatureSettings(
-                        orders.featureSettings.copyWith(
-                          managedOrdersEnabled: value,
-                        ),
-                      ),
+                    : (selection) {
+                        final restaurantMode = selection.single;
+                        if (!restaurantMode &&
+                            orders.managedOrders.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l.closeOrdersBeforeTicketMode),
+                            ),
+                          );
+                          return;
+                        }
+                        orders.updateFeatureSettings(
+                          orders.featureSettings.copyWith(
+                            managedOrdersEnabled: restaurantMode,
+                          ),
+                        );
+                      },
+              ),
+              const SizedBox(height: 8),
+              Text(
+                orders.featureSettings.managedOrdersEnabled
+                    ? l.restaurantModeBody
+                    : l.ticketModeBody,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               SwitchListTile(
                 key: const ValueKey('toggle-whole-steps'),

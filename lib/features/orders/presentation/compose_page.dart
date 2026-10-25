@@ -472,13 +472,18 @@ class ComposePageState extends State<ComposePage> {
     );
   }
 
-  Future<void> printTicket() async {
+  Future<void> printTicket() => _saveOrPrint(printRequested: true);
+
+  Future<void> saveOrderWithoutPrinting() =>
+      _saveOrPrint(printRequested: false);
+
+  Future<void> _saveOrPrint({required bool printRequested}) async {
     final l = AppLocalizations.of(context);
     if (widget.printing.value || widget.controller.saving) return;
     final output = widget.output;
     final connected = output?.printer.connected ?? false;
     final required = widget.settings.printerConnectionRequired;
-    if (required && !connected) {
+    if (printRequested && required && !connected) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l.connectBeforePrinting)));
       return;
@@ -501,6 +506,12 @@ class ComposePageState extends State<ComposePage> {
     }
     if (!required && widget.delivery != null) {
       unawaited(widget.delivery!.ticketReady(ticket.id));
+    }
+    if (!printRequested) {
+      widget.printing.value = false;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.orderSavedWithoutPrinting)));
+      return;
     }
     if (!connected) {
       widget.printing.value = false;
