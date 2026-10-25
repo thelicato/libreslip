@@ -238,7 +238,9 @@ void main() {
           find.text(language == 'it' ? 'Salva ordine' : 'Save order'),
           findsOneWidget,
         );
-        await tester.tap(find.byKey(const ValueKey('print-ticket')));
+        await tester.tap(
+          find.byKey(const ValueKey('save-order-without-printing')),
+        );
         await tester.pumpAndSettle();
         expect(orders.tickets.single.lines.single.name, 'Tea');
         expect(orders.managedOrders, hasLength(1));
@@ -264,7 +266,9 @@ void main() {
           find.text(language == 'it' ? 'Salva ordine' : 'Save order'),
           findsOneWidget,
         );
-        await tester.tap(find.byKey(const ValueKey('print-ticket')));
+        await tester.tap(
+          find.byKey(const ValueKey('save-order-without-printing')),
+        );
         await tester.pumpAndSettle();
         expect(orders.tickets, hasLength(1));
         expect(orders.managedOrders.single.revision, 2);

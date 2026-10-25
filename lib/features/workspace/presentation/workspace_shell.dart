@@ -366,7 +366,10 @@ class _ComposeActionBar extends StatelessWidget {
                     final button = FilledButton.icon(
                       key: const ValueKey('print-ticket'),
                       onPressed:
-                          !hasItems || busy || (printerRequired && !connected)
+                          !hasItems ||
+                              busy ||
+                              (restaurantMode && !connected) ||
+                              (printerRequired && !connected)
                           ? null
                           : onPrint,
                       icon: printing.value
@@ -375,12 +378,12 @@ class _ComposeActionBar extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Icon(
-                              connected || printerRequired
+                              restaurantMode || connected || printerRequired
                                   ? Icons.print_rounded
                                   : Icons.save_outlined,
                             ),
                       label: Text(
-                        connected || printerRequired
+                        restaurantMode || connected || printerRequired
                             ? l.printTicket
                             : l.saveOrder,
                       ),

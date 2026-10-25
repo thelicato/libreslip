@@ -142,15 +142,30 @@ void main() {
           );
         }
         await tap(find.byKey(const ValueKey('nav-4')));
-        final toggle = find.byKey(const ValueKey('toggle-managed-orders'));
+        final selector = find.byKey(const ValueKey('working-mode-selector'));
         await tester.scrollUntilVisible(
-          toggle,
+          selector,
           250,
           scrollable: find.byType(Scrollable).last,
         );
-        await tap(find.descendant(of: toggle, matching: find.byType(Switch)));
-        expect(env.controller.featureSettings.managedOrdersEnabled, isFalse);
-        expect(navigationLabel(), language == 'it' ? 'Ordini' : 'Orders');
+        final ticketMode = find.descendant(
+          of: selector,
+          matching: find.text(
+            language == 'it' ? 'Modalità ticket' : 'Ticket mode',
+          ),
+        );
+        await tap(ticketMode);
+        expect(env.controller.featureSettings.managedOrdersEnabled, isTrue);
+        expect(
+          find.text(
+            language == 'it'
+                ? 'Chiudi gli ordini attivi prima di passare alla modalità ticket.'
+                : 'Close active orders before switching to Ticket mode.',
+          ),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
         await tap(navigation);
         expect(find.byKey(ValueKey('view-order-$id')), findsOneWidget);
         expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsNothing);
@@ -166,6 +181,26 @@ void main() {
         );
         await tap(confirm);
         expect(env.controller.managedOrders, isEmpty);
+        await tap(find.byKey(const ValueKey('nav-4')));
+        final updatedSelector = find.byKey(
+          const ValueKey('working-mode-selector'),
+        );
+        await tester.scrollUntilVisible(
+          updatedSelector,
+          250,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tap(
+          find.descendant(
+            of: updatedSelector,
+            matching: find.text(
+              language == 'it' ? 'Modalità ticket' : 'Ticket mode',
+            ),
+          ),
+        );
+        expect(env.controller.featureSettings.managedOrdersEnabled, isFalse);
+        expect(navigationLabel(), language == 'it' ? 'Ordini' : 'Orders');
+        await tap(navigation);
         expect(find.byKey(ValueKey('view-ticket-${saved.id}')), findsOneWidget);
         expect(find.byType(AlertDialog), findsNothing);
         expect(
