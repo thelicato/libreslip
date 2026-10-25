@@ -720,6 +720,7 @@
   "phaseMovePending": "Send pending additions to the Server before moving items.",
   "ticketAdditionsHeading": "Additions",
   "editOrder": "Edit order",
+  "editOrderTitle": "Edit order title",
   "editingOrder": "Editing order",
   "savedItemsLabel": "Saved",
   "orderEditHelp": "Saved items update immediately. Save or print to add new items.",

@@ -1761,6 +1761,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get editOrder => 'Modifica ordine';
 
   @override
+  String get editOrderTitle => 'Modifica titolo ordine';
+
+  @override
   String get editingOrder => 'Modifica ordine';
 
   @override

@@ -210,7 +210,7 @@ class TicketDetailDialog extends StatelessWidget {
     final reference = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l.editOrder),
+        title: Text(l.editOrderTitle),
         content: TextField(
           controller: field,
           autofocus: true,

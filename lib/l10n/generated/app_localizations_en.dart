@@ -1746,6 +1746,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editOrder => 'Edit order';
 
   @override
+  String get editOrderTitle => 'Edit order title';
+
+  @override
   String get editingOrder => 'Editing order';
 
   @override

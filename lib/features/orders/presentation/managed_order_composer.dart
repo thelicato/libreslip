@@ -38,6 +38,15 @@ class ManagedOrderComposer extends StatelessWidget {
                   l.editingOrder,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                if (controller.editingOrder case final order?)
+                  TextButton.icon(
+                    key: ValueKey('edit-active-order-title-${order.id}'),
+                    onPressed: busy
+                        ? null
+                        : () => _editOrderTitle(context, order.id),
+                    icon: const Icon(Icons.drive_file_rename_outline_rounded),
+                    label: Text(l.editOrderTitle),
+                  ),
                 TextButton.icon(
                   key: const ValueKey('cancel-addition'),
                   onPressed: busy
@@ -70,6 +79,55 @@ class ManagedOrderComposer extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _editOrderTitle(BuildContext context, String orderId) async {
+    final l = AppLocalizations.of(context);
+    final order = controller.managedOrders
+        .where((order) => order.id == orderId)
+        .firstOrNull;
+    if (order == null) return;
+    var editedReference = order.reference;
+    final reference = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.editOrderTitle),
+        content: SizedBox(
+          height: 88,
+          child: TextFormField(
+            initialValue: editedReference,
+            autofocus: true,
+            maxLength: 80,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l.orderReference,
+              border: const UnderlineInputBorder(),
+            ),
+            onChanged: (value) => editedReference = value,
+            onFieldSubmitted: (value) => Navigator.pop(context, value),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, editedReference),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    if (reference == null || !context.mounted) return;
+    final saved = await controller.updateManagedOrderReference(
+      orderId,
+      reference,
+    );
+    if (context.mounted && !saved) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.saveError)));
+    }
   }
 }
 

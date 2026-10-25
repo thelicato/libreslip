@@ -246,7 +246,18 @@ class OrderWorkspaceController extends ChangeNotifier {
 
   Future<bool> updateTicketReference(String id, String reference) =>
       _perform(() async {
+        await flushWrites();
         await _repository.updateTicketReference(id, reference);
+        drafts = await _repository.loadDrafts();
+        tickets = await _repository.loadTickets();
+        managedOrders = await _repository.loadManagedOrders();
+      });
+
+  Future<bool> updateManagedOrderReference(String id, String reference) =>
+      _perform(() async {
+        await flushWrites();
+        await _repository.updateManagedOrderReference(id, reference);
+        drafts = await _repository.loadDrafts();
         tickets = await _repository.loadTickets();
         managedOrders = await _repository.loadManagedOrders();
       });

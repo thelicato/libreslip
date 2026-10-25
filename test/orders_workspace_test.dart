@@ -106,6 +106,27 @@ void main() {
         expect(env.controller.editingOrder?.id, id);
         expect(find.byKey(const ValueKey('cancel-addition')), findsOneWidget);
         expect(find.byType(AlertDialog), findsNothing);
+        await tap(find.byKey(ValueKey('edit-active-order-title-$id')));
+        final titleInput = find.descendant(
+          of: find.byType(AlertDialog).last,
+          matching: find.byType(TextField),
+        );
+        await tester.enterText(titleInput, 'Garden');
+        await tap(
+          find.descendant(
+            of: find.byType(AlertDialog).last,
+            matching: find.byType(FilledButton),
+          ),
+        );
+        expect(env.controller.managedOrders.single.reference, 'Garden');
+        expect(
+          env.controller.tickets
+              .singleWhere((ticket) => ticket.id == saved.id)
+              .reference,
+          'Garden',
+        );
+        expect(env.controller.saving, isFalse);
+        expect(env.controller.activeDraft?.managedOrderId, id);
         env.controller.addCatalogueItem(env.controller.items.single);
         final addition = (await env.controller.saveActiveTicket(
           heading: 'Kitchen',

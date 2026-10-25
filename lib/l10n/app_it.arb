@@ -720,6 +720,7 @@
   "phaseMovePending": "Invia al Server le aggiunte in attesa prima di spostare gli articoli.",
   "ticketAdditionsHeading": "Aggiunte",
   "editOrder": "Modifica ordine",
+  "editOrderTitle": "Modifica titolo ordine",
   "editingOrder": "Modifica ordine",
   "savedItemsLabel": "Salvato",
   "orderEditHelp": "Gli articoli salvati si aggiornano subito. Salva o stampa per aggiungere nuovi articoli.",

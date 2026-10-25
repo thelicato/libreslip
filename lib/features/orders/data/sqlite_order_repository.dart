@@ -3267,6 +3267,70 @@ class SqliteOrderRepository
             where: 'id = ?',
             whereArgs: [managedOrderId],
           );
+          await transaction.update(
+            'drafts',
+            {'reference': value},
+            where: 'managed_order_id = ?',
+            whereArgs: [managedOrderId],
+          );
+        }
+      });
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not update the order title.', error);
+    }
+  }
+
+  @override
+  Future<void> updateManagedOrderReference(String id, String reference) async {
+    final value = reference.trim();
+    if (value.length > 80) {
+      throw const OrderStorageException(
+        'Order title must be 80 characters or fewer.',
+      );
+    }
+    try {
+      await (await _db).transaction((transaction) async {
+        final orders = await transaction.query(
+          'managed_orders',
+          columns: ['id'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (orders.isEmpty) {
+          throw const OrderStorageException('Order not found.');
+        }
+        await transaction.update(
+          'managed_orders',
+          {
+            'reference_snapshot': value,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        await transaction.update(
+          'drafts',
+          {'reference': value},
+          where: 'managed_order_id = ?',
+          whereArgs: [id],
+        );
+        final latestTickets = await transaction.query(
+          'tickets',
+          columns: ['id'],
+          where: 'managed_order_id = ?',
+          whereArgs: [id],
+          orderBy: 'revision DESC',
+          limit: 1,
+        );
+        if (latestTickets.isNotEmpty) {
+          await transaction.update(
+            'tickets',
+            {'reference_snapshot': value},
+            where: 'id = ?',
+            whereArgs: [latestTickets.single['id']],
+          );
         }
       });
     } catch (error) {

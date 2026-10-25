@@ -3124,6 +3124,12 @@ abstract class AppLocalizations {
   /// **'Edit order'**
   String get editOrder;
 
+  /// No description provided for @editOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit order title'**
+  String get editOrderTitle;
+
   /// No description provided for @editingOrder.
   ///
   /// In en, this message translates to:
