@@ -261,6 +261,8 @@ abstract interface class OrderRepository {
 
   Future<void> deleteTicket(String id);
 
+  Future<void> updateTicketReference(String id, String reference);
+
   Future<void> deleteAllTickets();
 
   /// Returns a consistent, versioned snapshot of all SQLite-backed data.

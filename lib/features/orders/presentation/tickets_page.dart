@@ -272,6 +272,8 @@ class _TicketsPageState extends State<TicketsPage> {
           settings: widget.settings,
           output: widget.output,
           delivery: widget.delivery,
+          onReferenceChanged: (reference) =>
+              widget.controller.updateTicketReference(ticket.id, reference),
         ),
       ),
     );

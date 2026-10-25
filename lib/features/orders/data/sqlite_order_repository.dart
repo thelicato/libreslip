@@ -3233,6 +3233,49 @@ class SqliteOrderRepository
   }
 
   @override
+  Future<void> updateTicketReference(String id, String reference) async {
+    final value = reference.trim();
+    if (value.length > 80) {
+      throw const OrderStorageException(
+        'Order title must be 80 characters or fewer.',
+      );
+    }
+    try {
+      await (await _db).transaction((transaction) async {
+        final rows = await transaction.query(
+          'tickets',
+          columns: ['managed_order_id'],
+          where: 'id = ?',
+          whereArgs: [id],
+          limit: 1,
+        );
+        if (rows.isEmpty) throw const OrderStorageException('Order not found.');
+        await transaction.update(
+          'tickets',
+          {'reference_snapshot': value},
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        final managedOrderId = rows.single['managed_order_id'] as String?;
+        if (managedOrderId != null) {
+          await transaction.update(
+            'managed_orders',
+            {
+              'reference_snapshot': value,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            },
+            where: 'id = ?',
+            whereArgs: [managedOrderId],
+          );
+        }
+      });
+    } catch (error) {
+      if (error is OrderStorageException) rethrow;
+      throw OrderStorageException('Could not update the order title.', error);
+    }
+  }
+
+  @override
   Future<void> deleteAllTickets() async {
     try {
       await (await _db).transaction((transaction) async {

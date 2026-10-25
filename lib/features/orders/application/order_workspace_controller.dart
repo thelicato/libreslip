@@ -244,6 +244,13 @@ class OrderWorkspaceController extends ChangeNotifier {
     tickets = await _repository.loadTickets();
   });
 
+  Future<bool> updateTicketReference(String id, String reference) =>
+      _perform(() async {
+        await _repository.updateTicketReference(id, reference);
+        tickets = await _repository.loadTickets();
+        managedOrders = await _repository.loadManagedOrders();
+      });
+
   Future<bool> deleteAllTickets() => _perform(() async {
     await _repository.deleteAllTickets();
     tickets = await _repository.loadTickets();

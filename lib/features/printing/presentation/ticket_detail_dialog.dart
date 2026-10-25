@@ -21,6 +21,7 @@ class TicketDetailDialog extends StatelessWidget {
     this.output,
     this.delivery,
     this.pricesEnabled = false,
+    this.onReferenceChanged,
   });
 
   final SavedTicket ticket;
@@ -28,6 +29,7 @@ class TicketDetailDialog extends StatelessWidget {
   final AppSettings settings;
   final TicketOutputController? output;
   final ClientDeliveryController? delivery;
+  final Future<bool> Function(String reference)? onReferenceChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +55,22 @@ class TicketDetailDialog extends StatelessWidget {
         (controller.busy || controller.sharing);
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      title: OrderIdentity(
-        reference: ticket.reference,
-        numberLabel: l.ticketNumber(ticket.number),
+      title: Row(
+        children: [
+          Expanded(
+            child: OrderIdentity(
+              reference: ticket.reference,
+              numberLabel: l.ticketNumber(ticket.number),
+            ),
+          ),
+          if (onReferenceChanged != null)
+            IconButton(
+              key: ValueKey('edit-order-title-${ticket.id}'),
+              tooltip: l.editOrder,
+              onPressed: () => _editReference(context),
+              icon: const Icon(Icons.edit_outlined),
+            ),
+        ],
       ),
       content: SizedBox(
         width: 520,
@@ -187,6 +202,42 @@ class TicketDetailDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _editReference(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final field = TextEditingController(text: ticket.reference);
+    final reference = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.editOrder),
+        content: TextField(
+          controller: field,
+          autofocus: true,
+          maxLength: 80,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(labelText: l.orderReference),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, field.text),
+            child: Text(l.save),
+          ),
+        ],
+      ),
+    );
+    field.dispose();
+    if (reference == null || !context.mounted) return;
+    final saved = await onReferenceChanged?.call(reference);
+    if (context.mounted && saved != true) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.saveError)));
+    }
   }
 
   TicketDocument _document(BuildContext context) {
